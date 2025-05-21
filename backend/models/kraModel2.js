@@ -1,0 +1,13 @@
+import mongoose from "mongoose";
+
+const kraSchema = new mongoose.Schema({
+  goalId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Goal2",
+    required: true,
+  },
+  kra_name: { type: String, required: true },
+});
+
+const KRA2 = mongoose.model("KRA2", kraSchema);
+export default KRA2;
