@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import KpiTable from "./KpiTable";
+const backendUrl = "http://localhost:1221";
 
 const KpiAssignment = () => {
   const [formData, setFormData] = useState({
@@ -10,34 +11,49 @@ const KpiAssignment = () => {
     kra: "",
     kpi: "",
   });
+
   const [assignedKPIs, setAssignedKPIs] = useState([]);
 
+  // All options fetched from backend
   const [sectors, setSectors] = useState([]);
   const [subsectors, setSubsectors] = useState([]);
-  const [desks, setDesks] = useState([]);
+  //const [desks, setDesks] = useState([]);
   const [kras, setKras] = useState([]);
   const [kpis, setKpis] = useState([]);
 
+  // Filtered options based on selections
+  const [filteredSubsectors, setFilteredSubsectors] = useState([]);
+  const [filteredKpis, setFilteredKpis] = useState([]);
+
   // Fetch dropdown options
   const fetchDropdownData = async () => {
-    const [sectorRes, subsectorRes, deskRes, kraRes, kpiRes] =
-      await Promise.all([
-        axios.get("http://localhost:5000/api/sectors"),
-        axios.get("http://localhost:5000/api/subsectors"),
-        axios.get("http://localhost:5000/api/desks"),
-        axios.get("http://localhost:5000/api/kras"),
-        axios.get("http://localhost:5000/api/kpis/options"),
-      ]);
-    setSectors(sectorRes.data);
-    setSubsectors(subsectorRes.data);
-    setDesks(deskRes.data);
-    setKras(kraRes.data);
-    setKpis(kpiRes.data);
+    try {
+      const [sectorRes, subsectorRes, kraRes, kpiRes] =
+        await Promise.all([
+          axios.get(`${backendUrl}/api/sector/get-sector`),
+          axios.get(`${backendUrl}/api/subsector/get-subsector`),
+         // axios.get(`${backendUrl}/api/desk/get-desk`),
+          axios.get(`${backendUrl}/api/kras/get-kra`), 
+          axios.get(`${backendUrl}/api/kpis/get-kpi`),
+        ]);
+
+      setSectors(sectorRes.data);
+      setSubsectors(subsectorRes.data);
+      //setDesks(deskRes.data);
+      setKras(kraRes.data);
+      setKpis(kpiRes.data);
+    } catch (error) {
+      console.error("Failed to fetch dropdown data:", error);
+    }
   };
 
   const fetchAssignedKPIs = async () => {
-    const res = await axios.get("http://localhost:5000/api/kpis");
-    setAssignedKPIs(res.data);
+    try {
+      const res = await axios.get(`${backendUrl}/api/kpis/get-kpi`);
+      setAssignedKPIs(res.data);
+    } catch (error) {
+      console.error("Failed to fetch assigned KPIs:", error);
+    }
   };
 
   useEffect(() => {
@@ -45,17 +61,64 @@ const KpiAssignment = () => {
     fetchAssignedKPIs();
   }, []);
 
+  // Update filtered subsectors when sector changes
+  useEffect(() => {
+    if (!formData.sector) {
+      setFilteredSubsectors([]);
+      setFormData((prev) => ({ ...prev, subsector: "" }));
+      return;
+    }
+    // Filter subsectors by sector
+    const filtered = subsectors.filter(
+      (sub) => sub.sectorName === formData.sector
+    );
+    setFilteredSubsectors(filtered);
+    // Reset subsector if not in filtered list
+    if (!filtered.find((s) => s.name === formData.subsector)) {
+      setFormData((prev) => ({ ...prev, subsector: "" }));
+    }
+  }, [formData.sector, subsectors]);
+
+  // Update filtered KPIs when KRA changes
+  useEffect(() => {
+    if (!formData.kra) {
+      setFilteredKpis([]);
+      setFormData((prev) => ({ ...prev, kpi: "" }));
+      return;
+    }
+    // Filter KPIs by kra
+    const filtered = kpis.filter((kpi) => kpi.kraName === formData.kra);
+    setFilteredKpis(filtered);
+    // Reset kpi if not in filtered list
+    if (!filtered.find((k) => k.name === formData.kpi)) {
+      setFormData((prev) => ({ ...prev, kpi: "" }));
+    }
+  }, [formData.kra, kpis]);
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await axios.post("http://localhost:5000/api/kpis", formData);
-    setFormData({ sector: "", subsector: "", desk: "", kra: "", kpi: "" });
-    fetchAssignedKPIs();
+    try {
+      await axios.post(`${backendUrl}/api/kpis/assign-kpi`, {
+        sector: formData.sector,
+        subsector: formData.subsector,
+        // desk: formData.desk,
+        kra: formData.kra,
+        kpi: formData.kpi,    
+      });
+      fetchAssignedKPIs();
+      alert("KPI assigned successfully!");
+    } catch (error) {
+      console.error("Failed to assign KPI:", error);
+      alert("Failed to assign KPI.");
+    }
   };
 
+  // Helper to render select with passed options
   const renderSelect = (id, label, options) => (
     <div className="flex flex-col">
       <label htmlFor={id} className="mb-1 font-medium capitalize">
@@ -88,10 +151,15 @@ const KpiAssignment = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {renderSelect("sector", "Sector", sectors)}
-            {renderSelect("subsector", "Subsector", subsectors)}
+
+            {/* Subsector dropdown filtered by sector */}
+            {renderSelect("subsector", "Subsector", filteredSubsectors)}
+
             {renderSelect("desk", "Desk", desks)}
             {renderSelect("kra", "KRA", kras)}
-            {renderSelect("kpi", "KPI", kpis)}
+
+            {/* KPI dropdown filtered by KRA */}
+            {renderSelect("kpi", "KPI", filteredKpis)}
 
             <button
               type="submit"
