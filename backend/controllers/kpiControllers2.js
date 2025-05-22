@@ -1,34 +1,41 @@
+// ✅ backend/controllers/kpiController.js
+
 import KRA2 from "../models/kraModel2.js";
 import Goal2 from "../models/goalModel2.js";
 import KPI2 from "../models/kpiModel2.js";
 
+// ✅ Create KPI
 export const createKPI = async (req, res) => {
   try {
-    const { kpi_name } = req.body;
+    const { kpi_name, kraId, goalId } = req.body;
 
-    if (!kpi_name) {
-      return res.status(400).json({ error: "kpi_name is required" });
+    if (!kpi_name || !kraId || !goalId) {
+      return res
+        .status(400)
+        .json({ error: "kpi_name, kraId, and goalId are required" });
     }
 
-    const kra = await KRA.findOne().populate("goalId");
+    // Optional: Validate the existence of KRA and Goal
+    const kraExists = await KRA2.findById(kraId);
+    const goalExists = await Goal2.findById(goalId);
 
-    if (!kra) {
-      return res.status(404).json({ error: "No KRA found in the database" });
+    if (!kraExists || !goalExists) {
+      return res.status(404).json({ error: "Invalid kraId or goalId" });
     }
 
-    const { goalId } = kra;
-
-    const kpi = new KPI2({ kpi_name, kraId: kra._id, goalId: goalId._id });
+    const kpi = new KPI2({ kpi_name, kraId, goalId });
     await kpi.save();
 
     res.status(201).json({ message: "KPI created successfully", data: kpi });
   } catch (err) {
+    console.error("Error creating KPI:", err);
     res
       .status(500)
       .json({ error: "Failed to create KPI", details: err.message });
   }
 };
 
+// ✅ Get All KPIs (with related KRA and Goal)
 export const getAllKPIs = async (req, res) => {
   try {
     const kpis = await KPI2.find()
@@ -64,15 +71,13 @@ export const getAllKPIs = async (req, res) => {
   }
 };
 
-// ✅ backend/controllers/kpiController.js
-
+// ✅ Get All KPI Data structured by Goal → KRA → KPI
 export const getAllKPIData = async (req, res) => {
   try {
     const goals = await Goal2.find({}, "_id goal_desc");
     const kras = await KRA2.find({}, "_id kra_name goalId");
     const kpis = await KPI2.find({}, "_id kpi_name kraId");
 
-    // Iteratively build nested structure
     const result = goals.map((goal) => {
       const goalKras = kras.filter(
         (kra) => kra.goalId.toString() === goal._id.toString()
