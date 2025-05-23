@@ -24,7 +24,7 @@ const Datas = [
       },
       {
         subMenuItem: "ICT and Digital economy",
-        link: "ict",
+        // link: "ict",
         subsubmenu: true,
         subsubMenus: [
           "National E-Government Service",
@@ -46,7 +46,7 @@ const Datas = [
       },
       {
         subMenuItem: "Minister office",
-        link: "minister-office",
+        // link: "minister-office",
         subsubmenu: true,
         subsubMenus: [
           "Innovation Fund",
@@ -62,9 +62,9 @@ const Datas = [
       },
       {
         subMenuItem: "Admin issues",
-        link: "admin-issue",
+        // link: "admin-issue",
         subsubmenu: true,
-        susubMenus: [
+        subsubMenus: [
           "Strategic Affairs",
           "ICT",
           "Procurement & Finance",

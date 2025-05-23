@@ -110,9 +110,3 @@ function StrategicSideBody() {
 }
 
 export default StrategicSideBody;
-
-// import { LuFrame } from "react-icons/lu";
-// import { MdOutlineDisplaySettings } from "react-icons/md";
-// import { IoAnalytics } from "react-icons/io5";
-// import { FcPlanner } from "react-icons/fc";
-// import { TbReportAnalytics } from "react-icons/tb";

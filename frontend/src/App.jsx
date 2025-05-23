@@ -15,7 +15,7 @@ import Configuration from "./components/Configuration";
 import LiChart from "./components/Chart/LiChart";
 import BChart from "./components/Chart/BChart";
 import Chart from "./components/Chart";
-import EditProfile from "./components/EditProfile";
+
 import EditSystemSetting from "./components/EditSystemSetting";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import SectorialPlan from "./components/Sector/SectorialPlan";
@@ -30,6 +30,7 @@ import AddGoalKraKpi from "./pages/Admin/AdminComponents/GoalKpiKra/AddGoalKraKp
 import TargetValidation from "./pages/Strategic/StrategicComponents/TargetValidation";
 import PerformanceValidation from "./pages/Strategic/StrategicComponents/PerformanceValidation";
 import KpiAssignment from "./pages/Admin/AdminComponents/KpiAssignment";
+import UserProfile from "./components/UserProfile";
 
 function App() {
   return (
@@ -45,10 +46,11 @@ function App() {
               <Route path="linechart" element={<LiChart />} />
               <Route path="barchart" element={<BChart />} />
             </Route>
-            <Route path="profile" element={<EditProfile />} />
+
             <Route path="setting" element={<EditSystemSetting />} />
           </Route>
           <Route path="user-managment" element={<UserManagment />} />
+          <Route path="user-profile" element={<UserProfile />} />
           <Route path="Kpi-Assign" element={<KpiAssignment />} />
           <Route path="alert" element={<Alert />} />
           <Route path="configuration" element={<Configuration />} />
@@ -73,6 +75,7 @@ function App() {
           <Route path="affiliated-institutions" element={<Affiliated />} />
           <Route path="minister-office" element={<MinisterOffice />} />
           <Route path="admin-issue" element={<AdminIssue />} />
+          <Route path="user-profile" element={<UserProfile />} />
         </Route>
 
         <Route path="/minister" element={<Minister />}>
@@ -87,10 +90,15 @@ function App() {
           <Route path="affiliated-institutions" element={<Affiliated />} />
           <Route path="minister-office" element={<MinisterOffice />} />
           <Route path="admin-issue" element={<AdminIssue />} />
+          <Route path="user-profile" element={<UserProfile />} />
         </Route>
 
-        <Route path="/executive" element={<Executive />} />
-        <Route path="/workunit" element={<WorkUnit />} />
+        <Route path="/executive" element={<Executive />}>
+          <Route path="user-profile" element={<UserProfile />} />
+        </Route>
+        <Route path="/workunit" element={<WorkUnit />}>
+          <Route path="user-profile" element={<UserProfile />} />
+        </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </BrowserRouter>

@@ -1,18 +1,22 @@
+import { Outlet } from "react-router-dom";
 import MinisterSideMenu from "./MinisterSideMenu";
-import MinisterMain from "./MinisterMain";
+
 import MinisterTopBar from "./MinisterTopBar";
 
 function Minister() {
   return (
-    <div className="flex ">
-      {/* Side Nav Bar */}
-      <div className="h-screen ">
+    <div className="flex">
+      <div className="h-full w-72  ">
         <MinisterSideMenu />
       </div>
-      {/* Main Section */}
-      <div className="flex-1 flex flex-col ">
-        <MinisterTopBar />
-        <MinisterMain />
+
+      <div className="flex-1 flex flex-col">
+        <div>
+          <MinisterTopBar />
+        </div>
+        <main>
+          <Outlet />
+        </main>
       </div>
     </div>
   );

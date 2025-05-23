@@ -11,7 +11,7 @@ import ImageDropdown from "../../components/ImageDropdown";
 
 function MinisterTopBar({ bgColor = "bg-white" }) {
   return (
-    <div className="bg-green-600 text-white items-center duration-500 flex justify-between pl-1 pr-4 lg:pl-4 lg:pr-16 py-2">
+    <div className="bg-green-600 sticky top-0 text-white items-center duration-500 flex justify-between pl-1 pr-4 lg:pl-4 lg:pr-16 py-2">
       <div className=" flex gap-6 px-2">
         <IoMdMenu
           size={23}

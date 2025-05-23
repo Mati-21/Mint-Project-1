@@ -42,7 +42,7 @@ function StrategicTopBar({ bgColor = "bg-white" }) {
       </div>
       <div className="flex gap-4 items-center">
         <p className="hidden lg:block">Matimelkamu@gmail.com</p>
-        <ImageDropdown />
+        <ImageDropdown role="strategic" />
       </div>
     </div>
   );

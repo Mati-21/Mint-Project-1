@@ -6,7 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-function ImageDropdown() {
+function ImageDropdown({ role }) {
   const [opendropDown, setOpenDropDown] = useState(false);
 
   function toggleProfile() {
@@ -63,7 +63,7 @@ function ImageDropdown() {
         {/* lower part */}
 
         <ul className="mt-2">
-          <Link to="/profile" onClick={toggleProfile}>
+          <Link to={`user-profile`} onClick={toggleProfile}>
             <li className="group flex items-center justify-between px-4 py-1 rounded cursor-pointer transition-all hover:font-semibold">
               <span className="flex items-center gap-2">
                 <FaUser /> <span>Edit Profile</span>
