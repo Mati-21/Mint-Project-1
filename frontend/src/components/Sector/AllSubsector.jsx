@@ -6,8 +6,8 @@ import KPIGroupedTable from "../Table/KPIGroupedTable";
 const BACKEND_PORT = 1221;
 const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
 
-function AllSector() {
-  const { sectorId } = useParams();
+function AllSubsector() {
+  const { subsectorId } = useParams();
 
   const [assignedKpisRaw, setAssignedKpisRaw] = useState(null);
   const [nestedKpis, setNestedKpis] = useState([]);
@@ -16,7 +16,7 @@ function AllSector() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!sectorId) {
+    if (!subsectorId) {
       setNestedKpis([]);
       setDetailedKpis([]);
       setError(null);
@@ -28,39 +28,39 @@ function AllSector() {
       setError(null);
 
       try {
-        // Fetch assigned KPIs by sector ID
-        const assignedRes = await fetch(`${BACKEND_URL}/api/assign/sector/${sectorId}`, {
-          headers: { Accept: "application/json" },
-        });
+        // Fetch assigned KPIs with goal details
+        const assignedRes = await fetch(
+          `${BACKEND_URL}/api/assign/assigned-kpi-with-goal-details/${subsectorId}`,
+          { headers: { Accept: "application/json" } }
+        );
 
         if (!assignedRes.ok) {
           throw new Error(`Assigned KPIs fetch failed with status: ${assignedRes.status}`);
         }
 
+        const assignedContentType = assignedRes.headers.get("content-type");
+        if (!assignedContentType || !assignedContentType.includes("application/json")) {
+          throw new Error("Assigned KPIs response is not JSON");
+        }
+
         const assignedData = await assignedRes.json();
         setAssignedKpisRaw(assignedData);
 
-        // Transform assigned KPIs for UI
         const nested = transformAssignedKpisToNested(assignedData);
         setNestedKpis(nested);
 
-        // Extract KPI IDs from assigned data
-        // Adjust these keys according to your API response structure
-        const kpiIds = assignedData
-          .map(item => item.kpi_id || (item.kpi && item.kpi.kpi_id))
-          .filter(Boolean);
+        // Fetch detailed KPIs for subsector
+        const detailedRes = await fetch(`${BACKEND_URL}/api/assign/details/${subsectorId}`, {
+          headers: { Accept: "application/json" },
+        });
 
-        if (kpiIds.length === 0) {
+        if (!detailedRes.ok) {
+          console.warn("Failed to fetch detailed KPIs, status:", detailedRes.status);
           setDetailedKpis([]);
         } else {
-          // Fetch detailed KPIs by IDs query param
-          const queryParam = kpiIds.join(",");
-          const detailedRes = await fetch(`${BACKEND_URL}/api/assign/details?ids=${queryParam}`, {
-            headers: { Accept: "application/json" },
-          });
-
-          if (!detailedRes.ok) {
-            console.warn("Failed to fetch detailed KPIs, status:", detailedRes.status);
+          const detailedContentType = detailedRes.headers.get("content-type");
+          if (!detailedContentType || !detailedContentType.includes("application/json")) {
+            console.warn("Detailed KPIs response is not JSON");
             setDetailedKpis([]);
           } else {
             const detailedData = await detailedRes.json();
@@ -78,11 +78,11 @@ function AllSector() {
     }
 
     fetchData();
-  }, [sectorId]);
+  }, [subsectorId]);
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Assigned KPIs for Sector: {sectorId || "(no sector ID)"}</h2>
+      <h2 className="text-xl font-bold mb-4">Assigned KPIs for Subsector: {subsectorId || "(no subsector ID)"}</h2>
 
       {loading && <p>Loading assigned KPIs...</p>}
 
@@ -97,4 +97,4 @@ function AllSector() {
   );
 }
 
-export default AllSector;
+export default AllSubsector;

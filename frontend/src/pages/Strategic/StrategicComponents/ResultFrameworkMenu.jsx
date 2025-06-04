@@ -10,16 +10,14 @@ const ResultFrameworkMenu = ({ open = true }) => {
   const [menuData, setMenuData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
   const [openSectors, setOpenSectors] = useState({});
-  const [openSubsectors, setOpenSubsectors] = useState({});
 
   useEffect(() => {
     const fetchMenu = async () => {
       try {
         const res = await axios.get(`${backendUrl}/api/menu/result-framework`);
         setMenuData(Array.isArray(res.data) ? res.data : []);
-        console.log(res.data);
       } catch (err) {
         setError("Error loading menu.");
       } finally {
@@ -33,13 +31,6 @@ const ResultFrameworkMenu = ({ open = true }) => {
     setOpenSectors((prev) => ({
       ...prev,
       [sectorId]: !prev[sectorId],
-    }));
-  };
-
-  const toggleSubsector = (sectorId, subsectorId) => {
-    setOpenSubsectors((prev) => ({
-      ...prev,
-      [`${sectorId}-${subsectorId}`]: !prev[`${sectorId}-${subsectorId}`],
     }));
   };
 
@@ -63,42 +54,52 @@ const ResultFrameworkMenu = ({ open = true }) => {
         {menuData.length === 0 && (
           <li className="text-gray-300 px-2">No sectors available.</li>
         )}
+
         {menuData.map((sector) => (
-          <Link key={sector._id} to={`allSector/${sector._id}`}>
-          <li >
-            <div
-              className={`${
-                !open && "hidden"
-              } flex justify-between items-center px-2 py-1 rounded cursor-pointer text-white bg-green-300/20 hover:bg-green-300/40 duration-300 mt-2`}
-              onClick={() => toggleSector(sector._id)}
+          <li key={sector._id} className="mt-2 rounded overflow-hidden">
+            <div className="flex items-center bg-green-300/20 hover:bg-green-300/40 duration-300 rounded cursor-pointer">
+              {/* Sector Name Link */}
+              <Link
+                to={`allSector/${sector._id}`}
+                className="flex-1 px-2 py-1 text-white font-semibold"
               >
-              <span className="font-semibold">{sector.name}</span>
+                {sector.name}
+              </Link>
+
+              {/* Toggle button only if subsectors exist */}
               {sector.subsectors && sector.subsectors.length > 0 && (
-                <ChevronDown
-                size={15}
-                className={`transition-transform duration-200 ${
-                  openSectors[sector._id] ? "rotate-180" : "rotate-0"
-                }`}
-                />
+                <button
+                  onClick={() => toggleSector(sector._id)}
+                  className="p-1 mr-2 rounded hover:bg-green-300/40"
+                  aria-label={`Toggle ${sector.name} subsectors`}
+                  type="button"
+                >
+                  <ChevronDown
+                    size={15}
+                    className={`transition-transform duration-200 text-white ${
+                      openSectors[sector._id] ? "rotate-180" : "rotate-0"
+                    }`}
+                  />
+                </button>
               )}
             </div>
 
+            {/* Subsectors dropdown */}
             {sector.subsectors && openSectors[sector._id] && (
               <ul className="ml-4 mt-1 flex flex-col gap-1">
                 {sector.subsectors.map((subsector) => (
                   <li key={subsector._id}>
-                    <div
-                      className="flex justify-between items-center px-2 py-1 rounded cursor-pointer text-white bg-green-200/30 hover:bg-green-300/40 duration-300"
-                      onClick={() => toggleSubsector(sector._id, subsector._id)}
-                      >
-                      <span>{subsector.name}</span>
-                    </div>
+                    <Link
+                      to={`allSubsector/${subsector._id}`}
+                      className="block px-2 py-1 rounded text-white bg-green-200/30 hover:bg-green-300/40 duration-300"
+                    >
+                      {subsector.name}
+                    </Link>
                   </li>
                 ))}
               </ul>
             )}
           </li>
-            </Link>
         ))}
       </ul>
     </div>

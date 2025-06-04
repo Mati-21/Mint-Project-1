@@ -48,12 +48,14 @@ function KPITable({ groupKey, rows, openModal, openPerformanceModal }) {
                       <button
                         onClick={() => openModal(row, field)}
                         className="bg-green-500 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
+                        title={`Plan for ${field.toUpperCase()}`}
                       >
                         Plan
                       </button>
                       <button
-                        className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
                         onClick={() => openPerformanceModal(row, field)}
+                        className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
+                        title={`Performance for ${field.toUpperCase()}`}
                       >
                         Performance
                       </button>
