@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import KPIGroupedTable from "../Table/KPIGroupedTable";
 
-const backendUrl = "http://localhost:1221/api/kpis2/get-kpi2";
+const backendUrl = "http://localhost:1221/api/assign/assigned-kpi/683ebb87d1c6cad347cc4069";
 
 function Ict() {
   const [data, setData] = useState([]);
@@ -11,11 +11,13 @@ function Ict() {
     async function fetchData() {
       try {
         const res = await fetch(backendUrl);
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
 
         const result = await res.json();
+        console.log("Fetched data:", result);
         const combinedData = result.data;
 
         setData(combinedData);

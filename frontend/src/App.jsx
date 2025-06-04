@@ -31,6 +31,7 @@ import TargetValidation from "./pages/Strategic/StrategicComponents/TargetValida
 import PerformanceValidation from "./pages/Strategic/StrategicComponents/PerformanceValidation";
 import KpiAssignment from "./pages/Admin/AdminComponents/KpiAssignment";
 import UserProfile from "./components/UserProfile";
+import AllSector from "./components/Sector/AllSector";
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
           <Route index element={<Navigate to="sectorial-plan" replace />} />
           <Route path="sectorial-plan" element={<SectorialPlan />} />
           <Route path="ministries" element={<Ministries />} />
+          <Route path="allSector/:sector" element={<AllSector />} />
           <Route
             path="innovation-research"
             element={<InnovationAndResearch />}

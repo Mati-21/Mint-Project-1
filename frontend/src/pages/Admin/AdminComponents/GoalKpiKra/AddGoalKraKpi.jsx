@@ -24,7 +24,6 @@ const AddGoalKraKpi = () => {
   const [kras, setKras] = useState([]);
   const [kpiData, setKpiData] = useState([]); // nested Goal->KRA->KPI data
 
-  // Fetch nested data for display
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -34,7 +33,6 @@ const AddGoalKraKpi = () => {
       const res = await axios.get(`${API_BASE}/api/kpis2/get-kpi2`);
       const { data } = res.data;
 
-      // For dropdowns
       const uniqueGoals = data.map((goal) => ({
         _id: goal._id,
         goal_desc: goal.goal_desc,
@@ -114,7 +112,6 @@ const AddGoalKraKpi = () => {
     }
   };
 
-  // Prepare data for chart (count KRAs and KPIs per goal)
   const chartData = kpiData.map((goal) => ({
     goal: goal.goal_desc,
     KRAs: goal.kras.length,
@@ -125,11 +122,7 @@ const AddGoalKraKpi = () => {
     <div className="p-6 max-w-6xl mx-auto space-y-12">
       {/* Forms */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Goal */}
-        <form
-          onSubmit={handleGoalSubmit}
-          className="space-y-4 border p-4 rounded shadow"
-        >
+        <form onSubmit={handleGoalSubmit} className="space-y-4 border p-4 rounded shadow">
           <h2 className="text-xl font-semibold">➕ Create Goal</h2>
           <input
             type="text"
@@ -138,19 +131,12 @@ const AddGoalKraKpi = () => {
             onChange={(e) => setGoalDesc(e.target.value)}
             className="w-full border p-2 rounded"
           />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
             Create Goal
           </button>
         </form>
 
-        {/* KRA */}
-        <form
-          onSubmit={handleKRASubmit}
-          className="space-y-4 border p-4 rounded shadow"
-        >
+        <form onSubmit={handleKRASubmit} className="space-y-4 border p-4 rounded shadow">
           <h2 className="text-xl font-semibold">➕ Create KRA</h2>
           <input
             type="text"
@@ -171,19 +157,12 @@ const AddGoalKraKpi = () => {
               </option>
             ))}
           </select>
-          <button
-            type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded"
-          >
+          <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
             Create KRA
           </button>
         </form>
 
-        {/* KPI */}
-        <form
-          onSubmit={handleKPISubmit}
-          className="space-y-4 border p-4 rounded shadow"
-        >
+        <form onSubmit={handleKPISubmit} className="space-y-4 border p-4 rounded shadow">
           <h2 className="text-xl font-semibold">➕ Create KPI</h2>
           <input
             type="text"
@@ -204,20 +183,15 @@ const AddGoalKraKpi = () => {
               </option>
             ))}
           </select>
-          <button
-            type="submit"
-            className="bg-purple-600 text-white px-4 py-2 rounded"
-          >
+          <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded">
             Create KPI
           </button>
         </form>
       </div>
 
-      {/* Nested Table */}
+      {/* Table */}
       <div>
-        <h2 className="text-2xl font-semibold mb-4">
-          Goals - KRAs - KPIs Table
-        </h2>
+        <h2 className="text-2xl font-semibold mb-4">Goals - KRAs - KPIs Table</h2>
         <table className="w-full border-collapse border border-gray-300">
           <thead className="bg-gray-200">
             <tr>
@@ -227,64 +201,82 @@ const AddGoalKraKpi = () => {
             </tr>
           </thead>
           <tbody>
-            {kpiData.length === 0 && (
+            {kpiData.length === 0 ? (
               <tr>
                 <td colSpan="3" className="text-center p-4">
                   No data available.
                 </td>
               </tr>
-            )}
-            {kpiData.map((goal) => (
-              <tr key={goal._id} className="border-t border-gray-300">
-                <td
-                  rowSpan={goal.kras.reduce(
-                    (acc, kra) => acc + Math.max(kra.kpis.length, 1),
-                    0
-                  )}
-                  className="border border-gray-300 p-2 align-top font-semibold"
-                >
-                  {goal.goal_desc}
-                </td>
+            ) : (
+              kpiData.map((goal) => {
+                const totalRows = goal.kras.reduce(
+                  (acc, kra) => acc + Math.max(kra.kpis.length, 1),
+                  0
+                );
 
-                {/* Render first KRA and KPIs */}
-                {goal.kras.length === 0 ? (
-                  <td className="border border-gray-300 p-2 italic text-gray-500">
-                    No KRAs
-                  </td>
-                ) : (
-                  goal.kras.map((kra, kraIndex) => {
-                    const kpis = kra.kpis;
-                    return kpis.length === 0 ? (
-                      <tr key={kra._id}>
-                        {kraIndex > 0 && <></>}
-                        <td className="border border-gray-300 p-2">
-                          {kra.kra_name}
-                        </td>
-                        <td className="border border-gray-300 p-2 italic text-gray-500">
-                          No KPIs
-                        </td>
-                      </tr>
-                    ) : (
-                      kpis.map((kpi, kpiIndex) => (
-                        <tr key={kpi._id}>
-                          {kpiIndex === 0 && (
+                const rows = [];
+                let goalRendered = false;
+
+                if (goal.kras.length === 0) {
+                  rows.push(
+                    <tr key={`goal-${goal._id}`}>
+                      <td className="border border-gray-300 p-2 font-semibold">
+                        {goal.goal_desc}
+                      </td>
+                      <td colSpan="2" className="border border-gray-300 p-2 italic text-gray-500">
+                        No KRAs
+                      </td>
+                    </tr>
+                  );
+                } else {
+                  goal.kras.forEach((kra) => {
+                    if (kra.kpis.length === 0) {
+                      rows.push(
+                        <tr key={`kra-${kra._id}`}>
+                          {!goalRendered && (
                             <td
-                              className="border border-gray-300 p-2"
-                              rowSpan={kpis.length}
+                              rowSpan={totalRows}
+                              className="border border-gray-300 p-2 align-top font-semibold"
                             >
-                              {kra.kra_name}
+                              {goal.goal_desc}
                             </td>
                           )}
-                          <td className="border border-gray-300 p-2">
-                            {kpi.kpi_name}
+                          <td className="border border-gray-300 p-2">{kra.kra_name}</td>
+                          <td className="border border-gray-300 p-2 italic text-gray-500">
+                            No KPIs
                           </td>
                         </tr>
-                      ))
-                    );
-                  })
-                )}
-              </tr>
-            ))}
+                      );
+                      goalRendered = true;
+                    } else {
+                      kra.kpis.forEach((kpi, idx) => {
+                        rows.push(
+                          <tr key={`kpi-${kpi._id}`}>
+                            {!goalRendered && idx === 0 && (
+                              <td
+                                rowSpan={totalRows}
+                                className="border border-gray-300 p-2 align-top font-semibold"
+                              >
+                                {goal.goal_desc}
+                              </td>
+                            )}
+                            {idx === 0 && (
+                              <td rowSpan={kra.kpis.length} className="border border-gray-300 p-2">
+                                {kra.kra_name}
+                              </td>
+                            )}
+                            <td className="border border-gray-300 p-2">{kpi.kpi_name}</td>
+                          </tr>
+                        );
+                        goalRendered = true;
+                      });
+                    }
+                  });
+                }
+
+                return rows;
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -293,10 +285,7 @@ const AddGoalKraKpi = () => {
       <div>
         <h2 className="text-2xl font-semibold mb-4">Goals Summary Chart</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart
-            data={chartData}
-            margin={{ top: 20, right: 40, left: 20, bottom: 5 }}
-          >
+          <BarChart data={chartData} margin={{ top: 20, right: 40, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="goal" />
             <YAxis allowDecimals={false} />

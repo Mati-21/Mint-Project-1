@@ -3,7 +3,7 @@ import Datas from "./StrategicSideMenuTitles";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-function StrategicSideBody() {
+function StrategicSideBody({ open = true }) {
   const [isSubMenuOpen, setIsSubMenuOpen] = useState({
     menu1: false,
     menu2: false,
@@ -28,37 +28,33 @@ function StrategicSideBody() {
   };
 
   return (
-    <div
-      className={`overflow-auto ${
-        !open ? "px-0" : "px-4 "
-      }  text-sm bg-green-700 h-[450px] rounded scrollbar-hidden`}
-    >
+    <div className={`${!open ? "px-0" : "px-4"} text-sm bg-green-700 rounded`}>
       <ul>
         {Datas.map((data, index) => (
           <div key={index}>
             {data.sectionTitle && (
               <div
-                className={`flex items-center  border-b pb-2 mt-4  ${
+                className={`flex items-center border-b pb-2 mt-4 ${
                   !open ? "justify-center cursor-pointer" : "justify-between"
-                } border-black/50 `}
+                } border-black/50`}
               >
-                <h1 className={`${!open && "hidden"}  font-bold text-md `}>
+                <h1 className={`${!open && "hidden"} font-bold text-md`}>
                   {data.sectionTitle}
                 </h1>
-                <span className={`${!open && "text-4xl"}  `}>{data.icon}</span>
+                <span className={`${!open && "text-4xl"}`}>{data.icon}</span>
               </div>
             )}
 
-            <Link to={data.link ? data.link : ""}>
+            <Link to={data.link || ""}>
               <li
-                className={` ${
+                className={`${
                   !open && "hidden"
-                } flex gap-4 px-2 py-1  items-center bg-green-300/20 cursor-pointer rounded duration-500 text-white hover:bg-slate-300/20 mt-2`}
+                } flex gap-4 px-2 py-1 items-center bg-green-300/20 cursor-pointer rounded duration-500 text-white hover:bg-slate-300/20 mt-2`}
               >
                 <span className="flex-1 font-bold text-xs">{data.menu}</span>
                 {data.submenu && (
                   <ChevronDown
-                    className={`  cursor-pointer text-white  transition-transform  duration-200 `}
+                    className="cursor-pointer text-white transition-transform duration-200"
                     onClick={() => toggleDropdown(data.key)}
                     size={15}
                   />
@@ -67,27 +63,22 @@ function StrategicSideBody() {
             </Link>
 
             {data.subMenuItems && isSubMenuOpen[data.key] && (
-              <div className="py-4 flex flex-col  mt-1 gap-3">
+              <div className="py-4 flex flex-col mt-1 gap-3">
                 {data.subMenuItems.map((item, subIndex) => (
-                  <div>
+                  <div key={subIndex}>
                     <Link to={item.link}>
-                      <li
-                        key={subIndex}
-                        className=" duration-300 py-1 flex justify-between rounded px-2 ml-2 text-white/80 mr-1 cursor-pointer bg-green-200/10 hover:bg-green-300/20"
-                      >
+                      <li className="duration-300 py-1 flex justify-between rounded px-2 ml-2 text-white/80 mr-1 cursor-pointer bg-green-200/10 hover:bg-green-300/20">
                         {item.subMenuItem}
-                        {
-                          <ChevronDown
-                            className={`  cursor-pointer text-white  transition-transform  duration-200 `}
-                            onClick={() => toggleSubSubMenu(subIndex)}
-                            size={15}
-                          />
-                        }
+                        <ChevronDown
+                          className="cursor-pointer text-white transition-transform duration-200"
+                          onClick={() => toggleSubSubMenu(subIndex)}
+                          size={15}
+                        />
                       </li>
                     </Link>
 
                     {item.subsubmenu && isSubSubMenuOpen[subIndex] && (
-                      <ul className=" flex flex-col text-xs gap-3 w-46 cursor-pointer  ml-4 mt-2">
+                      <ul className="flex flex-col text-xs gap-3 w-46 cursor-pointer ml-4 mt-2">
                         {item.subsubMenus.map((subsubmenu) => (
                           <li
                             className="px-2 py-1 bg-green-600 rounded text-white"

@@ -1,23 +1,21 @@
-// ✅ backend/controllers/kpiController.js
-
 import KRA2 from "../models/kraModel2.js";
 import Goal2 from "../models/goalModel2.js";
 import KPI2 from "../models/kpiModel2.js";
 
-// ✅ Create KPI
+// Create a new KPI
 export const createKPI = async (req, res) => {
   try {
     const { kpi_name, kraId, goalId } = req.body;
 
     if (!kpi_name || !kraId || !goalId) {
-      return res
-        .status(400)
-        .json({ error: "kpi_name, kraId, and goalId are required" });
+      return res.status(400).json({ error: "kpi_name, kraId, and goalId are required" });
     }
 
-    // Optional: Validate the existence of KRA and Goal
-    const kraExists = await KRA2.findById(kraId);
-    const goalExists = await Goal2.findById(goalId);
+    // Validate referenced KRA and Goal existence
+    const [kraExists, goalExists] = await Promise.all([
+      KRA2.findById(kraId),
+      Goal2.findById(goalId),
+    ]);
 
     if (!kraExists || !goalExists) {
       return res.status(404).json({ error: "Invalid kraId or goalId" });
@@ -26,16 +24,14 @@ export const createKPI = async (req, res) => {
     const kpi = new KPI2({ kpi_name, kraId, goalId });
     await kpi.save();
 
-    res.status(201).json({ message: "KPI created successfully", data: kpi });
+    return res.status(201).json({ message: "KPI created successfully", data: kpi });
   } catch (err) {
     console.error("Error creating KPI:", err);
-    res
-      .status(500)
-      .json({ error: "Failed to create KPI", details: err.message });
+    return res.status(500).json({ error: "Failed to create KPI", details: err.message });
   }
 };
 
-// ✅ Get All KPIs (with related KRA and Goal)
+// Get all KPIs with their KRA and Goal info
 export const getAllKPIs = async (req, res) => {
   try {
     const kpis = await KPI2.find()
@@ -52,41 +48,41 @@ export const getAllKPIs = async (req, res) => {
     const structuredData = kpis.map((kpi) => ({
       kpi_id: kpi._id,
       kpi_name: kpi.kpi_name,
-      kra: {
-        kra_id: kpi.kraId?._id,
-        kra_name: kpi.kraId?.kra_name,
-      },
-      goal: {
-        goal_id: kpi.kraId?.goalId?._id,
-        goal_desc: kpi.kraId?.goalId?.goal_desc,
-      },
+      kra: kpi.kraId
+        ? {
+            kra_id: kpi.kraId._id,
+            kra_name: kpi.kraId.kra_name,
+          }
+        : null,
+      goal: kpi.kraId && kpi.kraId.goalId
+        ? {
+            goal_id: kpi.kraId.goalId._id,
+            goal_desc: kpi.kraId.goalId.goal_desc,
+          }
+        : null,
     }));
 
-    res.status(200).json({ success: true, data: structuredData });
+    return res.status(200).json({ success: true, data: structuredData });
   } catch (err) {
-    res.status(500).json({
-      error: "Failed to fetch KPIs with related data",
-      details: err.message,
-    });
+    console.error("Error fetching KPIs:", err);
+    return res.status(500).json({ error: "Failed to fetch KPIs with related data", details: err.message });
   }
 };
 
-// ✅ Get All KPI Data structured by Goal → KRA → KPI
+// Get structured data by Goal → KRA → KPI
 export const getAllKPIData = async (req, res) => {
   try {
-    const goals = await Goal2.find({}, "_id goal_desc");
-    const kras = await KRA2.find({}, "_id kra_name goalId");
-    const kpis = await KPI2.find({}, "_id kpi_name kraId");
+    const [goals, kras, kpis] = await Promise.all([
+      Goal2.find({}, "_id goal_desc").lean(),
+      KRA2.find({}, "_id kra_name goalId").lean(),
+      KPI2.find({}, "_id kpi_name kraId").lean(),
+    ]);
 
     const result = goals.map((goal) => {
-      const goalKras = kras.filter(
-        (kra) => kra.goalId.toString() === goal._id.toString()
-      );
+      const goalKras = kras.filter((kra) => kra.goalId.toString() === goal._id.toString());
 
       const structuredKras = goalKras.map((kra) => {
-        const kraKpis = kpis.filter(
-          (kpi) => kpi.kraId.toString() === kra._id.toString()
-        );
+        const kraKpis = kpis.filter((kpi) => kpi.kraId.toString() === kra._id.toString());
 
         return {
           _id: kra._id,
@@ -105,15 +101,37 @@ export const getAllKPIData = async (req, res) => {
       };
     });
 
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
+    return res.status(200).json({ success: true, data: result });
   } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({
-      error: "Failed to fetch goal-KRA-KPI data",
-      details: err.message,
-    });
+    console.error("Error fetching goal-KRA-KPI data:", err);
+    return res.status(500).json({ error: "Failed to fetch goal-KRA-KPI data", details: err.message });
+  }
+};
+
+// Get assigned KPIs with their related KRA and Goal info
+export const getAssignedKPIs = async (req, res) => {
+  try {
+    const assignedKPIs = await KPI2.find()
+      .populate({
+        path: "kraId",
+        select: "kra_name goalId",
+        populate: {
+          path: "goalId",
+          select: "goal_desc",
+        },
+      })
+      .select("kpi_name kraId");
+
+    const formatted = assignedKPIs.map((kpi) => ({
+      kpi_id: kpi._id,
+      kpi_name: kpi.kpi_name,
+      assigned_to_kra: kpi.kraId?.kra_name || null,
+      assigned_to_goal: kpi.kraId?.goalId?.goal_desc || null,
+    }));
+
+    return res.status(200).json({ success: true, data: formatted });
+  } catch (error) {
+    console.error("Error fetching assigned KPIs:", error);
+    return res.status(500).json({ error: "Failed to fetch assigned KPIs", details: error.message });
   }
 };
