@@ -33,6 +33,7 @@ import KpiAssignment from "./pages/Admin/AdminComponents/KpiAssignment";
 import UserProfile from "./components/UserProfile";
 import AllSector from "./components/Sector/AllSector";
 import AllSubsector from "./components/Sector/AllSubsector";
+import KpiYearAssignment from "./pages/Admin/AdminComponents/KpiYearAssignmentPage";
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
           <Route path="configuration" element={<Configuration />} />
           <Route path="Goal-Kra-Kpi" element={<AddGoalKraKpi />} />
           <Route path="Goal-" element={<AddGoalKraKpi />} />
+          <Route path="Kpi-Year-Assign" element={<KpiYearAssignment />} />
         </Route>
 
         <Route path="/strategic" element={<Strategic />}>

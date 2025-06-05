@@ -18,6 +18,7 @@ import kra2Router from "./routes/kraRoute2.js";
 import kpi2Router from "./routes/kpiRoute2.js";
 import kpiAssignmentRouter from "./routes/kpiAssignmentRoutes.js";
 import menuRouter from "./routes/menuRoutes.js";  // renamed here
+import kpiYearAssignmentRouter from "./routes/kpiYearAssignmentRoutes.js"; // Uncomment if you have this route
 
 dotenv.config();
 connectDB();
@@ -50,6 +51,7 @@ app.use("/api/goal2", goal2Router);
 app.use("/api/kras2", kra2Router);
 app.use("/api/assign", kpiAssignmentRouter);
 app.use("/api/menu", menuRouter);  // fixed here
+app.use("/api/year", kpiYearAssignmentRouter); // Uncomment if you have this route
 
 // ✅ Run server
 const PORT = process.env.PORT || 1221;

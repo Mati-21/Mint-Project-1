@@ -36,6 +36,12 @@ const settings = [
     emoji: <MdNotificationsActive />,
     link: "Kpi-Assign",
   },
+  {
+    setting: "KPI Year Assignment",
+    emoji: <MdNotificationsActive />,
+    link: "Kpi-Year-Assign",
+  },
+  
 ];
 
 function AdminSideBody() {
