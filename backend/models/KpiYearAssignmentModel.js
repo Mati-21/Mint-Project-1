@@ -1,6 +1,14 @@
 import mongoose from "mongoose";
 
 const kpiYearAssignmentSchema = new mongoose.Schema({
+<<<<<<< Updated upstream
+=======
+  assignmentId: {
+    type: String,
+    required: false,
+    unique: true, // optional, only if you want assignmentId to be unique
+  },
+>>>>>>> Stashed changes
   sectorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Sector",
@@ -12,12 +20,21 @@ const kpiYearAssignmentSchema = new mongoose.Schema({
     required: false,
     default: null,
   },
+<<<<<<< Updated upstream
   deskId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Desk",
     required: false,
     default: null,
   },
+=======
+  // deskId: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "Desk",
+  //   required: false,
+  //   default: null,
+  // },
+>>>>>>> Stashed changes
   kpiId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "KPI2",
@@ -43,7 +60,11 @@ const kpiYearAssignmentSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1900,
+<<<<<<< Updated upstream
     max: new Date().getFullYear() + 10,
+=======
+    max: 2200,
+>>>>>>> Stashed changes
   },
 }, { timestamps: true });
 
