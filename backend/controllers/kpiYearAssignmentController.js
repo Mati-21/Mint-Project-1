@@ -1,37 +1,4 @@
 import KpiYearAssignment from "../models/KpiYearAssignmentModel.js";
-<<<<<<< Updated upstream
-import sectorModel from "../models/sectorModel.js";
-import subsectorModel from "../models/subsectorModel.js";
-import KPI2 from "../models/kpiModel2.js";
-import KRA2 from "../models/kraModel2.js";
-import Goal2 from "../models/goalModel2.js";
-
-// GET all KPI year assignments
-export const getAllKpiYearAssignments = async (req, res) => {
-  try {
-    const { sectorId } = req.query;
-    let filter = {};
-    if (sectorId) filter.sectorId = sectorId;
-
-    const assignments = await KpiYearAssignment.find(filter)
-      .populate("sectorId", "sector_name")
-      .populate("subsectorId", "subsector_name sectorId")
-      .populate("deskId", "desk_name")
-      .populate({
-        path: "kpiId",
-        select: "kpi_id kpi_name kra goal",
-        populate: [
-          { path: "kra", select: "kra_id kra_name" },
-          { path: "goal", select: "goal_id goal_desc" },
-        ],
-      });
-
-    const formatted = assignments.map((a) => {
-      const kpi = a.kpiId || {};
-      const kra = kpi.kra || {};
-      const goal = kpi.goal || {};
-
-=======
 import KPI2 from "../models/kpiModel2.js";
 
 // GET all KPI year assignments, optionally filtered by sectorId
@@ -61,15 +28,10 @@ export const getAllKpiYearAssignments = async (req, res) => {
       const kpi = a.kpiId || {};
       const kra = kpi.kraId || {};
       const goal = kpi.goalId || {};
->>>>>>> Stashed changes
       return {
         _id: a._id,
         sectorId: a.sectorId,
         subsectorId: a.subsectorId,
-<<<<<<< Updated upstream
-        deskId: a.deskId,
-=======
->>>>>>> Stashed changes
         kpi: {
           kpi_id: kpi.kpi_id,
           kpi_name: kpi.kpi_name,
@@ -95,16 +57,8 @@ export const getAllKpiYearAssignments = async (req, res) => {
   }
 };
 
-<<<<<<< Updated upstream
-// PUT update start/end year by ID
-export const updateKpiYearAssignmentYears = async (req, res) => {
-  console.log("→ PUT /api/year/:id/update-years → params:", req.params);
-  console.log("→ PUT /api/year/:id/update-years → body:", req.body);
-   console.error("Error in assignOrUpdateKpiYearAssignment:", error);
-=======
 // PUT update startYear and endYear by KPI year assignment _id
 export const updateKpiYearAssignmentYears = async (req, res) => {
->>>>>>> Stashed changes
   try {
     const { id } = req.params;
     const { startYear, endYear } = req.body;
@@ -115,19 +69,11 @@ export const updateKpiYearAssignmentYears = async (req, res) => {
       startYear > endYear
     ) {
       return res.status(400).json({
-<<<<<<< Updated upstream
-        message:
-          "Invalid startYear and endYear. Ensure they are numbers and startYear <= endYear.",
-      });
-    }
-
-=======
         message: "Invalid startYear and endYear. Ensure startYear <= endYear.",
       });
     }
 
     console.time("findByIdAndUpdate");
->>>>>>> Stashed changes
     const updatedAssignment = await KpiYearAssignment.findByIdAndUpdate(
       id,
       { startYear, endYear },
@@ -135,17 +81,6 @@ export const updateKpiYearAssignmentYears = async (req, res) => {
     )
       .populate("sectorId", "sector_name")
       .populate("subsectorId", "subsector_name sectorId")
-<<<<<<< Updated upstream
-      .populate("deskId", "desk_name")
-      .populate({
-        path: "kpiId",
-        select: "kpi_id kpi_name kra goal",
-        populate: [
-          { path: "kra", select: "kra_id kra_name" },
-          { path: "goal", select: "goal_id goal_desc" },
-        ],
-      });
-=======
       .populate({
         path: "kpiId",
         select: "kpi_id kpi_name kraId goalId",
@@ -155,23 +90,12 @@ export const updateKpiYearAssignmentYears = async (req, res) => {
         ],
       });
     console.timeEnd("findByIdAndUpdate");
->>>>>>> Stashed changes
 
     if (!updatedAssignment) {
       return res.status(404).json({ message: "KPI year assignment not found" });
     }
 
     const kpi = updatedAssignment.kpiId || {};
-<<<<<<< Updated upstream
-    const kra = kpi.kra || {};
-    const goal = kpi.goal || {};
-
-    const formatted = {
-      _id: updatedAssignment._id,
-      sectorId: updatedAssignment.sectorId,
-      subsectorId: updatedAssignment.subsectorId,
-      deskId: updatedAssignment.deskId,
-=======
     const kra = kpi.kraId || {};
     const goal = kpi.goalId || {};
 
@@ -179,7 +103,6 @@ export const updateKpiYearAssignmentYears = async (req, res) => {
       _id: updatedAssignment._id,
       sectorId: updatedAssignment.sectorId,
       subsectorId: updatedAssignment.subsectorId,
->>>>>>> Stashed changes
       kpi: {
         kpi_id: kpi.kpi_id,
         kpi_name: kpi.kpi_name,
@@ -195,13 +118,7 @@ export const updateKpiYearAssignmentYears = async (req, res) => {
       },
       startYear: updatedAssignment.startYear,
       endYear: updatedAssignment.endYear,
-<<<<<<< Updated upstream
-    };
-
-    res.status(200).json(formatted);
-=======
     });
->>>>>>> Stashed changes
   } catch (error) {
     console.error("Error updating KPI year assignment:", error);
     res.status(500).json({ message: "Failed to update KPI year assignment" });
@@ -211,17 +128,10 @@ export const updateKpiYearAssignmentYears = async (req, res) => {
 // POST create or update KPI year assignment
 export const assignOrUpdateKpiYearAssignment = async (req, res) => {
   try {
-<<<<<<< Updated upstream
-    const {
-      sectorId,
-      subsectorId,
-      deskId,
-=======
     let {
       assignmentId,
       sectorId,
       subsectorId = null,
->>>>>>> Stashed changes
       kpiId,
       kraId,
       goalId,
@@ -229,8 +139,6 @@ export const assignOrUpdateKpiYearAssignment = async (req, res) => {
       endYear,
     } = req.body;
 
-<<<<<<< Updated upstream
-=======
     // Fetch missing kraId and goalId from KPI if needed
     if ((!kraId || !goalId) && kpiId) {
       const kpiDoc = await KPI2.findById(kpiId).select("kraId goalId");
@@ -246,44 +154,12 @@ export const assignOrUpdateKpiYearAssignment = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
->>>>>>> Stashed changes
     if (
       typeof startYear !== "number" ||
       typeof endYear !== "number" ||
       startYear > endYear
     ) {
       return res.status(400).json({
-<<<<<<< Updated upstream
-        message:
-          "Invalid startYear and endYear. Ensure they are numbers and startYear <= endYear.",
-      });
-    }
-
-    const filter = {
-      sectorId,
-      subsectorId: subsectorId || null,
-      deskId: deskId || null,
-      kpiId,
-    };
-
-    let assignment = await KpiYearAssignment.findOne(filter);
-
-    if (assignment) {
-      assignment.startYear = startYear;
-      assignment.endYear = endYear;
-      await assignment.save();
-    } else {
-      assignment = await KpiYearAssignment.create({
-        ...filter,
-        kraId,
-        goalId,
-        startYear,
-        endYear,
-      });
-    }
-
-    res.status(200).json({ message: "Year assignment successful", data: assignment });
-=======
         message: "Invalid startYear and endYear. Ensure startYear <= endYear.",
       });
     }
@@ -370,7 +246,6 @@ export const assignOrUpdateKpiYearAssignment = async (req, res) => {
         endYear: populatedAssignment.endYear,
       },
     });
->>>>>>> Stashed changes
   } catch (error) {
     console.error("Error assigning KPI year:", error);
     res.status(500).json({ message: "Server error during KPI year assignment" });
