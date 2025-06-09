@@ -1,15 +1,19 @@
 import express from "express";
 import {
-  addUser,
+  createUser,
+  getUsers,
   loginUser,
-  getProfile,
   getActiveUsersStats,
-} from "../controllers/userControllers.js";
+  getProfile,
+} from "../controllers/userController.js";
+
+import { validatePasswordStrength } from "../middlewares/validatePasswordStrength.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 const userRouter = express.Router();
 
-userRouter.post("/add-user", addUser);
+userRouter.get("/", getUsers);
+userRouter.post("/create", validatePasswordStrength, createUser);
 userRouter.post("/login", loginUser);
 userRouter.get("/get-profile", authMiddleware, getProfile);
 userRouter.get("/active-users", getActiveUsersStats);

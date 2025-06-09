@@ -2,29 +2,41 @@ import { useEffect, useState } from "react";
 import KPIGroupedTable from "../Table/KPIGroupedTable";
 
 function SectorialPlan() {
-  const [ictData, setIctData] = useState([]);
-  const [innovationData, setInnovationData] = useState([]);
+  const [kpiData, setKpiData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const InnovationEndpoint = "http://localhost:5002/kpis";
-  const IctEndpoint = "http://localhost:5001/kpis";
+  // ✅ Adjust endpoint if needed
+  const KPI_ENDPOINT = "http://localhost:1221/api/kpis2/all2"; 
 
   useEffect(() => {
-    async function fetchData() {
-      const res = await fetch(InnovationEndpoint);
-      const res1 = await fetch(IctEndpoint);
-      const data = await res.json();
-      const data1 = await res1.json();
-      setIctData(data1);
-      setInnovationData(data);
-    }
-    fetchData();
+    const fetchKPIs = async () => {
+      try {
+        const response = await fetch(KPI_ENDPOINT);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch KPIs");
+        }
+
+        const data = await response.json();
+        setKpiData(data);
+      } catch (err) {
+        console.error("Error fetching KPI data:", err);
+        setError(err.message || "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchKPIs();
   }, []);
 
-  const finalData = [...innovationData, ...ictData];
+  if (loading) return <div className="text-white p-4">Loading KPIs...</div>;
+  if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
 
   return (
     <div>
-      <KPIGroupedTable data={finalData} />
+      <KPIGroupedTable data={kpiData} />
     </div>
   );
 }

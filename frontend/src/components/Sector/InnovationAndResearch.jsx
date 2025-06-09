@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import KPIGroupedTable from "../Table/KPIGroupedTable";
 
-const backendUrl = "http://localhost:1221/api/kpis/get-kpi";
+const backendUrl = "http://localhost:1221/api/kpis2/get-kpi2";
 
 function InnovationAndResearch() {
   const [data, setData] = useState([]);

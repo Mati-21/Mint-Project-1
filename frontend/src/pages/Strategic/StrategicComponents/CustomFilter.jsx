@@ -63,21 +63,7 @@ const CustomFilter = () => {
             </select>
           </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1">Select Ministry</label>
-            <select
-              value={sector}
-              onChange={(e) => setSector(e.target.value)}
-              className="border px-3 py-2 rounded w-64 focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="">-- Select --</option>
-              <option>Ethiopian Technology Authority</option>
-              <option>Ministry of Innovation</option>
-              <option>ICT and Digital Economy</option>
-              <option>Space & Geospatial</option>
-              {/* Add more as needed */}
-            </select>
-          </div>
+          
         </div>
 
         <div className="mt-6">

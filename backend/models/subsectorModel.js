@@ -11,6 +11,6 @@ const subsectorSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const subsectorModel = mongoose.model("subsector", subsectorSchema);
+const subsectorModel = mongoose.model("Subsector", subsectorSchema); // <-- Capital S here
 
 export default subsectorModel;

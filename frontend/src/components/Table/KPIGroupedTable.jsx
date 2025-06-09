@@ -1,76 +1,269 @@
 import React, { useState } from "react";
-import Filters from "./Filters";
 import KPITable from "./KPITable";
+import Filters from "./Filters";
 import PlanModal from "./PlanModal";
+import PerformanceModal from "./PerformanceModal";
 
-function KPIGroupedTable({ data }) {
+const BACKEND_URL = "http://localhost:1221";
+
+function getCurrentEthiopianYear() {
+  const today = new Date();
+  const gYear = today.getFullYear();
+  const gMonth = today.getMonth() + 1;
+  const gDate = today.getDate();
+
+  const isLeapYear =
+    (gYear % 4 === 0 && gYear % 100 !== 0) || gYear % 400 === 0;
+  const newYearDay = isLeapYear ? 12 : 11;
+
+  return gMonth < 9 || (gMonth === 9 && gDate < newYearDay)
+    ? gYear - 8
+    : gYear - 7;
+}
+
+function KPIGroupedTable({ data, detailedKpis }) {
   const [filterYear, setFilterYear] = useState("");
   const [filterGoal, setFilterGoal] = useState("");
   const [filterKra, setFilterKra] = useState("");
   const [filterKpiName, setFilterKpiName] = useState("");
-  const [modalInfo, setModalInfo] = useState(null);
+
+  const [planModalInfo, setPlanModalInfo] = useState(null);
+  const [performanceModalInfo, setPerformanceModalInfo] = useState(null);
 
   if (!data || !Array.isArray(data)) {
     return <div>No data available</div>;
   }
 
-  // ✅ Flatten nested data: goal -> kras -> kpis
-  const normalizedData = data.flatMap((goalItem) => {
-    const goalDesc = goalItem.goal_desc;
-    const kras = goalItem.kras || [];
+  const currentEthYear = getCurrentEthiopianYear();
 
-    return kras.flatMap((kraItem) => {
-      const kraName = kraItem.kra_name;
-      const kpis = kraItem.kpis || [];
+  const normalizedData = [];
 
-      return kpis.map((kpi) => ({
-        kpiName: kpi.kpi_name,
-        year: kpi.year,
-        q1: kpi.q1,
-        q2: kpi.q2,
-        q3: kpi.q3,
-        q4: kpi.q4,
-        kra: kraName,
-        goal: goalDesc,
-      }));
+  data.forEach((goal) => {
+    const goalName = goal.goal_desc || "N/A";
+    goal.kras?.forEach((kra) => {
+      const kraName = kra.kra_name || "N/A";
+      kra.kpis?.forEach((kpi) => {
+        const kpiDetail = detailedKpis.find((d) => d._id === kpi._id) || {};
+
+        normalizedData.push({
+          kpiId: kpiDetail.kpiId || kpi.kpiId || kpi._id || null,
+          kpiName: kpiDetail.kpi_name || kpi.kpi_name || "N/A",
+          kraId: kpiDetail.kraId || kra.kra_id || kra._id || null,
+          sectorId: kpiDetail.sectorId || null,
+          subsectorId: kpiDetail.subsectorId || null,
+          year: kpiDetail.year || currentEthYear,
+          q1: kpiDetail.q1 || "N/A",
+          q2: kpiDetail.q2 || "N/A",
+          q3: kpiDetail.q3 || "N/A",
+          q4: kpiDetail.q4 || "N/A",
+          target: kpiDetail.target || "",
+          performanceMeasure: kpiDetail.performanceMeasure || "",
+          description: kpiDetail.description || "",
+          kra: kraName,
+          goal: goalName,
+        });
+      });
     });
   });
 
-  // ✅ Apply filters
   const filteredData = normalizedData.filter((row) => {
     const goal = row.goal?.toLowerCase() || "";
     const kra = row.kra?.toLowerCase() || "";
     const kpiName = row.kpiName?.toLowerCase() || "";
+    const yearStr = row.year?.toString() || "";
 
     return (
-      (!filterYear || row.year?.toString().includes(filterYear.trim())) &&
+      (!filterYear || yearStr.includes(filterYear.trim())) &&
       (!filterGoal || goal.includes(filterGoal.trim().toLowerCase())) &&
       (!filterKra || kra.includes(filterKra.trim().toLowerCase())) &&
       (!filterKpiName || kpiName.includes(filterKpiName.trim().toLowerCase()))
     );
   });
 
-  // ✅ Group by Goal and KRA
   const groupedData = {};
   filteredData.forEach((row) => {
     const groupKey = `${row.goal}||${row.kra}`;
-    if (!groupedData[groupKey]) {
-      groupedData[groupKey] = [];
-    }
+    if (!groupedData[groupKey]) groupedData[groupKey] = [];
     groupedData[groupKey].push(row);
   });
 
-  // ✅ Modal open
   const openModal = (row, field) => {
-    setModalInfo({ row, field, value: row[field] });
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user.id || user._id || null;
+    const role = user.role || null;
+    const sectorId = user.sectorId || user.sector || null;
+    const subsectorId = user.subsectorId || user.subsector || null;
+
+    if (!userId || !role) {
+      alert("User info missing: Please log in again.");
+      return;
+    }
+
+    setPlanModalInfo({
+      ...row,
+      field,
+      userId,
+      role,
+      sectorId,
+      subsectorId,
+    });
   };
 
-  const closeModal = () => setModalInfo(null);
+  const closeModal = () => setPlanModalInfo(null);
 
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    alert("Plan saved!");
-    closeModal();
+  const handlePlanFormSubmit = async (formData) => {
+    try {
+      const {
+        userId,
+        role,
+        sectorId,
+        subsectorId,
+        kpiName,
+        kraId,
+        kpiId,
+        year,
+        q1,
+        q2,
+        q3,
+        q4,
+        target,
+        performanceMeasure,
+        description,
+        goal,
+        period,
+        quarter,
+      } = formData;
+
+      if (!userId || !role) {
+        throw new Error("User info missing: Please log in again.");
+      }
+
+      const body = {
+        userId,
+        role,
+        sectorId,
+        subsectorId,
+        kpi_name: kpiName,
+        kraId,
+        kpiId,
+        year: Number(year) || currentEthYear,
+        q1: q1 === "N/A" ? null : q1,
+        q2: q2 === "N/A" ? null : q2,
+        q3: q3 === "N/A" ? null : q3,
+        q4: q4 === "N/A" ? null : q4,
+        target,
+        performanceMeasure,
+        description,
+        goal,
+        period,
+        quarter,
+      };
+
+      Object.keys(body).forEach((key) => {
+        if (body[key] === null || body[key] === undefined || body[key] === "") {
+          delete body[key];
+        }
+      });
+
+      const response = await fetch(`${BACKEND_URL}/api/plans`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Backend error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Plan saved response:", result);
+      alert("Plan saved!");
+      closeModal();
+    } catch (error) {
+      console.error("Failed to save plan:", error);
+      alert("Failed to save plan: " + error.message);
+    }
+  };
+
+  const openPerformanceModal = (row, field) => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user.id || user._id || null;
+    const role = user.role || null;
+    const sectorId = user.sectorId || user.sector || null;
+    const subsectorId = user.subsectorId || user.subsector || null;
+
+    if (!userId || !role) {
+      alert("User info missing: Please log in again.");
+      return;
+    }
+
+    setPerformanceModalInfo({
+      ...row,
+      kpiName: row.kpiName || row.kpi_name, // Ensure kpiName is passed
+      field,
+      userId,
+      role,
+      sectorId,
+      subsectorId,
+    });
+  };
+
+  const closePerformanceModal = () => setPerformanceModalInfo(null);
+
+  const handlePerformanceFormSubmit = async (formData) => {
+    try {
+      console.log("Submitting performance data:", formData);
+
+      const {
+        userId,
+        role,
+        sectorId,
+        subsectorId,
+        kpiName,
+        kraId,
+        year,
+        performanceMeasure,
+        quarter,
+        description,
+      } = formData;
+
+      const body = {
+        userId,
+        role,
+        sectorId,
+        subsectorId,
+        kpi_name: kpiName,
+        kraId,
+        year: Number(year),
+        performanceMeasure,
+        quarter,
+        description,
+      };
+
+      Object.keys(body).forEach((key) => {
+        if (body[key] === null || body[key] === undefined || body[key] === "") {
+          delete body[key];
+        }
+      });
+
+      const response = await fetch(`${BACKEND_URL}/api/performance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Backend error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Performance saved response:", result);
+      alert("Performance saved!");
+      closePerformanceModal();
+    } catch (error) {
+      console.error("Failed to save performance:", error);
+      alert("Failed to save performance: " + error.message);
+    }
   };
 
   return (
@@ -93,17 +286,27 @@ function KPIGroupedTable({ data }) {
             groupKey={groupKey}
             rows={rows}
             openModal={openModal}
+            openPerformanceModal={openPerformanceModal}
+            currentEthYear={currentEthYear}
           />
         ))
       ) : (
         <p className="text-gray-600">No results found.</p>
       )}
 
-      {modalInfo && (
+      {planModalInfo && (
         <PlanModal
-          modalInfo={modalInfo}
+          modalInfo={planModalInfo}
           closeModal={closeModal}
-          handleFormSubmit={handleFormSubmit}
+          handleFormSubmit={handlePlanFormSubmit}
+        />
+      )}
+
+      {performanceModalInfo && (
+        <PerformanceModal
+          modalInfo={performanceModalInfo}
+          closeModal={closePerformanceModal}
+          handleFormSubmit={handlePerformanceFormSubmit}
         />
       )}
     </div>

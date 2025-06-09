@@ -1,58 +1,57 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import KpiTable from "./KpiTable";
+
 const backendUrl = "http://localhost:1221";
 
 const KpiAssignment = () => {
   const [formData, setFormData] = useState({
     sector: "",
     subsector: "",
-    desk: "",
     kra: "",
     kpi: "",
   });
 
   const [assignedKPIs, setAssignedKPIs] = useState([]);
-
-  // All options fetched from backend
   const [sectors, setSectors] = useState([]);
   const [subsectors, setSubsectors] = useState([]);
-  //const [desks, setDesks] = useState([]);
   const [kras, setKras] = useState([]);
   const [kpis, setKpis] = useState([]);
-
-  // Filtered options based on selections
   const [filteredSubsectors, setFilteredSubsectors] = useState([]);
   const [filteredKpis, setFilteredKpis] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // Fetch dropdown options
+  // Fetch dropdown data
   const fetchDropdownData = async () => {
     try {
-      const [sectorRes, subsectorRes, kraRes, kpiRes] =
-        await Promise.all([
-          axios.get(`${backendUrl}/api/sector/get-sector`),
-          axios.get(`${backendUrl}/api/subsector/get-subsector`),
-         // axios.get(`${backendUrl}/api/desk/get-desk`),
-          axios.get(`${backendUrl}/api/kras/get-kra`), 
-          axios.get(`${backendUrl}/api/kpis/get-kpi`),
-        ]);
-
-      setSectors(sectorRes.data);
-      setSubsectors(subsectorRes.data);
-      //setDesks(deskRes.data);
-      setKras(kraRes.data);
-      setKpis(kpiRes.data);
+      const [sectorRes, subsectorRes, kraRes, kpiRes] = await Promise.all([
+        axios.get(`${backendUrl}/api/sector/get-sector`),
+        axios.get(`${backendUrl}/api/subsector/get-subsector`),
+        axios.get(`${backendUrl}/api/kras2/get-kra2`),
+        axios.get(`${backendUrl}/api/kpis2/all2`),
+      ]);
+      setSectors(sectorRes.data?.data || []);
+      setSubsectors(subsectorRes.data || []);
+      setKras(kraRes.data || []);
+      setKpis(kpiRes.data?.data || []);
     } catch (error) {
       console.error("Failed to fetch dropdown data:", error);
     }
   };
 
-  const fetchAssignedKPIs = async () => {
+  // Fetch assigned KPIs
+  const fetchAssignedKPIs = async (sectorId) => {
     try {
-      const res = await axios.get(`${backendUrl}/api/kpis/get-kpi`);
-      setAssignedKPIs(res.data);
+      if (sectorId) {
+        const res = await axios.get(`${backendUrl}/api/assign/sector/${sectorId}`);
+        setAssignedKPIs(Array.isArray(res.data) ? res.data : []);
+      } else {
+        const res = await axios.get(`${backendUrl}/api/assign/assigned-kpi`);
+        setAssignedKPIs(Array.isArray(res.data) ? res.data : []);
+      }
     } catch (error) {
       console.error("Failed to fetch assigned KPIs:", error);
+      setAssignedKPIs([]);
     }
   };
 
@@ -61,117 +60,260 @@ const KpiAssignment = () => {
     fetchAssignedKPIs();
   }, []);
 
-  // Update filtered subsectors when sector changes
+  // Update subsectors when sector changes
   useEffect(() => {
     if (!formData.sector) {
       setFilteredSubsectors([]);
       setFormData((prev) => ({ ...prev, subsector: "" }));
+      fetchAssignedKPIs();
       return;
     }
-    // Filter subsectors by sector
-    const filtered = subsectors.filter(
-      (sub) => sub.sectorName === formData.sector
-    );
+    const filtered = subsectors.filter((sub) => {
+      if (!sub.sectorId) return false;
+      const subSectorId =
+        typeof sub.sectorId === "object"
+          ? sub.sectorId._id || sub.sectorId
+          : sub.sectorId;
+      return subSectorId === formData.sector;
+    });
     setFilteredSubsectors(filtered);
-    // Reset subsector if not in filtered list
-    if (!filtered.find((s) => s.name === formData.subsector)) {
-      setFormData((prev) => ({ ...prev, subsector: "" }));
-    }
+    setFormData((prev) => ({ ...prev, subsector: "" }));
+    fetchAssignedKPIs(formData.sector);
   }, [formData.sector, subsectors]);
 
-  // Update filtered KPIs when KRA changes
+  // Filter KPIs by selected KRA
   useEffect(() => {
     if (!formData.kra) {
       setFilteredKpis([]);
       setFormData((prev) => ({ ...prev, kpi: "" }));
       return;
     }
-    // Filter KPIs by kra
-    const filtered = kpis.filter((kpi) => kpi.kraName === formData.kra);
+    const filtered = kpis.filter((kpi) => kpi.kra?.kra_id === formData.kra);
     setFilteredKpis(filtered);
-    // Reset kpi if not in filtered list
-    if (!filtered.find((k) => k.name === formData.kpi)) {
-      setFormData((prev) => ({ ...prev, kpi: "" }));
-    }
   }, [formData.kra, kpis]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
+
+    if (id === "sector") {
+      setFormData((prev) => ({ ...prev, sector: value, subsector: "" }));
+    } else if (id === "subsector") {
+      setFormData((prev) => ({ ...prev, subsector: value }));
+    } else {
+      setFormData((prev) => ({ ...prev, [id]: value }));
+    }
+
+    setErrorMsg("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg("");
+
+    if (!formData.kra || !formData.kpi) {
+      setErrorMsg("Please select both KRA and KPI.");
+      return;
+    }
+    if (!formData.sector && !formData.subsector) {
+      setErrorMsg("Please select either a Sector or a Subsector.");
+      return;
+    }
+
     try {
-      await axios.post(`${backendUrl}/api/kpis/assign-kpi`, {
-        sector: formData.sector,
-        subsector: formData.subsector,
-        // desk: formData.desk,
+      await axios.post(`${backendUrl}/api/assign/assign-kpi`, {
+        sector: formData.subsector ? null : formData.sector || null,
+        subsector: formData.subsector || null,
         kra: formData.kra,
-        kpi: formData.kpi,    
+        kpi: formData.kpi,
       });
-      fetchAssignedKPIs();
       alert("KPI assigned successfully!");
+      fetchAssignedKPIs(formData.sector || null);
+      setFormData({ sector: "", subsector: "", kra: "", kpi: "" });
     } catch (error) {
       console.error("Failed to assign KPI:", error);
-      alert("Failed to assign KPI.");
+      if (error.response?.status === 409) {
+        setErrorMsg("This KPI is already assigned to the selected Sector/Subsector.");
+      } else if (error.response?.data?.error) {
+        setErrorMsg(error.response.data.error);
+      } else {
+        setErrorMsg("Failed to assign KPI due to server error.");
+      }
     }
   };
 
-  // Helper to render select with passed options
-  const renderSelect = (id, label, options) => (
-    <div className="flex flex-col">
-      <label htmlFor={id} className="mb-1 font-medium capitalize">
-        {label}:
-      </label>
-      <select
-        id={id}
-        value={formData[id]}
-        onChange={handleChange}
-        required
-        className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        <option value="">Select {label}</option>
-        {options.map((opt) => (
-          <option key={opt._id} value={opt.name}>
-            {opt.name}
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to unassign this KPI?")) return;
+
+    try {
+      await axios.delete(`${backendUrl}/api/assign/unassign-kpi/${id}`);
+      alert("KPI unassigned successfully.");
+      fetchAssignedKPIs(formData.sector || null);
+    } catch (error) {
+      console.error("Failed to unassign KPI:", error);
+      alert("Failed to unassign KPI.");
+    }
+  };
+
+  const filteredAssignedKPIs = assignedKPIs.filter((item) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      item.kpiId?.kpi_name?.toLowerCase().includes(term) ||
+      item.kraId?.kra_name?.toLowerCase().includes(term) ||
+      item.sectorId?.sector_name?.toLowerCase().includes(term) ||
+      item.subsectorId?.subsector_name?.toLowerCase().includes(term)
+    );
+  });
+
+  const renderSelect = (id, label, options) => {
+    let valueKey = "name";
+    let labelKey = "name";
+
+    switch (id) {
+      case "sector":
+        valueKey = "_id";
+        labelKey = "sector_name";
+        break;
+      case "subsector":
+        valueKey = "_id";
+        labelKey = "subsector_name";
+        break;
+      case "kra":
+        valueKey = "_id";
+        labelKey = "kra_name";
+        break;
+      case "kpi":
+        valueKey = "kpi_id";
+        labelKey = "kpi_name";
+        break;
+      default:
+        break;
+    }
+
+    const isDisabled = id === "subsector" && !formData.sector;
+
+    return (
+      <div className="flex flex-col mb-4">
+        <label htmlFor={id} className="mb-1 font-medium capitalize">
+          {label}
+          {id === "subsector" && " (Optional)"}
+        </label>
+        <select
+          id={id}
+          value={formData[id] || ""}
+          onChange={handleChange}
+          required={id === "kra" || id === "kpi"}
+          disabled={isDisabled}
+          className={`border border-gray-300 rounded-md px-4 py-2 ${
+            isDisabled ? "bg-gray-100 cursor-not-allowed" : ""
+          }`}
+        >
+          <option value="">
+            {id === "subsector" && !formData.sector
+              ? "Select Sector first"
+              : `Select ${label}`}
           </option>
-        ))}
-      </select>
-    </div>
-  );
+          {options.map((opt) => (
+            <option key={opt[valueKey]} value={opt[valueKey]}>
+              {opt[labelKey]}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
 
   return (
-    <>
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-3xl">
-          <h2 className="text-2xl font-bold mb-6 text-center text-blue-700">
-            KPI Assignment
-          </h2>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded shadow-md">
+      <h2 className="text-2xl font-semibold mb-6">Assign KPI to Sector/Subsector</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {renderSelect("sector", "Sector", sectors)}
+      <form onSubmit={handleSubmit} className="mb-6">
+        {renderSelect("sector", "Sector", sectors)}
 
-            {/* Subsector dropdown filtered by sector */}
-            {renderSelect("subsector", "Subsector", filteredSubsectors)}
+        {renderSelect("subsector", "Subsector", filteredSubsectors)}
 
-            {renderSelect("desk", "Desk", desks)}
-            {renderSelect("kra", "KRA", kras)}
+        {renderSelect("kra", "KRA", kras)}
+        {renderSelect("kpi", "KPI", filteredKpis)}
 
-            {/* KPI dropdown filtered by KRA */}
-            {renderSelect("kpi", "KPI", filteredKpis)}
+        {errorMsg && <p className="text-red-600 mb-4">{errorMsg}</p>}
 
-            <button
-              type="submit"
-              className="w-full cursor-pointer bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-            >
-              Assign KPI
-            </button>
-          </form>
-        </div>
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded"
+        >
+          Assign KPI
+        </button>
+      </form>
+
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search assigned KPIs..."
+          className="border border-gray-300 rounded-md px-4 py-2 w-full"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
-      <KpiTable assignedKPIs={assignedKPIs} />
-    </>
+
+      <table className="min-w-full border border-gray-300 rounded">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="border px-4 py-2">Sector</th>
+            <th className="border px-4 py-2">Subsector</th>
+            <th className="border px-4 py-2">KRA</th>
+            <th className="border px-4 py-2">KPI</th>
+            <th className="border px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredAssignedKPIs.length === 0 && (
+            <tr>
+              <td colSpan="5" className="text-center py-4">
+                No assigned KPIs found.
+              </td>
+            </tr>
+          )}
+
+          {filteredAssignedKPIs.map((item) => (
+            <tr key={item._id || item.id}>
+              <td className="border px-4 py-2">
+                {item.subsectorId
+                  ? (() => {
+                      const subsectorObj = subsectors.find(
+                        (sub) => sub._id === item.subsectorId._id
+                      );
+                      const sectorObj = subsectorObj
+                        ? sectors.find(
+                            (sec) =>
+                              sec._id ===
+                              (typeof subsectorObj.sectorId === "object"
+                                ? subsectorObj.sectorId._id
+                                : subsectorObj.sectorId)
+                          )
+                        : null;
+                      return sectorObj?.sector_name || "-";
+                    })()
+                  : item.sectorId?.sector_name || "-"}
+              </td>
+              <td className="border px-4 py-2">
+                {item.subsectorId?.subsector_name || "-"}
+              </td>
+              <td className="border px-4 py-2">{item.kraId?.kra_name || "-"}</td>
+              <td className="border px-4 py-2">{item.kpiId?.kpi_name || "-"}</td>
+              <td className="border px-4 py-2 text-center">
+                <button
+                  onClick={() => handleDelete(item._id || item.id)}
+                  className="text-red-600 hover:underline"
+                  title="Unassign KPI"
+                >
+                  Unassign
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 

@@ -18,10 +18,12 @@ function Login() {
     event.preventDefault();
     setError("");
 
-    // Try Admin login
+    const normalizedEmail = email.trim().toLowerCase();
+
     try {
+      // Admin login
       const adminRes = await axios.post(`${backendUrl}/api/admin/login`, {
-        email,
+        email: normalizedEmail,
         password,
       });
 
@@ -35,48 +37,75 @@ function Login() {
         return;
       }
     } catch (err) {
-      console.error("Admin login failed:", err);
+      console.warn("Admin login attempt failed.");
     }
 
-    // Try User login
     try {
-      const userRes = await axios.post(`${backendUrl}/api/user/login`, {
-        email,
+      // User login
+      const userRes = await axios.post(`${backendUrl}/api/users/login`, {
+        email: normalizedEmail,
         password,
       });
 
       const userData = userRes.data;
 
       if (userData.success) {
-        localStorage.setItem("uToken", userData.token);
-        localStorage.setItem("user", JSON.stringify(userData.user));
-        toast.success("User login successful!");
+  localStorage.setItem("uToken", userData.token);
+  localStorage.setItem("user", JSON.stringify(userData.user));
+  toast.success("User login successful!");
 
-        const role = userData.user?.role?.toLowerCase();
+  console.log("✅ Logged-in User Object:", userData.user);
 
-        switch (role) {
-          case "admin":
-            navigate("/admin");
-            break;
-          case "strategic":
-            navigate("/strategic");
-            break;
-          case "minister":
-            navigate("/minister");
-            break;
-          case "executive":
-            navigate("/executive");
-            break;
-          case "workunit":
-            navigate("/workunit");
-            break;
-          default:
-            toast.error("Unknown role. Access denied.");
-            navigate("/unauthorized");
-        }
+  const role = (userData.user?.role || "").toLowerCase();
+  const userId = userData.user.id || userData.user._id;
+  const sector = userData.user.sector;
+  const subsector = userData.user.subsector;
 
-        return;
+  console.log("Role:", role);
+  console.log("User ID:", userId);
+  console.log("Sector:", sector);
+  console.log("Subsector:", subsector);
+
+  switch (role) {
+    case "system admin":
+      navigate("/admin");
+      break;
+
+    case "chief ceo":
+      if (sector) {
+        navigate(`/executive/allSector/${sector}?userId=${userId}`);
       } else {
+        toast.error("Sector not assigned.");
+        navigate("/unauthorized");
+      }
+      break;
+
+    case "ceo":
+    case "worker":
+      if (subsector) {
+        navigate(`/executive/allSubsector/${subsector}?userId=${userId}`);
+      } else {
+        toast.error("Subsector not assigned.");
+        navigate("/unauthorized");
+      }
+      break;
+
+    case "minister":
+      navigate("/minister");
+      break;
+
+    case "strategic unit":
+      navigate("/strategic");
+      break;
+
+    default:
+      toast.error("Unknown role. Access denied.");
+      navigate("/unauthorized");
+  }
+
+  return;
+}
+ else {
         setError(userData.message || "Login failed. Please try again.");
       }
     } catch (err) {
@@ -123,6 +152,7 @@ function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="username"
               />
             </div>
 
@@ -138,6 +168,7 @@ function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
               />
             </div>
 

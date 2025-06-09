@@ -31,6 +31,9 @@ import TargetValidation from "./pages/Strategic/StrategicComponents/TargetValida
 import PerformanceValidation from "./pages/Strategic/StrategicComponents/PerformanceValidation";
 import KpiAssignment from "./pages/Admin/AdminComponents/KpiAssignment";
 import UserProfile from "./components/UserProfile";
+import AllSector from "./components/Sector/AllSector";
+import AllSubsector from "./components/Sector/AllSubsector";
+import KpiYearAssignment from "./pages/Admin/AdminComponents/KpiYearAssignmentPage";
 
 function App() {
   return (
@@ -56,12 +59,28 @@ function App() {
           <Route path="configuration" element={<Configuration />} />
           <Route path="Goal-Kra-Kpi" element={<AddGoalKraKpi />} />
           <Route path="Goal-" element={<AddGoalKraKpi />} />
+          <Route path="Kpi-Year-Assign" element={<KpiYearAssignment />} />
+        </Route>
+
+        <Route path="/executive" element={<Executive />}>
+          <Route index element={<Navigate to="sectorial-plan" replace />} />
+          <Route path="sectorial-plan" element={<SectorialPlan />} />
+          <Route path="ministries" element={<Ministries />} />
+          <Route path="allSector/:sectorId" element={<AllSector />} />
+          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
         </Route>
 
         <Route path="/strategic" element={<Strategic />}>
           <Route index element={<Navigate to="sectorial-plan" replace />} />
           <Route path="sectorial-plan" element={<SectorialPlan />} />
           <Route path="ministries" element={<Ministries />} />
+          <Route path="allSector/:sectorId" element={<AllSector />} />
+          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+{/* 
+          
+          <Route path="allSector/:sector" element={<AllSector />} />
+          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} /> */}
+          
           <Route
             path="innovation-research"
             element={<InnovationAndResearch />}
