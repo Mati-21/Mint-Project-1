@@ -1,7 +1,7 @@
 export function transformAssignedKpisToNested(assignedKpis) {
   // If assignedKpis is NOT an array, check if it's nested object by goalId
   if (!Array.isArray(assignedKpis)) {
-    console.warn("Expected array but received object, attempting to transform nested structure:", assignedKpis);
+   
 
     // Check if it's nested by goalId with 'goal_desc' and 'kras'
     if (Object.values(assignedKpis).every(goal =>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { transformAssignedKpisToNested } from "../../utils/transformAssignedKpisToNested";
 import KPIGroupedTable from "../Table/KPIGroupedTable";
 
@@ -8,6 +8,9 @@ const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
 
 function AllSector() {
   const { sectorId } = useParams();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const userId = queryParams.get("userId");
 
   const [assignedKpisRaw, setAssignedKpisRaw] = useState(null);
   const [nestedKpis, setNestedKpis] = useState([]);
@@ -44,8 +47,7 @@ function AllSector() {
         const nested = transformAssignedKpisToNested(assignedData);
         setNestedKpis(nested);
 
-        // Extract KPI IDs from assigned data
-        // Adjust these keys according to your API response structure
+        // Extract KPI IDs
         const kpiIds = assignedData
           .map(item => item.kpi_id || (item.kpi && item.kpi.kpi_id))
           .filter(Boolean);
@@ -53,7 +55,6 @@ function AllSector() {
         if (kpiIds.length === 0) {
           setDetailedKpis([]);
         } else {
-          // Fetch detailed KPIs by IDs query param
           const queryParam = kpiIds.join(",");
           const detailedRes = await fetch(`${BACKEND_URL}/api/assign/details?ids=${queryParam}`, {
             headers: { Accept: "application/json" },
@@ -82,13 +83,19 @@ function AllSector() {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Assigned KPIs for Sector: {sectorId || "(no sector ID)"}</h2>
+      <h2 className="text-xl font-bold mb-4">
+        Assigned KPIs for Sector: {sectorId || "(no sector ID)"}
+      </h2>
+
+      <p className="text-sm mb-2 text-gray-600">User ID: {userId}</p>
 
       {loading && <p>Loading assigned KPIs...</p>}
 
       {error && <p className="text-red-600">Error loading KPIs: {error}</p>}
 
-      {!loading && !error && nestedKpis.length === 0 && <p>No KPIs assigned or failed to load.</p>}
+      {!loading && !error && nestedKpis.length === 0 && (
+        <p>No KPIs assigned or failed to load.</p>
+      )}
 
       {!loading && !error && nestedKpis.length > 0 && (
         <KPIGroupedTable data={nestedKpis} detailedKpis={detailedKpis} />

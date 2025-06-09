@@ -3,18 +3,35 @@ import { useState, useEffect } from "react";
 function PerformanceModal({ PerformanceModalInfo, closePerformanceModal, handleFormSubmit }) {
   const [formData, setFormData] = useState({
     kpiName: "",
+    quarter: null,
     year: "",
     target: "",
     performanceMeasure: "",
     description: "",
   });
 
-  // Initialize form data when PerformanceModalInfo changes
   useEffect(() => {
     if (PerformanceModalInfo) {
+      let quarter = null;
+      let year = "";
+
+      // parse period like 'year-2017' or 'q1-2017'
+      if (PerformanceModalInfo.period) {
+        const parts = PerformanceModalInfo.period.split("-");
+        if (parts.length === 2) {
+          if (parts[0].startsWith("q")) {
+            quarter = parts[0].toUpperCase(); // Q1, Q2, etc
+            year = parts[1];
+          } else if (parts[0] === "year") {
+            year = parts[1];
+          }
+        }
+      }
+
       setFormData({
         kpiName: PerformanceModalInfo.kpiName || "",
-        year: PerformanceModalInfo.year || "",
+        quarter,
+        year,
         target: PerformanceModalInfo.target || "",
         performanceMeasure: PerformanceModalInfo.performanceMeasure || "",
         description: PerformanceModalInfo.description || "",
@@ -47,14 +64,14 @@ function PerformanceModal({ PerformanceModalInfo, closePerformanceModal, handleF
               className="w-full border px-3 py-1 rounded"
             />
           </div>
+
           <div>
-            <label className="block font-semibold">Year</label>
+            <label className="block font-semibold">{formData.quarter ? "Quarter" : "Year"}</label>
             <input
-              name="year"
               type="text"
-              value={formData.year}
-              onChange={onChange}
-              className="w-full border px-3 py-1 rounded"
+              readOnly
+              value={formData.quarter ? `${formData.quarter} ${formData.year}` : formData.year}
+              className="w-full border px-3 py-1 rounded bg-gray-100 cursor-not-allowed"
             />
           </div>
 
@@ -68,6 +85,7 @@ function PerformanceModal({ PerformanceModalInfo, closePerformanceModal, handleF
               className="w-full border px-3 py-1 rounded"
             />
           </div>
+
           <div>
             <label className="block font-semibold">Performance Measure</label>
             <input
@@ -78,6 +96,7 @@ function PerformanceModal({ PerformanceModalInfo, closePerformanceModal, handleF
               className="w-full border px-3 py-1 rounded"
             />
           </div>
+
           <div>
             <label className="block font-semibold">Description</label>
             <textarea
@@ -87,6 +106,7 @@ function PerformanceModal({ PerformanceModalInfo, closePerformanceModal, handleF
               className="w-full border px-3 py-1 rounded"
             />
           </div>
+
           <div className="flex justify-end space-x-2">
             <button
               type="button"

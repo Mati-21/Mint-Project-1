@@ -62,6 +62,14 @@ function App() {
           <Route path="Kpi-Year-Assign" element={<KpiYearAssignment />} />
         </Route>
 
+        <Route path="/executive" element={<Executive />}>
+          <Route index element={<Navigate to="sectorial-plan" replace />} />
+          <Route path="sectorial-plan" element={<SectorialPlan />} />
+          <Route path="ministries" element={<Ministries />} />
+          <Route path="allSector/:sectorId" element={<AllSector />} />
+          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+        </Route>
+
         <Route path="/strategic" element={<Strategic />}>
           <Route index element={<Navigate to="sectorial-plan" replace />} />
           <Route path="sectorial-plan" element={<SectorialPlan />} />

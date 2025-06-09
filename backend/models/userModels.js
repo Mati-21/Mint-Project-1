@@ -1,32 +1,31 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const userSchema = new mongoose.Schema(
   {
-    username: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    fullName: { type: String, required: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/.+@.+\..+/, "Invalid email format"],
+    },
     password: { type: String, required: true },
+    salt: { type: String, required: true }, // NEW: for crypto-based hashing
     role: {
       type: String,
-      enum: ["admin", "strategic", "minister", "executive", "workunit"],
-      default: "workunit",
+      enum: ["Chief CEO", "CEO", "Worker", "System Admin", "Minister", "Strategic Unit"],
+      required: true,
     },
+    sector: { type: mongoose.Schema.Types.ObjectId, ref: "Sector", default: null },
+    subsector: { type: mongoose.Schema.Types.ObjectId, ref: "Subsector", default: null },
   },
   { timestamps: true }
 );
 
-// Hash password before saving
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
+// No bcrypt-based pre-save hook needed anymore
+// Passwords are hashed manually in the controller using crypto
 
-// Method to compare password
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
-const User = mongoose.model("User", userSchema);
-export default User;
+export default mongoose.model("User", userSchema);

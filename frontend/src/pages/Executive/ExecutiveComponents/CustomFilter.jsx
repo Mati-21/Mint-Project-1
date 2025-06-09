@@ -1,28 +1,36 @@
 import React, { useState, useEffect } from "react";
 import { FaFilter } from "react-icons/fa";
 
-const CustomFilter = () => {
+const CustomFilter = ({ onFilterChange }) => {
   const [timePeriod, setTimePeriod] = useState("quarterly");
   const [yearQuarterOptions, setYearQuarterOptions] = useState([]);
   const [selectedYearQuarter, setSelectedYearQuarter] = useState("");
-  const [sector, setSector] = useState("");
 
   useEffect(() => {
-    const currentYear = new Date().getFullYear();
+    const currentGregorianYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    const currentEthioYear =
+      currentMonth >= 9 ? currentGregorianYear - 7 : currentGregorianYear - 8;
+
     if (timePeriod === "yearly") {
       const years = Array.from({ length: 5 }, (_, i) =>
-        (currentYear - i).toString()
+        (currentEthioYear - i).toString()
       );
       setYearQuarterOptions(years);
     } else {
       const quarters = ["Q1", "Q2", "Q3", "Q4"];
-      setYearQuarterOptions(quarters.map((q) => `${currentYear} - ${q}`));
+      setYearQuarterOptions(
+        quarters.map((q) => `${currentEthioYear} - ${q}`)
+      );
     }
+
     setSelectedYearQuarter("");
   }, [timePeriod]);
 
   const handleFilter = () => {
-    console.log({ timePeriod, selectedYearQuarter, sector });
+    if (onFilterChange) {
+      onFilterChange({ timePeriod, selectedYearQuarter });
+    }
   };
 
   return (
@@ -62,8 +70,6 @@ const CustomFilter = () => {
               ))}
             </select>
           </div>
-
-          
         </div>
 
         <div className="mt-6">

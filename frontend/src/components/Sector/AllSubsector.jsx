@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { transformAssignedKpisToNested } from "../../utils/transformAssignedKpisToNested";
 import KPIGroupedTable from "../Table/KPIGroupedTable";
 
@@ -8,6 +8,9 @@ const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
 
 function AllSubsector() {
   const { subsectorId } = useParams();
+    const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const userId = queryParams.get("userId");
 
   const [assignedKpisRaw, setAssignedKpisRaw] = useState(null);
   const [nestedKpis, setNestedKpis] = useState([]);

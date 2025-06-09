@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 
+import authMiddleware from "./middlewares/authMiddleware.js";
+import profileRouter from "./routes/profileRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
 import planRouter from "./routes/planRoutes.js";
@@ -18,7 +20,9 @@ import kra2Router from "./routes/kraRoute2.js";
 import kpi2Router from "./routes/kpiRoute2.js";
 import kpiAssignmentRouter from "./routes/kpiAssignmentRoutes.js";
 import menuRouter from "./routes/menuRoutes.js";  // renamed here
-import kpiYearAssignmentRouter from "./routes/kpiYearAssignmentRoutes.js"; // Uncomment if you have this route
+import kpiYearAssignmentRouter from "./routes/kpiYearAssignmentRoutes.js";
+import planRoutes from "./routes/planRoutes.js";
+import performanceRoutes from "./routes/performanceRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -36,7 +40,8 @@ app.use(
 );
 
 // ✅ API routes
-app.use("/api/user", userRouter);
+app.get("/api/profile", authMiddleware, profileRouter);
+app.use("/api/users", userRouter); 
 app.use("/api/admin", adminRouter);
 app.use("/api/plan", planRouter);
 app.use("/api/reports", reportRouter);
@@ -51,7 +56,9 @@ app.use("/api/goal2", goal2Router);
 app.use("/api/kras2", kra2Router);
 app.use("/api/assign", kpiAssignmentRouter);
 app.use("/api/menu", menuRouter);  // fixed here
-app.use("/api/year", kpiYearAssignmentRouter); // Uncomment if you have this route
+app.use("/api/year", kpiYearAssignmentRouter);
+app.use('/api', planRoutes);
+app.use('/api', performanceRoutes);
 
 // ✅ Run server
 const PORT = process.env.PORT || 1221;
