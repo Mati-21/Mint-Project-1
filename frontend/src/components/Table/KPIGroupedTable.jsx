@@ -1,26 +1,24 @@
 import React, { useState } from "react";
 import KPITable from "./KPITable";
-import Filters from "./Filters"; // your filter inputs component
-import PlanModal from "./PlanModal"; // modal for editing plan
-import PerformanceModal from "./PerformanceModal"; // modal for editing KPI performance
+import Filters from "./Filters";
+import PlanModal from "./PlanModal";
+import PerformanceModal from "./PerformanceModal";
 
 const BACKEND_URL = "http://localhost:1221";
 
 function getCurrentEthiopianYear() {
   const today = new Date();
   const gYear = today.getFullYear();
-  const gMonth = today.getMonth() + 1; // 1-based month
+  const gMonth = today.getMonth() + 1;
   const gDate = today.getDate();
 
   const isLeapYear =
     (gYear % 4 === 0 && gYear % 100 !== 0) || gYear % 400 === 0;
-
   const newYearDay = isLeapYear ? 12 : 11;
 
-  const ethiopianYear =
-    gMonth < 9 || (gMonth === 9 && gDate < newYearDay) ? gYear - 8 : gYear - 7;
-
-  return ethiopianYear;
+  return gMonth < 9 || (gMonth === 9 && gDate < newYearDay)
+    ? gYear - 8
+    : gYear - 7;
 }
 
 function KPIGroupedTable({ data, detailedKpis }) {
@@ -29,7 +27,6 @@ function KPIGroupedTable({ data, detailedKpis }) {
   const [filterKra, setFilterKra] = useState("");
   const [filterKpiName, setFilterKpiName] = useState("");
 
-  // Modal states
   const [planModalInfo, setPlanModalInfo] = useState(null);
   const [performanceModalInfo, setPerformanceModalInfo] = useState(null);
 
@@ -39,7 +36,6 @@ function KPIGroupedTable({ data, detailedKpis }) {
 
   const currentEthYear = getCurrentEthiopianYear();
 
-  // Flatten nested data for display & filtering
   const normalizedData = [];
 
   data.forEach((goal) => {
@@ -47,14 +43,13 @@ function KPIGroupedTable({ data, detailedKpis }) {
     goal.kras?.forEach((kra) => {
       const kraName = kra.kra_name || "N/A";
       kra.kpis?.forEach((kpi) => {
-        // Find detailed KPI info by matching _id
         const kpiDetail = detailedKpis.find((d) => d._id === kpi._id) || {};
 
         normalizedData.push({
           kpiId: kpiDetail.kpiId || kpi.kpiId || kpi._id || null,
           kpiName: kpiDetail.kpi_name || kpi.kpi_name || "N/A",
           kraId: kpiDetail.kraId || kra.kra_id || kra._id || null,
-          sectorId: kpiDetail.sectorId || null, // Add these if available in your data
+          sectorId: kpiDetail.sectorId || null,
           subsectorId: kpiDetail.subsectorId || null,
           year: kpiDetail.year || currentEthYear,
           q1: kpiDetail.q1 || "N/A",
@@ -71,7 +66,6 @@ function KPIGroupedTable({ data, detailedKpis }) {
     });
   });
 
-  // Filtering
   const filteredData = normalizedData.filter((row) => {
     const goal = row.goal?.toLowerCase() || "";
     const kra = row.kra?.toLowerCase() || "";
@@ -86,7 +80,6 @@ function KPIGroupedTable({ data, detailedKpis }) {
     );
   });
 
-  // Group by Goal and KRA
   const groupedData = {};
   filteredData.forEach((row) => {
     const groupKey = `${row.goal}||${row.kra}`;
@@ -94,9 +87,7 @@ function KPIGroupedTable({ data, detailedKpis }) {
     groupedData[groupKey].push(row);
   });
 
-  // Modal handlers for Plan
   const openModal = (row, field) => {
-    // Read user info from localStorage (stored after login)
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = user.id || user._id || null;
     const role = user.role || null;
@@ -108,7 +99,6 @@ function KPIGroupedTable({ data, detailedKpis }) {
       return;
     }
 
-    // Pass user info along with KPI row info to PlanModal
     setPlanModalInfo({
       ...row,
       field,
@@ -118,9 +108,9 @@ function KPIGroupedTable({ data, detailedKpis }) {
       subsectorId,
     });
   };
+
   const closeModal = () => setPlanModalInfo(null);
 
-  // Async submit to backend for Plan
   const handlePlanFormSubmit = async (formData) => {
     try {
       const {
@@ -145,9 +135,7 @@ function KPIGroupedTable({ data, detailedKpis }) {
       } = formData;
 
       if (!userId || !role) {
-        throw new Error(
-          "User info missing: Please log in again to submit the plan."
-        );
+        throw new Error("User info missing: Please log in again.");
       }
 
       const body = {
@@ -158,26 +146,21 @@ function KPIGroupedTable({ data, detailedKpis }) {
         kpi_name: kpiName,
         kraId,
         kpiId,
-        year: Number(year) || getCurrentEthiopianYear(),
+        year: Number(year) || currentEthYear,
         q1: q1 === "N/A" ? null : q1,
         q2: q2 === "N/A" ? null : q2,
         q3: q3 === "N/A" ? null : q3,
         q4: q4 === "N/A" ? null : q4,
-        target: target || null,
-        performanceMeasure: performanceMeasure || null,
-        description: description || null,
-        goal: goal || null,
-        period: period || null,
-        quarter: quarter || null,
+        target,
+        performanceMeasure,
+        description,
+        goal,
+        period,
+        quarter,
       };
 
-      // Remove null or empty fields
       Object.keys(body).forEach((key) => {
-        if (
-          body[key] === null ||
-          body[key] === undefined ||
-          body[key] === ""
-        ) {
+        if (body[key] === null || body[key] === undefined || body[key] === "") {
           delete body[key];
         }
       });
@@ -202,21 +185,71 @@ function KPIGroupedTable({ data, detailedKpis }) {
     }
   };
 
-  // Modal handlers for Performance
   const openPerformanceModal = (row, field) => {
-    setPerformanceModalInfo({ ...row, field });
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user.id || user._id || null;
+    const role = user.role || null;
+    const sectorId = user.sectorId || user.sector || null;
+    const subsectorId = user.subsectorId || user.subsector || null;
+
+    if (!userId || !role) {
+      alert("User info missing: Please log in again.");
+      return;
+    }
+
+    setPerformanceModalInfo({
+      ...row,
+      kpiName: row.kpiName || row.kpi_name, // Ensure kpiName is passed
+      field,
+      userId,
+      role,
+      sectorId,
+      subsectorId,
+    });
   };
+
   const closePerformanceModal = () => setPerformanceModalInfo(null);
 
-  // Async submit to backend for Performance
   const handlePerformanceFormSubmit = async (formData) => {
     try {
-      console.log("Submitting performance data to backend:", formData);
+      console.log("Submitting performance data:", formData);
+
+      const {
+        userId,
+        role,
+        sectorId,
+        subsectorId,
+        kpiName,
+        kraId,
+        year,
+        performanceMeasure,
+        quarter,
+        description,
+      } = formData;
+
+      const body = {
+        userId,
+        role,
+        sectorId,
+        subsectorId,
+        kpi_name: kpiName,
+        kraId,
+        year: Number(year),
+        performanceMeasure,
+        quarter,
+        description,
+      };
+
+      Object.keys(body).forEach((key) => {
+        if (body[key] === null || body[key] === undefined || body[key] === "") {
+          delete body[key];
+        }
+      });
 
       const response = await fetch(`${BACKEND_URL}/api/performance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -272,7 +305,7 @@ function KPIGroupedTable({ data, detailedKpis }) {
       {performanceModalInfo && (
         <PerformanceModal
           modalInfo={performanceModalInfo}
-          closePerformanceModal={closePerformanceModal}
+          closeModal={closePerformanceModal}
           handleFormSubmit={handlePerformanceFormSubmit}
         />
       )}
