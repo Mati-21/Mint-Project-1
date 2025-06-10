@@ -41,7 +41,7 @@ function AdminTopBar({ bgColor = "bg-white" }) {
 
       <div className="flex gap-4 items-center">
         <p className="hidden lg:block">Matimelkamu@gmail.com</p>
-        <ImageDropdown role={"admin"} />
+        {/* <ImageDropdown role={"admin"} /> */}
       </div>
     </div>
   );

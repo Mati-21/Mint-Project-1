@@ -5,17 +5,13 @@ import { IoIosNotifications } from "react-icons/io";
 
 import { IoMdMenu } from "react-icons/io";
 
-import ImageDropdown from "../../components/ImageDropdown";
-import useAuthStore from "../../store/auth.store";
-// import { useDispatch } from "react-redux";
-// import { showMainSidenav } from "../slices/mainSidebarSlice";
+import ImageDropdown from "./ImageDropdown";
+import useAuthStore from "../store/auth.store";
 
-function WorkUnitTopBar({ bgColor = "bg-white" }) {
+function TopNavBar({ bgColor = "bg-white" }) {
   const { user } = useAuthStore();
-  console.log(user);
-
+  //
   return (
-    // ✅ You were missing this!
     <div className="bg-green-600 sticky top-0 text-white items-center duration-500 flex justify-between pl-1 pr-4 lg:pl-4 lg:pr-16 py-2">
       <div className="flex gap-6 px-2">
         <IoMdMenu
@@ -53,4 +49,4 @@ function WorkUnitTopBar({ bgColor = "bg-white" }) {
   );
 }
 
-export default WorkUnitTopBar;
+export default TopNavBar;

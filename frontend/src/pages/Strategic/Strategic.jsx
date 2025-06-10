@@ -3,6 +3,7 @@ import StrategicSideBar from "./StrategicSideBar";
 import StrategicTopBar from "./StrategicTopBar";
 import InfoNavigation from "../../components/InfoNavigation";
 import { Outlet } from "react-router-dom";
+import TopNavBar from "../../components/TopNavBar";
 
 function Strategic() {
   return (
@@ -12,7 +13,7 @@ function Strategic() {
       </div>
 
       <div className="flex-1 flex flex-col ">
-        <StrategicTopBar />
+        <TopNavBar />
 
         <div className="px-6 py-3">
           <InfoNavigation />

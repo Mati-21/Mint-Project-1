@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import ExecutiveSideBar from "./ExecutiveSideBar";
 import ExecutiveTopBar from "./ExecutiveTopBar";
+import TopNavBar from "../../components/TopNavBar";
 
 function Executive() {
   return (
@@ -10,7 +11,7 @@ function Executive() {
       </div>
       <div className="flex-1 flex flex-col ">
         <div>
-          <ExecutiveTopBar />
+          <TopNavBar />
         </div>
         <main>
           <Outlet />

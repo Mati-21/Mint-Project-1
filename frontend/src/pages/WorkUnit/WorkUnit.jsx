@@ -1,8 +1,7 @@
-import StrategicSideBar from "../Strategic/StrategicSideBar";
-import StrategicTopBar from "../Strategic/StrategicTopBar";
 import { Outlet } from "react-router-dom";
 import WorkUnitSideBar from "./WorkUnitSideBar";
-import WorkUnitTopBar from "./WorkUnitTopBar";
+
+import TopNavBar from "../../components/TopNavBar";
 
 function WorkUnit() {
   return (
@@ -12,7 +11,7 @@ function WorkUnit() {
       </div>
       <div className="flex-1 flex flex-col ">
         <div>
-          <WorkUnitTopBar />
+          <TopNavBar />
         </div>
         <main>
           <Outlet />

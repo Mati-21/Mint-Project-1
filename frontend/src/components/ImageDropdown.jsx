@@ -1,13 +1,17 @@
 import manjpg from "../assets/man.jpg";
 import { FaUser } from "react-icons/fa";
-import { FiLogOut } from "react-icons/fi";
+
 import { IoMdSettings } from "react-icons/io";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import useAuthStore from "../store/auth.store";
+import { useNavigate } from "react-router-dom";
 
 function ImageDropdown({ role }) {
   const [opendropDown, setOpenDropDown] = useState(false);
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   function toggleProfile() {
     setOpenDropDown((prev) => !prev);
@@ -27,6 +31,13 @@ function ImageDropdown({ role }) {
       document.removeEventListener("click", handler);
     };
   }, []);
+
+  const handleLogout = async (e) => {
+    e.preventDefault();
+
+    navigate("/");
+    await logout();
+  };
 
   return (
     <div
@@ -56,8 +67,8 @@ function ImageDropdown({ role }) {
             />
           </div>
           <div className="flex flex-col gap-1 ">
-            <h1 className="text-md font-bold">Mati Melkamu</h1>
-            <p className="text-xs">Excutive director</p>
+            <h1 className="text-md font-bold">{user?.fullName || "no Name"}</h1>
+            <p className="text-xs">{user?.role || "no role"}</p>
           </div>
         </div>
         {/* lower part */}
@@ -83,7 +94,7 @@ function ImageDropdown({ role }) {
           <Link>
             <li className="group flex items-center justify-between px-4 py-1 rounded cursor-pointer transition-all hover:font-semibold">
               <span className="flex items-center gap-2">
-                <FiLogOut /> <span>Logout</span>
+                <span onClick={handleLogout}>Logout</span>
               </span>
               <ChevronRight className="transition-all duration-500 group-hover:translate-x-2" />
             </li>

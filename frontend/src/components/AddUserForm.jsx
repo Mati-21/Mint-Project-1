@@ -57,7 +57,9 @@ const AddUser = () => {
     const filtered = subsectors.filter((sub) => {
       if (!sub.sectorId) return false;
       const sectorIdFromSub =
-        typeof sub.sectorId === "object" ? sub.sectorId._id || sub.sectorId : sub.sectorId;
+        typeof sub.sectorId === "object"
+          ? sub.sectorId._id || sub.sectorId
+          : sub.sectorId;
       return sectorIdFromSub === formData.sector;
     });
     setFilteredSubsectors(filtered);
@@ -182,7 +184,7 @@ const AddUser = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto p-6 bg-white rounded shadow-md">
+    <div className="w-[1000px] mx-auto p-6 bg-white rounded shadow-md">
       <h2 className="text-2xl font-semibold mb-6">Add User</h2>
 
       <form onSubmit={handleSubmit}>
@@ -215,12 +217,12 @@ const AddUser = () => {
             className="border border-gray-300 rounded-md px-4 py-2 w-full"
           >
             <option value="">Select Role</option>
-            <option value="Chief CEO">Chief CEO</option>
+            <option value="Chief-CEO">Chief CEO</option>
             <option value="CEO">CEO</option>
-            <option value="Worker">Worker</option>
-            <option value="System Admin">System Admin</option>
+            <option value="Workunit">Worker</option>
+            <option value="System-Admin">System Admin</option>
             <option value="Minister">Minister</option>
-            <option value="Strategic Unit">Strategic Unit</option>
+            <option value="Strategic-Unit">Strategic Unit</option>
           </select>
         </div>
 
@@ -288,7 +290,9 @@ const AddUser = () => {
         <div className="mb-4">
           <label
             htmlFor="sector"
-            className={`block mb-1 font-medium ${!useSector ? "text-gray-400" : ""}`}
+            className={`block mb-1 font-medium ${
+              !useSector ? "text-gray-400" : ""
+            }`}
           >
             Sector
           </label>
@@ -344,7 +348,9 @@ const AddUser = () => {
             onChange={handleChange}
             disabled={!useSubsector || !useSector}
             className={`border border-gray-300 rounded-md px-4 py-2 w-full ${
-              !useSubsector || !useSector ? "bg-gray-100 cursor-not-allowed" : ""
+              !useSubsector || !useSector
+                ? "bg-gray-100 cursor-not-allowed"
+                : ""
             }`}
           >
             <option value="">Select Subsector</option>

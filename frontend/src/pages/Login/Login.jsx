@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+// import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import exampleImage from "../../assets/download.jpg";
-
-const backendUrl = "http://localhost:1221";
+import useAuthStore from "../../store/auth.store";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -14,98 +13,98 @@ function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
+  const { adminLogin, userLogin, user } = useAuthStore();
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    try {
-      // Admin login
-      const adminRes = await axios.post(`${backendUrl}/api/admin/login`, {
-        email: normalizedEmail,
-        password,
-      });
+    // try {
+    //   const adminData = await adminLogin(normalizedEmail, password);
 
-      const adminData = adminRes.data;
+    //   console.log(adminData);
 
-      if (adminData.success) {
-        localStorage.setItem("aToken", adminData.token);
-        localStorage.setItem("admin", JSON.stringify(adminData.user));
-        toast.success("Admin login successful!");
-        navigate("/admin");
-        return;
-      }
-    } catch (err) {
-      console.warn("Admin login attempt failed.");
-    }
+    //   if (adminData) {
+    //     localStorage.setItem("aToken", adminData.token);
+    //     localStorage.setItem("admin", JSON.stringify(adminData.user));
+    //     toast.success("Admin login successful!");
+    //     navigate("/admin");
+    //     return;
+    //   }
+    // } catch (err) {
+    //   console.warn("Admin login attempt failed.");
+    // }
 
     try {
       // User login
-      const userRes = await axios.post(`${backendUrl}/api/users/login`, {
-        email: normalizedEmail,
-        password,
-      });
+      // const userRes = await axios.post(`${backendUrl}/api/users/login`, {
+      //   email: normalizedEmail,
+      //   password,
+      // });
 
-      const userData = userRes.data;
+      const userData = await userLogin(normalizedEmail, password);
+
+      console.log(userData);
 
       if (userData.success) {
-  localStorage.setItem("uToken", userData.token);
-  localStorage.setItem("user", JSON.stringify(userData.user));
-  toast.success("User login successful!");
+        localStorage.setItem("uToken", userData.token);
+        localStorage.setItem("user", JSON.stringify(userData.user));
+        toast.success("User login successful!");
 
-  console.log("✅ Logged-in User Object:", userData.user);
+        console.log("✅ Logged-in User Object:", userData.user);
 
-  const role = (userData.user?.role || "").toLowerCase();
-  const userId = userData.user.id || userData.user._id;
-  const sector = userData.user.sector;
-  const subsector = userData.user.subsector;
+        const role = (userData.user?.role || "").toLowerCase();
+        const userId = userData.user.id || userData.user._id;
+        const sector = userData.user.sector;
+        const subsector = userData.user.subsector;
 
-  console.log("Role:", role);
-  console.log("User ID:", userId);
-  console.log("Sector:", sector);
-  console.log("Subsector:", subsector);
+        console.log("Role:", role);
+        console.log("User ID:", userId);
+        console.log("Sector:", sector);
+        console.log("Subsector:", subsector);
 
-  switch (role) {
-    case "system admin":
-      navigate("/admin");
-      break;
+        switch (role) {
+          case "system admin":
+            navigate("/admin");
+            break;
 
-    case "chief ceo":
-      if (sector) {
-        navigate(`/executive/allSector/${sector}?userId=${userId}`);
+          case "chief ceo":
+            if (sector) {
+              navigate(`/executive/allSector/${sector}?userId=${userId}`);
+            } else {
+              toast.error("Sector not assigned.");
+              navigate("/unauthorized");
+            }
+            break;
+
+          case "ceo":
+          case "worker":
+            if (subsector) {
+              navigate(`/allSubsector/${subsector}?userId=${userId}`);
+              navigate(`workunit`);
+            } else {
+              toast.error("Subsector not assigned.");
+              navigate("/unauthorized");
+            }
+            break;
+
+          case "minister":
+            navigate("/minister");
+            break;
+
+          case "strategic unit":
+            navigate("/strategic");
+            break;
+
+          default:
+            toast.error("Unknown role. Access denied.");
+            navigate("/unauthorized");
+        }
+
+        return;
       } else {
-        toast.error("Sector not assigned.");
-        navigate("/unauthorized");
-      }
-      break;
-
-    case "ceo":
-    case "worker":
-      if (subsector) {
-        navigate(`/executive/allSubsector/${subsector}?userId=${userId}`);
-      } else {
-        toast.error("Subsector not assigned.");
-        navigate("/unauthorized");
-      }
-      break;
-
-    case "minister":
-      navigate("/minister");
-      break;
-
-    case "strategic unit":
-      navigate("/strategic");
-      break;
-
-    default:
-      toast.error("Unknown role. Access denied.");
-      navigate("/unauthorized");
-  }
-
-  return;
-}
- else {
         setError(userData.message || "Login failed. Please try again.");
       }
     } catch (err) {
@@ -127,8 +126,12 @@ function Login() {
           </div>
 
           <div className="space-y-1 text-center">
-            <h1 className="text-2xl font-semibold text-gray-900">Welcome back</h1>
-            <p className="text-sm text-gray-500">Please enter your details to sign in</p>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Welcome back
+            </h1>
+            <p className="text-sm text-gray-500">
+              Please enter your details to sign in
+            </p>
           </div>
 
           <div className="flex w-full items-center gap-2">
@@ -141,7 +144,10 @@ function Login() {
 
           <form className="w-full space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <input
@@ -157,7 +163,10 @@ function Login() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <input
@@ -184,7 +193,10 @@ function Login() {
                   Remember for 30 days
                 </label>
               </div>
-              <a href="#" className="text-sm font-medium text-purple-600 hover:text-purple-500">
+              <a
+                href="#"
+                className="text-sm font-medium text-purple-600 hover:text-purple-500"
+              >
                 Forgot password?
               </a>
             </div>

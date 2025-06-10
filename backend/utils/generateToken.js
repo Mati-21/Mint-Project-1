@@ -1,20 +1,20 @@
 import jwt from "jsonwebtoken";
 
-/**
- * Generate a JWT token for a given user ID.
- * @param {string} userId - The user ID to encode in the token.
- * @returns {string} - Signed JWT token.
- */
-const generateToken = (userId) => {
+const generateToken = (userId, res) => {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined in environment variables");
   }
 
-  return jwt.sign(
-    { id: userId }, 
-    process.env.JWT_SECRET, 
-    { expiresIn: "7d" } // token expiry time (adjust as needed)
-  );
+  const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
+
+  return res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // set true on prod
+    sameSite: "strict", // adjust to 'none' if backend/frontend are cross-domain, with HTTPS!
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 };
 
 export default generateToken;

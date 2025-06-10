@@ -34,13 +34,29 @@ import UserProfile from "./components/UserProfile";
 import AllSector from "./components/Sector/AllSector";
 import AllSubsector from "./components/Sector/AllSubsector";
 import KpiYearAssignment from "./pages/Admin/AdminComponents/KpiYearAssignmentPage";
+import { useEffect } from "react";
+import useAuthStore from "./store/auth.store";
+import ProtectRoute from "./utils/ProtectRoute";
 
 function App() {
+  const { checkAuth, isAuthenticated, user, isCheckingAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/admin" element={<Admin />}>
+        <Route
+          path="/admin"
+          element={
+            <ProtectRoute>
+              <Admin />
+            </ProtectRoute>
+          }
+        >
           <Route index element={<Navigate to="admin-dashboard" replace />} />
           <Route path="admin-dashboard" element={<AdminDashboard />}>
             <Route index element={<Navigate to="chart" replace />} />
@@ -62,7 +78,14 @@ function App() {
           <Route path="Kpi-Year-Assign" element={<KpiYearAssignment />} />
         </Route>
 
-        <Route path="/executive" element={<Executive />}>
+        <Route
+          path="/executive"
+          element={
+            <ProtectRoute>
+              <Executive />
+            </ProtectRoute>
+          }
+        >
           <Route index element={<Navigate to="sectorial-plan" replace />} />
           <Route path="sectorial-plan" element={<SectorialPlan />} />
           <Route path="ministries" element={<Ministries />} />
@@ -70,17 +93,20 @@ function App() {
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
         </Route>
 
-        <Route path="/strategic" element={<Strategic />}>
+        <Route
+          path="/strategic"
+          element={
+            <ProtectRoute>
+              <Strategic />
+            </ProtectRoute>
+          }
+        >
           <Route index element={<Navigate to="sectorial-plan" replace />} />
           <Route path="sectorial-plan" element={<SectorialPlan />} />
           <Route path="ministries" element={<Ministries />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
-{/* 
-          
-          <Route path="allSector/:sector" element={<AllSector />} />
-          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} /> */}
-          
+
           <Route
             path="innovation-research"
             element={<InnovationAndResearch />}
@@ -97,7 +123,14 @@ function App() {
           <Route path="user-profile" element={<UserProfile />} />
         </Route>
 
-        <Route path="/minister" element={<Minister />}>
+        <Route
+          path="/minister"
+          element={
+            <ProtectRoute>
+              <Minister />
+            </ProtectRoute>
+          }
+        >
           <Route index element={<Navigate to="sectorial-plan" replace />} />
           <Route path="sectorial-plan" element={<SectorialPlan />} />
           <Route path="ministries" element={<Ministries />} />
@@ -112,10 +145,24 @@ function App() {
           <Route path="user-profile" element={<UserProfile />} />
         </Route>
 
-        <Route path="/executive" element={<Executive />}>
+        <Route
+          path="/executive"
+          element={
+            <ProtectRoute>
+              <Executive />
+            </ProtectRoute>
+          }
+        >
           <Route path="user-profile" element={<UserProfile />} />
         </Route>
-        <Route path="/workunit" element={<WorkUnit />}>
+        <Route
+          path="/workunit"
+          element={
+            <ProtectRoute>
+              <WorkUnit />
+            </ProtectRoute>
+          }
+        >
           <Route path="user-profile" element={<UserProfile />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
@@ -123,9 +170,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
-// function App() {
-//   return <KpiAssignment />;
-// }
 
 export default App;

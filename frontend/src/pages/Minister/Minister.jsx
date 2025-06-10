@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import MinisterSideMenu from "./MinisterSideMenu";
 
 import MinisterTopBar from "./MinisterTopBar";
+import TopNavBar from "../../components/TopNavBar";
 
 function Minister() {
   return (
@@ -12,7 +13,7 @@ function Minister() {
 
       <div className="flex-1 flex flex-col">
         <div>
-          <MinisterTopBar />
+          <TopNavBar />
         </div>
         <main>
           <Outlet />

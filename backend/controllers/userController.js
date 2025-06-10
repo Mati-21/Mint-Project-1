@@ -1,10 +1,9 @@
-import User from "../models/userModels.js";
-import Sector from "../models/sectorModel.js";
-import Subsector from "../models/subsectorModel.js";
 import generateToken from "../utils/generateToken.js";
+import User from "../models/userModels.js";
+// import Sector from "../models/sectorModel.js";
+// import Subsector from "../models/subsectorModel.js";
+
 import { hashPassword, verifyPassword } from "../utils/hashPassword.js";
-import fs from "fs";
-import path from "path";
 
 // Create new user
 export const createUser = async (req, res) => {
@@ -24,7 +23,9 @@ export const createUser = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       console.warn("[createUser] User already exists with email:", email);
-      return res.status(400).json({ success: false, message: "Email already registered" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already registered" });
     }
 
     const { hash, salt } = hashPassword(password);
@@ -45,10 +46,16 @@ export const createUser = async (req, res) => {
 
     console.log("[createUser] User created successfully:", email);
 
-    res.status(201).json({ success: true, message: "User created successfully", user: newUser });
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      user: newUser,
+    });
   } catch (error) {
     console.error("[createUser] Error creating user:", error);
-    res.status(500).json({ success: false, message: "Server error during user creation" });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error during user creation" });
   }
 };
 
@@ -57,28 +64,25 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     const normalizedEmail = email.trim().toLowerCase();
-    console.log("[loginUser] Logging in with:", normalizedEmail, password);
 
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       console.warn(`[loginUser] No user found for email: ${normalizedEmail}`);
-      return res.status(401).json({ success: false, message: "Invalid email or password" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid email or password" });
     }
-
-    console.log("[loginUser] User found:", {
-      email: user.email,
-      storedHashedPassword: user.password,
-      salt: user.salt,
-    });
 
     const isMatch = verifyPassword(password, user.password, user.salt);
-    console.log("[loginUser] Password match result:", isMatch);
 
     if (!isMatch) {
-      console.warn(`[loginUser] Incorrect password for email: ${normalizedEmail}`);
-      return res.status(401).json({ success: false, message: "Invalid email or password" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid email or password" });
     }
+
+    generateToken(user._id, res);
 
     res.json({
       success: true,
@@ -94,10 +98,11 @@ export const loginUser = async (req, res) => {
     });
   } catch (error) {
     console.error("[loginUser] Error during login:", error);
-    res.status(500).json({ success: false, message: "Server error during login" });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error during login" });
   }
 };
-
 
 // Get all users with populated sector/subsector names
 export const getUsers = async (req, res) => {
@@ -114,7 +119,6 @@ export const getUsers = async (req, res) => {
   }
 };
 
-
 // Get profile of logged-in user by ID
 export const getProfile = async (req, res) => {
   try {
@@ -126,7 +130,9 @@ export const getProfile = async (req, res) => {
 
     if (!user) {
       console.warn("⚠️ [getProfile] User not found:", req.userId);
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     console.log("✅ [getProfile] Profile found for:", user.email);
@@ -135,6 +141,11 @@ export const getProfile = async (req, res) => {
     console.error("❌ [getProfile] Server error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
+};
+
+export const logout = (req, res) => {
+  res.clearCookie("token");
+  res.status(200).json({ message: "Logged out successfully." });
 };
 
 // Get statistics about active users
@@ -148,7 +159,12 @@ export const getActiveUsersStats = async (req, res) => {
       },
     });
 
-    console.log("✅ [getActiveUsersStats] Total:", totalUsers, "Last Month:", lastMonthCount);
+    console.log(
+      "✅ [getActiveUsersStats] Total:",
+      totalUsers,
+      "Last Month:",
+      lastMonthCount
+    );
 
     res.status(200).json({
       count: totalUsers,
@@ -163,6 +179,18 @@ export const getActiveUsersStats = async (req, res) => {
     });
   }
 };
+
+//
+
+//
+
+//
+
+//
+
+//
+
+//
 
 // Optional: Update user profile (uncomment and adjust if you want to enable)
 /*
