@@ -1,5 +1,7 @@
 // import LiChart from "./LiChart";
 
+import { Outlet } from "react-router-dom";
+
 // import BChart from "./BChart";
 
 function Chart() {
@@ -19,6 +21,7 @@ function Chart() {
           Bar Chart
         </div>
       </div>
+      <Outlet />
     </div>
   );
 }

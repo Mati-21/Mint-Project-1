@@ -1,5 +1,5 @@
 import { IoSearch } from "react-icons/io5";
-function ExecutiveSideHeader() {
+function CEOSideHeader() {
   return (
     <div
       className={` flex flex-col items-center justify-center ${
@@ -33,4 +33,4 @@ function ExecutiveSideHeader() {
   );
 }
 
-export default ExecutiveSideHeader;
+export default CEOSideHeader;

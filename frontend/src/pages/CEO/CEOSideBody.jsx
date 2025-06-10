@@ -1,9 +1,9 @@
 import { ChevronDown } from "lucide-react";
-import Datas from "./ExecutiveSideMenuTitles";
+import Datas from "./CEOSideMenuTitles";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-function ExcutiveSideBody() {
+function CEOSideBody() {
   const [isSubMenuOpen, setIsSubMenuOpen] = useState({
     menu1: false,
     menu2: false,
@@ -114,4 +114,4 @@ function ExcutiveSideBody() {
   );
 }
 
-export default ExcutiveSideBody;
+export default CEOSideBody;

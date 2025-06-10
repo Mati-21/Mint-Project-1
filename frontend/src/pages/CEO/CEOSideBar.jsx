@@ -1,9 +1,10 @@
 import { BsArrowLeftShort } from "react-icons/bs";
-import ExecutiveSideHeader from "./ExecutiveSideHeader";
-import ExecutiveSideBody from "./ExecutiveSideBody";
-import ResultFrameworkMenu from "./ExecutiveComponents/ResultFrameworkMenu";
 
-function ExecutiveSideBar({ open = true }) {
+import CEOSideBody from "./CEOSideBody";
+import ResultFrameworkMenu from "./CEOComponents/ResultFrameworkMenu";
+import CEOSideHeader from "./CEOSideHeader";
+
+function CEOSideBar({ open = true }) {
   return (
     <div
       className={`bg-green-700 h-full p-4 fixed w-72 duration-300 scrollbar-hidden flex flex-col`}
@@ -14,15 +15,15 @@ function ExecutiveSideBar({ open = true }) {
         } z-20`}
         // onClick={() => dispatch(toggleMainSidenav())}
       />
-      <ExecutiveSideHeader />
+      <CEOSideHeader />
 
       {/* Scrollable area */}
       <div className="flex-1 overflow-auto scrollbar-hidden space-y-4 mt-2">
         <ResultFrameworkMenu open={open} />
-        <ExecutiveSideBody open={open} />
+        <CEOSideBody open={open} />
       </div>
     </div>
   );
 }
 
-export default ExecutiveSideBar;
+export default CEOSideBar;

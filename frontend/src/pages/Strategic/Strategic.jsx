@@ -1,6 +1,5 @@
 import StrategicSideBar from "./StrategicSideBar";
-// import StrategicMain from "./StrategicMain";
-import StrategicTopBar from "./StrategicTopBar";
+
 import InfoNavigation from "../../components/InfoNavigation";
 import { Outlet } from "react-router-dom";
 import TopNavBar from "../../components/TopNavBar";

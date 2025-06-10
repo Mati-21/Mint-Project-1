@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import axios from "axios";
+
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import exampleImage from "../../assets/download.jpg";
@@ -21,29 +21,7 @@ function Login() {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // try {
-    //   const adminData = await adminLogin(normalizedEmail, password);
-
-    //   console.log(adminData);
-
-    //   if (adminData) {
-    //     localStorage.setItem("aToken", adminData.token);
-    //     localStorage.setItem("admin", JSON.stringify(adminData.user));
-    //     toast.success("Admin login successful!");
-    //     navigate("/admin");
-    //     return;
-    //   }
-    // } catch (err) {
-    //   console.warn("Admin login attempt failed.");
-    // }
-
     try {
-      // User login
-      // const userRes = await axios.post(`${backendUrl}/api/users/login`, {
-      //   email: normalizedEmail,
-      //   password,
-      // });
-
       const userData = await userLogin(normalizedEmail, password);
 
       console.log(userData);
@@ -72,7 +50,8 @@ function Login() {
 
           case "chief ceo":
             if (sector) {
-              navigate(`/executive/allSector/${sector}?userId=${userId}`);
+              // navigate(`/executive/allSector/${sector}?userId=${userId}`);
+              navigate(`/chief-ceo`);
             } else {
               toast.error("Sector not assigned.");
               navigate("/unauthorized");

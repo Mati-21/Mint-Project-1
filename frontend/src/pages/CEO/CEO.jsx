@@ -1,13 +1,13 @@
 import { Outlet } from "react-router-dom";
-import ExecutiveSideBar from "./ExecutiveSideBar";
-import ExecutiveTopBar from "./ExecutiveTopBar";
-import TopNavBar from "../../components/TopNavBar";
 
-function Executive() {
+import TopNavBar from "../../components/TopNavBar";
+import CEOSideBar from "./CEOSideBar";
+
+function CEO() {
   return (
     <div className="flex ">
       <div className="h-screen relative w-72 bg-amber-200">
-        <ExecutiveSideBar />
+        <CEOSideBar />
       </div>
       <div className="flex-1 flex flex-col ">
         <div>
@@ -21,4 +21,4 @@ function Executive() {
   );
 }
 
-export default Executive;
+export default CEO;

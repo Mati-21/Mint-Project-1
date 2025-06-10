@@ -12,7 +12,7 @@ function RedirectAuthenticated({ children }) {
       break;
 
     case "Chief CEO":
-      redirect = "/admin";
+      redirect = "/sectorial-plan";
       break;
 
     case "CEO":
