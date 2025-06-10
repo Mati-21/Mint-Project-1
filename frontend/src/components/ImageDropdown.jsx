@@ -11,6 +11,8 @@ import { useNavigate } from "react-router-dom";
 function ImageDropdown() {
   const [opendropDown, setOpenDropDown] = useState(false);
   const { user, logout } = useAuthStore();
+
+  console.log(user);
   const navigate = useNavigate();
 
   function toggleProfile() {

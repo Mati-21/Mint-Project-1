@@ -1,4 +1,5 @@
-import AdminTopBar from "./AdminTopBar";
+
+import TopNavBar from "../../components/TopNavBar";
 import AdminSideBar from "./AdminSideBar";
 import { Outlet } from "react-router-dom";
 
@@ -11,7 +12,7 @@ function Admin() {
       </div>
       {/* Main Section */}
       <div className="flex-1 flex flex-col ">
-        <AdminTopBar />
+      <TopNavBar />
         <main className="px-6 py-4">
           <Outlet />
         </main>
