@@ -43,7 +43,7 @@ function TopNavBar({ bgColor = "bg-white" }) {
       </div>
       <div className="flex gap-4 items-center">
         <p className="hidden lg:block">{user?.email || "No User"}</p>
-        <ImageDropdown role="strategic" />
+        <ImageDropdown />
       </div>
     </div>
   );

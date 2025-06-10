@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import useAuthStore from "../store/auth.store";
 import { useNavigate } from "react-router-dom";
 
-function ImageDropdown({ role }) {
+function ImageDropdown() {
   const [opendropDown, setOpenDropDown] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
