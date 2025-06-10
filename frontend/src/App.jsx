@@ -49,7 +49,14 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/admin" element={<Admin />}>
+        <Route
+          path="/admin"
+          element={
+            <ProtectRoute>
+              <Admin />
+            </ProtectRoute>
+          }
+        >
           <Route index element={<Navigate to="admin-dashboard" replace />} />
           <Route path="admin-dashboard" element={<AdminDashboard />}>
             <Route index element={<Navigate to="chart" replace />} />
