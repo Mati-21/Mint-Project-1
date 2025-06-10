@@ -96,7 +96,7 @@ function App() {
             </ProtectRoute>
           }
         >
-          <Route index element={<Navigate to="sectorial-plan" replace />} />
+          <Route index element={<Dashboard />} />
           <Route path="sectorial-plan" element={<SectorialPlan />} />
           <Route path="ministries" element={<Ministries />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />

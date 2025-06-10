@@ -59,15 +59,24 @@ function Login() {
             break;
 
           case "ceo":
-          case "worker":
             if (subsector) {
-              navigate(`/allSubsector/${subsector}?userId=${userId}`);
-              navigate(`workunit`);
+              // navigate(`/executive/allSubsector/${subsector}?userId=${userId}`);
+              navigate(`/ceo`);
             } else {
-              toast.error("Subsector not assigned.");
+              toast.error("Sector not assigned.");
               navigate("/unauthorized");
             }
             break;
+
+          // case "worker":
+          //   if (subsector) {
+          //     navigate(`/allSubsector/${subsector}?userId=${userId}`);
+          //     navigate(`workunit`);
+          //   } else {
+          //     toast.error("Subsector not assigned.");
+          //     navigate("/unauthorized");
+          //   }
+          //   break;
 
           case "minister":
             navigate("/minister");

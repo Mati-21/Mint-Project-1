@@ -199,8 +199,8 @@ const AddUser = () => {
             value={formData.fullName}
             onChange={handleChange}
             required
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
-            placeholder="John Doe"
+            className="border border-gray-300 rounded-md px-4 py-1 w-full"
+            placeholder="Full Name"
           />
         </div>
 
@@ -214,7 +214,7 @@ const AddUser = () => {
             value={formData.role}
             onChange={handleChange}
             required
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
+            className="border border-gray-300 rounded-md px-4 py-1 w-full"
           >
             <option value="">Select Role</option>
             <option value="Chief CEO">Chief CEO</option>
@@ -237,7 +237,7 @@ const AddUser = () => {
             value={formData.email}
             onChange={handleChange}
             required
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
+            className="border border-gray-300 rounded-md px-4 py-1 w-full"
             placeholder="user@example.com"
           />
         </div>
@@ -253,7 +253,7 @@ const AddUser = () => {
             value={formData.password}
             onChange={handleChange}
             required
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
+            className="border border-gray-300 rounded-md px-4 py-1 w-full"
           />
         </div>
 
@@ -268,7 +268,7 @@ const AddUser = () => {
             value={formData.confirmPassword}
             onChange={handleChange}
             required
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
+            className="border border-gray-300 rounded-md px-4 py-1 w-full"
           />
         </div>
 
@@ -301,7 +301,7 @@ const AddUser = () => {
             value={formData.sector}
             onChange={handleChange}
             disabled={!useSector}
-            className={`border border-gray-300 rounded-md px-4 py-2 w-full ${
+            className={`border border-gray-300 rounded-md px-4 py-1 w-full ${
               !useSector ? "bg-gray-100 cursor-not-allowed" : ""
             }`}
           >
@@ -347,7 +347,7 @@ const AddUser = () => {
             value={formData.subsector}
             onChange={handleChange}
             disabled={!useSubsector || !useSector}
-            className={`border border-gray-300 rounded-md px-4 py-2 w-full ${
+            className={`border border-gray-300 rounded-md px-4 py-1 w-full ${
               !useSubsector || !useSector
                 ? "bg-gray-100 cursor-not-allowed"
                 : ""
@@ -369,7 +369,7 @@ const AddUser = () => {
 
         <button
           type="submit"
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+          className="bg-blue-600 text-white px-6 py-1 rounded hover:bg-blue-700 transition"
         >
           Create User
         </button>
