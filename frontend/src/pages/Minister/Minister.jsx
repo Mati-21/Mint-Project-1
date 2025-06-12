@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import MinisterSideMenu from "./MinisterSideMenu";
+import MinisterSideMenu from "./MinisterSideBar";
 
 import TopNavBar from "../../components/TopNavBar";
 

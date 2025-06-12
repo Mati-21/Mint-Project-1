@@ -3,7 +3,7 @@ import ChiefCEO from "./pages/ChiefCEO/ChiefCEO";
 import CEO from "./pages/CEO/CEO";
 import Strategic from "./pages/Strategic/Strategic";
 import Minister from "./pages/Minister/Minister";
-import WorkUnit from "./pages/Worker/WorkUnit";
+import Worker from "./pages/Worker/Worker";
 
 // local
 import useAuthStore from "./store/auth.store";
@@ -103,6 +103,8 @@ function App() {
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
         </Route>
 
+        
+
         <Route
           path="/strategic"
           element={
@@ -111,7 +113,7 @@ function App() {
             </ProtectRoute>
           }
         >
-          <Route index element={<Navigate to="sectorial-plan" replace />} />
+          <Route index element={<Dashboard />} />
           <Route path="sectorial-plan" element={<SectorialPlan />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
@@ -133,22 +135,27 @@ function App() {
             </ProtectRoute>
           }
         >
-          <Route index element={<Navigate to="sectorial-plan" replace />} />
-          <Route path="sectorial-plan" element={<SectorialPlan />} />
+
+          <Route index element={<Dashboard />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
         </Route>
 
         <Route
-          path="/workunit"
+          path="/worker"
           element={
             <ProtectRoute>
-              <WorkUnit />
+              <Worker />
             </ProtectRoute>
           }
         >
+          <Route index element={<Dashboard />} />
+          <Route path="sectorial-plan" element={<SectorialPlan />} />
+          <Route path="allSector/:sectorId" element={<AllSector />} />
+          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
+          
         </Route>
 
         {/* Page Not Found  */}

@@ -3,7 +3,7 @@ import WorkUnitSideBar from "./WorkUnitSideBar";
 
 import TopNavBar from "../../components/TopNavBar";
 
-function WorkUnit() {
+function Worker() {
   return (
     <div className="flex ">
       <div className="h-screen relative w-70 bg-amber-200">
@@ -21,4 +21,4 @@ function WorkUnit() {
   );
 }
 
-export default WorkUnit;
+export default Worker;

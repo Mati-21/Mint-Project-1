@@ -4,14 +4,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 function MinisterSideBody({ open = true }) {
-  const [isSubMenuOpen, setIsSubMenuOpen] = useState({});
-  const [isSubSubMenuOpen, setSubSubMenuOpen] = useState({});
+  const [isSubMenuOpen, setIsSubMenuOpen] = useState({
+    menu1: false,
+    menu2: false,
+    menu3: false,
+    menu4: false,
+  });
 
-  const UserInfo = {
-    name: "Tom",
-    sector: "Innovation and research",
-    subSector: "National Research",
-  };
+  const [isSubSubMenuOpen, setSubSubMenuOpen] = useState({});
 
   const toggleDropdown = (key) => {
     setIsSubMenuOpen((prev) => ({
@@ -20,20 +20,15 @@ function MinisterSideBody({ open = true }) {
     }));
   };
 
-  const toggleSubSubMenu = (mainKey, subIndex) => {
-    const uniqueKey = `${mainKey}-${subIndex}`;
+  const toggleSubSubMenu = (subIndex) => {
     setSubSubMenuOpen((prev) => ({
       ...prev,
-      [uniqueKey]: !prev[uniqueKey],
+      [subIndex]: !prev[subIndex],
     }));
   };
 
   return (
-    <div
-      className={`overflow-auto ${
-        !open ? "px-0" : "px-4"
-      } text-sm bg-green-700 h-[450px] rounded scrollbar-hidden`}
-    >
+    <div className={`${!open ? "px-0" : "px-4"} text-sm bg-green-700 rounded`}>
       <ul>
         {Datas.map((data, index) => (
           <div key={index}>
@@ -50,60 +45,52 @@ function MinisterSideBody({ open = true }) {
               </div>
             )}
 
-            <li
-              className={`${
-                !open && "hidden"
-              } flex gap-4 px-2 py-1 items-center bg-green-300/20 cursor-pointer rounded duration-500 text-white hover:bg-slate-300/20 mt-2`}
-              onClick={() => data.submenu && toggleDropdown(data.key)}
-            >
-              <span className="flex-1 font-bold text-xs">{data.menu}</span>
-              {data.submenu && (
-                <ChevronDown
-                  className="cursor-pointer text-white transition-transform duration-200"
-                  size={15}
-                />
-              )}
-            </li>
+            <Link to={data.link || ""}>
+              <li
+                className={`${
+                  !open && "hidden"
+                } flex gap-4 px-2 py-1 items-center bg-green-300/20 cursor-pointer rounded duration-500 text-white hover:bg-slate-300/20 mt-2`}
+              >
+                <span className="flex-1 font-bold text-xs">{data.menu}</span>
+                {data.submenu && (
+                  <ChevronDown
+                    className="cursor-pointer text-white transition-transform duration-200"
+                    onClick={() => toggleDropdown(data.key)}
+                    size={15}
+                  />
+                )}
+              </li>
+            </Link>
 
             {data.subMenuItems && isSubMenuOpen[data.key] && (
               <div className="py-4 flex flex-col mt-1 gap-3">
-                {data.subMenuItems.map((item, subIndex) => {
-                  const uniqueKey = `${data.key}-${subIndex}`;
-                  return (
-                    <div key={uniqueKey}>
-                      <li
-                        className="duration-300 py-1 flex justify-between rounded px-2 ml-2 text-white/80 mr-1 cursor-pointer bg-green-200/10 hover:bg-green-300/20"
-                        onClick={() =>
-                          item.subsubmenu &&
-                          toggleSubSubMenu(data.key, subIndex)
-                        }
-                      >
-                        <Link to={item.link} className="flex-1">
-                          {item.subMenuItem}
-                        </Link>
-                        {item.subsubmenu && (
-                          <ChevronDown
-                            className="cursor-pointer text-white transition-transform duration-200"
-                            size={15}
-                          />
-                        )}
+                {data.subMenuItems.map((item, subIndex) => (
+                  <div key={subIndex}>
+                    <Link to={item.link}>
+                      <li className="duration-300 py-1 flex justify-between rounded px-2 ml-2 text-white/80 mr-1 cursor-pointer bg-green-200/10 hover:bg-green-300/20">
+                        {item.subMenuItem}
+                        <ChevronDown
+                          className="cursor-pointer text-white transition-transform duration-200"
+                          onClick={() => toggleSubSubMenu(subIndex)}
+                          size={15}
+                        />
                       </li>
+                    </Link>
 
-                      {item.subsubmenu && isSubSubMenuOpen[uniqueKey] && (
-                        <ul className="flex flex-col text-xs gap-3 w-46 cursor-pointer ml-4 mt-2">
-                          {item.subsubMenus.map((subsubmenu, subsubIndex) => (
-                            <li
-                              className="px-2 py-1 bg-green-600 rounded text-white"
-                              key={subsubIndex}
-                            >
-                              {subsubmenu}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  );
-                })}
+                    {item.subsubmenu && isSubSubMenuOpen[subIndex] && (
+                      <ul className="flex flex-col text-xs gap-3 w-46 cursor-pointer ml-4 mt-2">
+                        {item.subsubMenus.map((subsubmenu) => (
+                          <li
+                            className="px-2 py-1 bg-green-600 rounded text-white"
+                            key={subsubmenu}
+                          >
+                            {subsubmenu}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>

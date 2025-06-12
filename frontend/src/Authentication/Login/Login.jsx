@@ -68,15 +68,15 @@ function Login() {
             }
             break;
 
-          // case "worker":
-          //   if (subsector) {
-          //     navigate(`/allSubsector/${subsector}?userId=${userId}`);
-          //     navigate(`workunit`);
-          //   } else {
-          //     toast.error("Subsector not assigned.");
-          //     navigate("/unauthorized");
-          //   }
-          //   break;
+          case "worker":
+            if (subsector) {
+              navigate(`/allSubsector/${subsector}?userId=${userId}`);
+              navigate(`/worker`);
+            } else {
+              toast.error("Subsector not assigned.");
+              navigate("/unauthorized");
+            }
+            break;
 
           case "minister":
             navigate("/minister");

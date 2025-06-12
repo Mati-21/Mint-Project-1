@@ -1,6 +1,5 @@
 import StrategicSideBar from "./StrategicSideBar";
 
-import InfoNavigation from "../../components/InfoNavigation";
 import { Outlet } from "react-router-dom";
 import TopNavBar from "../../components/TopNavBar";
 
@@ -15,7 +14,7 @@ function Strategic() {
         <TopNavBar />
 
         <div className="px-6 py-3">
-          <InfoNavigation />
+         
           <Outlet />
         </div>
       </div>
