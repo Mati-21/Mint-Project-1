@@ -3,7 +3,7 @@ import Datas from "./WorkUnitSideMenuTitles";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-function WorkUnitSideBarBody() {
+function WorkUnitSideBody() {
   const [isSubMenuOpen, setIsSubMenuOpen] = useState({
     menu1: false,
     menu2: false,
@@ -11,12 +11,10 @@ function WorkUnitSideBarBody() {
     menu4: false,
   });
 
+  const [isSubSubMenuOpen, setSubSubMenuOpen] = useState({});
   const [userData, setUserData] = useState({
     sector: "Innovation and research",
-    subSector: "National Research",
   });
-
-  const [isSubSubMenuOpen, setSubSubMenuOpen] = useState({});
 
   const toggleDropdown = (key) => {
     setIsSubMenuOpen((prev) => ({
@@ -54,7 +52,7 @@ function WorkUnitSideBarBody() {
               </div>
             )}
 
-            <Link>
+            <Link to={data.link ? data.link : ""}>
               <li
                 className={` ${
                   !open && "hidden"
@@ -94,19 +92,15 @@ function WorkUnitSideBarBody() {
                       </Link>
 
                       {item.subsubmenu && isSubSubMenuOpen[subIndex] && (
-                        <ul className="flex flex-col text-xs gap-3 w-46 cursor-pointer ml-4 mt-2">
-                          {item.subsubMenus
-                            .filter(
-                              (subsubmenu) => userData.subSector === subsubmenu
-                            )
-                            .map((subsubmenu) => (
-                              <li
-                                className="px-2 py-1 bg-green-600 rounded text-white"
-                                key={subsubmenu}
-                              >
-                                {subsubmenu}
-                              </li>
-                            ))}
+                        <ul className=" flex flex-col text-xs gap-3 w-46 cursor-pointer  ml-4 mt-2">
+                          {item.subsubMenus.map((subsubmenu) => (
+                            <li
+                              className="px-2 py-1 bg-green-600 rounded text-white"
+                              key={subsubmenu}
+                            >
+                              {subsubmenu}
+                            </li>
+                          ))}
                         </ul>
                       )}
                     </div>
@@ -120,4 +114,4 @@ function WorkUnitSideBarBody() {
   );
 }
 
-export default WorkUnitSideBarBody;
+export default WorkUnitSideBody;

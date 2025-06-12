@@ -29,25 +29,32 @@ function AddSubSector() {
   }, []);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const subsectorName = e.target.subsectorName.value;
+  e.preventDefault();
+  const subsectorName = e.target.subsectorName.value;
+  const sectorId = e.target.sector.value; // Get selected sector id
 
-    if (!subsectorName.trim()) {
-      return alert("Enter subsector name");
-    }
+  if (!sectorId) {
+    return alert("Please select a sector");
+  }
 
-    try {
-      await axios.post(`${backendUrl}/api/subsector/add-subsector`, {
-        subsector_name: subsectorName, // key matches backend controller
-      });
-      alert("✅ Subsector created!");
-      e.target.reset();
-      fetchAllData(); // refresh subsector list after adding new subsector
-    } catch (err) {
-      alert("❌ Failed to create subsector");
-      console.error("Add subsector error:", err);
-    }
-  };
+  if (!subsectorName.trim()) {
+    return alert("Enter subsector name");
+  }
+
+  try {
+    await axios.post(`${backendUrl}/api/subsector/add-subsector`, {
+      subsector_name: subsectorName, // key matches backend controller
+      sectorId,                     // send selected sector id
+    });
+    alert("✅ Subsector created!");
+    e.target.reset();
+    fetchAllData(); // refresh subsector list after adding new subsector
+  } catch (err) {
+    alert("❌ Failed to create subsector");
+    console.error("Add subsector error:", err);
+  }
+};
+
 
   return (
     <div className="flex bg-white rounded flex-col p-4 w-[450px] shadow-2xl">

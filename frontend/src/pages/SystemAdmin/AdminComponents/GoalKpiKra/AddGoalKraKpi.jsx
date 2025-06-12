@@ -70,24 +70,25 @@ const AddGoalKraKpi = () => {
     }
   };
 
-  const handleKRASubmit = async (e) => {
-    e.preventDefault();
-    if (!kraName.trim()) return alert("Enter KRA name");
-    if (!selectedGoal) return alert("Select a goal");
+const handleKRASubmit = async (e) => {
+  e.preventDefault();
+  if (!kraName.trim()) return alert("Enter KRA name");
+  if (!selectedGoal) return alert("Select a goal");
 
-    try {
-      await axios.post(`${API_BASE}/api/kras2/create-kra2`, {
-        kra_name: kraName,
-        goalId: selectedGoal,
-      });
-      alert("✅ KRA created!");
-      setKraName("");
-      setSelectedGoal("");
-      fetchAllData();
-    } catch {
-      alert("❌ Failed to create KRA");
-    }
-  };
+  const kraPayload = { kra_name: kraName, goalId: selectedGoal };
+  console.log("Sending KRA:", kraPayload); // 🔍 Debug log
+
+  try {
+    await axios.post(`${API_BASE}/api/kras2/create-kra2`, kraPayload);
+    alert("✅ KRA created!");
+    setKraName("");
+    setSelectedGoal("");
+    fetchAllData();
+  } catch {
+    alert("❌ Failed to create KRA");
+  }
+};
+
 
   const handleKPISubmit = async (e) => {
     e.preventDefault();
@@ -146,17 +147,21 @@ const AddGoalKraKpi = () => {
             className="w-full border p-2 rounded"
           />
           <select
-            value={selectedGoal}
-            onChange={(e) => setSelectedGoal(e.target.value)}
-            className="w-full border p-2 rounded"
-          >
-            <option value="">-- Select Goal --</option>
-            {goals.map((goal) => (
-              <option key={goal._id} value={goal._id}>
-                {goal.goal_desc}
-              </option>
-            ))}
-          </select>
+  value={selectedGoal}
+  onChange={(e) => {
+    console.log("Goal selected:", e.target.value);
+    setSelectedGoal(e.target.value);
+  }}
+  className="w-full border p-2 rounded"
+>
+  <option value="">-- Select Goal --</option>
+  {goals.map((goal) => (
+    <option key={goal._id} value={goal._id}>
+      {goal.goal_desc}
+    </option>
+  ))}
+</select>
+
           <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
             Create KRA
           </button>

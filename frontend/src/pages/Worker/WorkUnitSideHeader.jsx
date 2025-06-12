@@ -1,5 +1,5 @@
 import { IoSearch } from "react-icons/io5";
-function WorkUnitSideBarHeader() {
+function WorkUnitSideHeader() {
   return (
     <div
       className={` flex flex-col items-center justify-center ${
@@ -33,4 +33,4 @@ function WorkUnitSideBarHeader() {
   );
 }
 
-export default WorkUnitSideBarHeader;
+export default WorkUnitSideHeader;
