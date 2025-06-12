@@ -10,11 +10,11 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
+  const [validationStatus, setValidationStatus] = useState("Pending");
 
   useEffect(() => {
     let quarter = null;
     let year = null;
-
     if (modalInfo.period) {
       const parts = modalInfo.period.split("-");
       if (parts.length === 2) {
@@ -97,6 +97,11 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
 
         setPerformanceMeasure(perfData.performanceMeasure?.toString() || "");
         setDescription(perfData.description || "");
+        setValidationStatus(
+          perfData.validationStatus ??
+            perfData.validationStatusYear ??
+            "Pending"
+        );
         setError("");
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -154,10 +159,14 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
       return;
     }
 
-    if (target !== "" && !isNaN(parseFloat(target)) && perfValue > parseFloat(target)) {
-      setError("Performance measure cannot exceed the target.");
-      return;
-    }
+    // if (
+    //   target !== "" &&
+    //   !isNaN(parseFloat(target)) &&
+    //   perfValue > parseFloat(target)
+    // ) {
+    //   setError("Performance measure cannot exceed the target.");
+    //   return;
+    // }
 
     const data = {
       ...modalInfo,
@@ -175,9 +184,10 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
     <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded shadow-md w-96">
         <h2 className="text-lg font-bold mb-4">Enter KPI Performance</h2>
-
         {loading && (
-          <p className="text-blue-600 font-semibold mb-2">Loading performance data...</p>
+          <p className="text-blue-600 font-semibold mb-2">
+            Loading performance data...
+          </p>
         )}
 
         {warning && (
@@ -185,6 +195,18 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
             {warning}
           </p>
         )}
+
+        <div className="flex justify-end mb-2">
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+              validationStatus === "Approved"
+                ? "bg-green-100 text-green-700 border-green-400"
+                : "bg-yellow-100 text-yellow-700 border-yellow-400"
+            }`}
+          >
+            {validationStatus}
+          </span>
+        </div>
 
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <div>
@@ -214,7 +236,9 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
           </div>
 
           <div>
-            <label htmlFor="target" className="block font-semibold">Target</label>
+            <label htmlFor="target" className="block font-semibold">
+              Target
+            </label>
             <input
               id="target"
               type="number"
@@ -237,7 +261,7 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
               onChange={handlePerformanceChange}
               className="w-full border px-3 py-1 rounded"
               required
-              disabled={loading || !!warning}
+              disabled={loading || !!warning || validationStatus === "Approved"}
               placeholder="Enter actual performance"
             />
             {error && (
@@ -246,7 +270,9 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
           </div>
 
           <div>
-            <label htmlFor="description" className="block font-semibold">Description</label>
+            <label htmlFor="description" className="block font-semibold">
+              Description
+            </label>
             <textarea
               id="description"
               value={description}
@@ -268,8 +294,10 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
             </button>
             <button
               type="submit"
-              className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
-              disabled={loading || !!error || !!warning}
+              className={`px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 ${
+                validationStatus === "Approved" ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={loading || !!error || !!warning || validationStatus === "Approved"}
             >
               {loading ? "Loading..." : "Save"}
             </button>

@@ -1,7 +1,10 @@
 import Performance from '../models/performanceModel.js';
 import Plan from '../models/planModels.js';
 import KPI from '../models/kpiModel2.js';
+import Goal from '../models/goalModel2.js';
+import KRA from '../models/kraModel2.js';
 import mongoose from 'mongoose';
+
 // Create or update performance entry
 export const createOrUpdatePerformance = async (req, res) => {
   console.log("Request body received:", req.body);
@@ -16,7 +19,6 @@ export const createOrUpdatePerformance = async (req, res) => {
       description,
       sectorId,
       subsectorId,
-      deskId,
     } = req.body;
 
     if (!userId || !role || !kpi_name || !year || performanceMeasure === undefined) {
@@ -26,6 +28,10 @@ export const createOrUpdatePerformance = async (req, res) => {
     const kpi = await KPI.findOne({ kpi_name });
     if (!kpi) return res.status(404).json({ message: "KPI not found." });
 
+    const goalId = kpi.goalId;
+    const kraId = kpi.kraId;
+
+    // Find the related plan
     const plan = await Plan.findOne({
       kpiId: kpi._id,
       year,
@@ -35,13 +41,32 @@ export const createOrUpdatePerformance = async (req, res) => {
       ...(subsectorId && { subsectorId }),
     });
 
-    const target = quarter && plan ? plan[quarter.toLowerCase()] || 0 : plan?.target || 0;
+    // Do not save if no plan found
+    if (!plan) {
+      return res.status(404).json({ message: "No plan found." });
+    }
+
+    let target = 0;
+    if (quarter && quarter.toLowerCase().startsWith("q")) {
+      target = plan[quarter.toLowerCase()] || 0;
+    } else {
+      target = plan.target || 0;
+    }
+
+    return res.json({
+      planId: plan._id,
+      plan, // optional, but helps
+      target,
+      year: plan.year,
+      validationStatus: plan.validationStatus || "Pending"
+    });
 
     const perfFilter = {
       userId,
       kpiId: kpi._id,
       year,
       sectorId,
+      planId: plan._id,
       ...(subsectorId && { subsectorId }),
     };
 
@@ -55,7 +80,9 @@ export const createOrUpdatePerformance = async (req, res) => {
       target,
       sectorId,
       subsectorId,
-      deskId,
+      planId: plan._id,
+      goalId, // always set from KPI
+      kraId,  // always set from KPI
     };
 
     if (quarter) {
@@ -148,20 +175,18 @@ export const createOrUpdatePerformance = async (req, res) => {
 // Get all performance entries with optional filters
 export const getPerformances = async (req, res) => {
   try {
-    const { userId, year, quarter, sectorId, subsectorId, deskId, kpiId } = req.query;
+    const { userId, year, quarter, sectorId, subsectorId, kpiId } = req.query;
     const filter = {};
     if (userId) filter.userId = userId;
     if (year) filter.year = year;
     if (quarter) filter.quarter = quarter;
     if (sectorId) filter.sectorId = sectorId;
     if (subsectorId) filter.subsectorId = subsectorId;
-    if (deskId) filter.deskId = deskId;
     if (kpiId) filter.kpiId = kpiId;
 
     const performances = await Performance.find(filter)
-      .populate('sectorId', 'name')
-      .populate('subsectorId', 'name')
-      .populate('deskId', 'name')
+      .populate('goalId', 'goal_desc')
+      .populate('kraId', 'kra_name')
       .populate('kpiId', 'kpi_name')
       .sort({ year: 1, quarter: 1 });
 
@@ -189,11 +214,13 @@ export const getPerformanceAndTarget = async (req, res) => {
       return res.status(400).json({ message: "Missing required query parameters." });
     }
 
-    // Find KPI by name
+    // Find KPI by name and always get goalId and kraId from it
     const kpi = await KPI.findOne({ kpi_name: kpiName });
     if (!kpi) {
       return res.status(404).json({ message: "KPI not found." });
     }
+    const goalId = kpi.goalId;
+    const kraId = kpi.kraId;
 
     // Find Plan for target
     const planFilter = {
@@ -202,46 +229,110 @@ export const getPerformanceAndTarget = async (req, res) => {
       role,
       sectorId,
       userId,
+      ...(subsectorId && { subsectorId }),
+      ...(goalId && { goalId }),
+      ...(kraId && { kraId }),
     };
-    if (subsectorId) planFilter.subsectorId = subsectorId;
 
-    const plan = await Plan.findOne(planFilter);
+    const plan = await Plan.findOne(planFilter)
+      .populate('goalId', 'goal_desc')
+      .populate('kraId', 'kra_name');
 
-    // Extract target for the quarter (e.g., q1, q2, q3, q4) or yearly target if quarter missing
+    // Extract target for the quarter or yearly target if quarter missing
     let target = 0;
     if (plan) {
-      if (quarter) {
+      if (quarter && quarter.toLowerCase().startsWith("q")) {
         target = plan[quarter.toLowerCase()] || 0;
       } else {
         target = plan.target || 0;
       }
     }
 
-    // Find existing performance record
+    // Find existing performance record and populate goalId/kraId
     const perfFilter = {
       userId,
       kpiId: kpi._id,
       year,
+      ...(sectorId && { sectorId }),
+      ...(subsectorId && { subsectorId }),
+      ...(goalId && { goalId }),
+      ...(kraId && { kraId }),
     };
-    if (quarter) perfFilter.quarter = quarter;
-    if (sectorId) perfFilter.sectorId = sectorId;
-    if (subsectorId) perfFilter.subsectorId = subsectorId;
 
-    const performance = await Performance.findOne(perfFilter);
+    let performance = await Performance.findOne(perfFilter)
+      .populate('goalId', 'goal_desc')
+      .populate('kraId', 'kra_name');
+
+    let goalName = "";
+    let kraName = "";
+    let goalIdResult = "";
+    let kraIdResult = "";
+
+    if (performance) {
+      goalName = performance.goalId?.goal_desc || "";
+      kraName = performance.kraId?.kra_name || "";
+      goalIdResult = performance.goalId?._id?.toString() || "";
+      kraIdResult = performance.kraId?._id?.toString() || "";
+    } else if (plan) {
+      goalName = plan.goalId?.goal_desc || "";
+      kraName = plan.kraId?.kra_name || "";
+      goalIdResult = plan.goalId?._id?.toString() || "";
+      kraIdResult = plan.kraId?._id?.toString() || "";
+    } else {
+      // fallback to kpi if neither performance nor plan exists
+      if (goalId) {
+        const goalDoc = await Goal.findById(goalId);
+        goalName = goalDoc?.goal_desc || "";
+        goalIdResult = goalDoc?._id?.toString() || "";
+      }
+      if (kraId) {
+        const kraDoc = await KRA.findById(kraId);
+        kraName = kraDoc?.kra_name || "";
+        kraIdResult = kraDoc?._id?.toString() || "";
+      }
+    }
+
+    // Get validation status from performance table only
+    let validationStatus = "Pending";
+    if (performance) {
+      if (quarter && quarter.toLowerCase().startsWith("q")) {
+        const perfStatusKey = `validationStatus${quarter.charAt(0).toUpperCase()}${quarter.slice(1)}`;
+        validationStatus = performance[perfStatusKey] || "Pending";
+      } else {
+        validationStatus = performance.validationStatusYear || "Pending";
+      }
+    }
+
+    // --- FIXED: Always return the correct performance measure and description ---
+    let performanceMeasure = "";
+    let description = "";
+
+    if (performance) {
+      if (quarter && quarter.toLowerCase().startsWith("q")) {
+        const perfField = `${quarter.toLowerCase()}Performance`;
+        performanceMeasure = performance[perfField]?.value ?? "";
+        description = performance[perfField]?.description ?? "";
+      } else {
+        performanceMeasure = performance.performanceYear ?? "";
+        description = performance.performanceDescription ?? "";
+      }
+    }
 
     return res.status(200).json({
       target,
-      performanceMeasure: performance?.performanceMeasure || "",
-      description: performance?.description || "",
+      performanceMeasure,
+      description,
+      validationStatus,
+      goal: goalName,
+      kra: kraName,
+      goalId: goalIdResult,
+      kraId: kraIdResult,
     });
   } catch (error) {
     console.error("getPerformanceAndTarget error:", error);
     return res.status(500).json({ message: "Server error." });
   }
 };
-
-// You can keep other methods like getPerformanceById, updatePerformance, deletePerformance here as needed.
-
 
 // Get single performance entry by ID
 export const getPerformanceById = async (req, res) => {
@@ -254,7 +345,6 @@ export const getPerformanceById = async (req, res) => {
     const performance = await Performance.findById(id)
       .populate('sectorId', 'name')
       .populate('subsectorId', 'name')
-      .populate('deskId', 'name')
       .populate('kpiId', 'kpi_name');
 
     if (!performance) return res.status(404).json({ message: "Performance not found." });
@@ -306,4 +396,47 @@ export const deletePerformance = async (req, res) => {
     console.error("deletePerformance error:", error);
     return res.status(500).json({ message: "Server error." });
   }
+};
+
+// Example: backend/controllers/performanceController.js
+export const getPerformanceMeasure = async (req, res) => {
+  const { kpiName, kraId, role, sectorId, subsectorId, userId, year, quarter } = req.query;
+  // Build filter
+  const filter = {
+    kpiName,
+    kraId,
+    role,
+    sectorId,
+    userId,
+    year,
+  };
+  if (subsectorId) filter.subsectorId = subsectorId;
+
+  const performance = await Performance.findOne(filter);
+  if (!performance) return res.json({});
+
+  let performanceMeasure = "";
+  let description = "";
+
+  if (performance) {
+    if (quarter && quarter.toLowerCase().startsWith("q")) {
+      const perfField = `${quarter.toLowerCase()}Performance`;
+      performanceMeasure = performance[perfField]?.value ?? "";
+      description = performance[perfField]?.description ?? "";
+    } else {
+      performanceMeasure = performance.performanceYear ?? "";
+      description = performance.performanceDescription ?? "";
+    }
+  }
+
+  return res.status(200).json({
+    target,
+    performanceMeasure,
+    description,
+    validationStatus,
+    goal: goalName,
+    kra: kraName,
+    goalId: goalIdResult,
+    kraId: kraIdResult,
+  });
 };

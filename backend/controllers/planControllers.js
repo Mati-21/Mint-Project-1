@@ -14,7 +14,6 @@ export const createOrUpdatePlan = async (req, res) => {
       year,
       target,
       description,
-      deskId,
       quarter,
       kraId,
       goalId,
@@ -93,7 +92,6 @@ export const createOrUpdatePlan = async (req, res) => {
           role,
           sectorId,
           subsectorId,
-          deskId,
           kpiId,
           kpi_name,
           kraId: finalKraId,
@@ -104,7 +102,7 @@ export const createOrUpdatePlan = async (req, res) => {
           description: description || '',
         });
         const savedPlan = await newPlan.save();
-        return res.status(201).json(savedPlan);
+        return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
       }
     }
 
@@ -124,7 +122,6 @@ export const createOrUpdatePlan = async (req, res) => {
       role,
       sectorId,
       subsectorId,
-      deskId,
       kpiId,
       kpi_name,
       kraId: finalKraId,
@@ -142,7 +139,7 @@ export const createOrUpdatePlan = async (req, res) => {
     const options = { new: true, upsert: true, setDefaultsOnInsert: true };
     const savedPlan = await Plan.findOneAndUpdate(planFilter, updateData, options);
 
-    return res.status(201).json(savedPlan);
+    return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
   } catch (error) {
     console.error("createOrUpdatePlan error:", error);
     return res.status(500).json({ message: "Server error." });
@@ -154,20 +151,18 @@ export const createOrUpdatePlan = async (req, res) => {
 // Get all plans (with optional filters)
 export const getPlans = async (req, res) => {
   try {
-    const { userId, year, sectorId, subsectorId, deskId, kpiId } = req.query;
+    const { userId, year, sectorId, subsectorId, kpiId } = req.query;
     const filter = {};
 
     if (userId) filter.userId = userId;
     if (year) filter.year = year;
     if (sectorId) filter.sectorId = sectorId;
     if (subsectorId) filter.subsectorId = subsectorId;
-    if (deskId) filter.deskId = deskId;
     if (kpiId) filter.kpiId = kpiId;
 
     const plans = await Plan.find(filter)
       .populate('sectorId', 'name')
       .populate('subsectorId', 'name')
-      .populate('deskId', 'name')
       .populate('kpiId', 'kpi_name')
       .populate('kraId', 'kra_name')
       .populate('goalId', 'goal_desc')
@@ -192,7 +187,6 @@ export const getPlanById = async (req, res) => {
     const plan = await Plan.findById(id)
       .populate('sectorId', 'name')
       .populate('subsectorId', 'name')
-      .populate('deskId', 'name')
       .populate('kpiId', 'kpi_name')
       .populate('kraId', 'kra_name')
       .populate('goalId', 'goal_desc');
@@ -303,22 +297,25 @@ export const getPlanTarget = async (req, res) => {
       return res.status(404).json({ message: "No plan found for the specified criteria." });
     }
 
-    // If quarter specified, return quarter target
+    // If quarter specified, return quarter target and its validation status
     if (quarter) {
       const qKey = quarter.toLowerCase();
       const quarterTarget = plan[qKey];
+      const validationStatusKey = `validationStatus${qKey.charAt(0).toUpperCase()}${qKey.slice(1)}`; // e.g. validationStatusQ1
       return res.status(200).json({
         target: quarterTarget !== undefined ? quarterTarget : "",
         description: plan.description,
         year: plan.year,
+        validationStatus: plan[validationStatusKey] || "Pending",
       });
     }
 
-    // Otherwise return yearly target
+    // Otherwise return yearly target and its validation status
     return res.status(200).json({
-      target: plan.target,
-      description: plan.description,
-      year: plan.year,
+      target: plan.target ?? "",
+      planId: plan._id,
+      validationStatus: plan.validationStatusYear || "Pending",
+      // ...other fields
     });
   } catch (error) {
     console.error("getPlanTarget error:", error);

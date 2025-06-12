@@ -29,6 +29,11 @@ function KPIGroupedTable({ data, detailedKpis }) {
 
   const [planModalInfo, setPlanModalInfo] = useState(null);
   const [performanceModalInfo, setPerformanceModalInfo] = useState(null);
+  const [planIds, setPlanIds] = useState({}); // NEW: { [kpiKey]: planId }
+
+  // Helper to create a unique key for each KPI/period
+  const getKpiKey = (row, quarter, year) =>
+    `${row.kpiId || row.kpiName}_${quarter || "year"}_${year}`;
 
   if (!data || !Array.isArray(data)) {
     return <div>No data available</div>;
@@ -111,6 +116,7 @@ function KPIGroupedTable({ data, detailedKpis }) {
 
   const closeModal = () => setPlanModalInfo(null);
 
+  // Update handlePlanFormSubmit to store planId
   const handlePlanFormSubmit = async (formData) => {
     try {
       const {
@@ -177,6 +183,14 @@ function KPIGroupedTable({ data, detailedKpis }) {
 
       const result = await response.json();
       console.log("Plan saved response:", result);
+
+      // Store planId for this KPI/period
+      const kpiKey = getKpiKey(formData, formData.quarter, formData.year);
+      setPlanIds((prev) => ({
+        ...prev,
+        [kpiKey]: result._id || result.planId || (result.plan && result.plan._id),
+      }));
+
       alert("Plan saved!");
       closeModal();
     } catch (error) {
@@ -185,6 +199,7 @@ function KPIGroupedTable({ data, detailedKpis }) {
     }
   };
 
+  // When opening PerformanceModal, pass the planId if available
   const openPerformanceModal = (row, field) => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = user.id || user._id || null;
@@ -197,14 +212,26 @@ function KPIGroupedTable({ data, detailedKpis }) {
       return;
     }
 
+    // Parse quarter and year from row/field
+    let quarter = null, year = row.year;
+    if (field && field.toLowerCase().startsWith("q")) {
+      quarter = field.toUpperCase();
+    }
+
+    const kpiKey = getKpiKey(row, quarter, year);
+    const planId = planIds[kpiKey] || ""; // Get planId if exists
+
     setPerformanceModalInfo({
       ...row,
-      kpiName: row.kpiName || row.kpi_name, // Ensure kpiName is passed
+      kpiName: row.kpiName || row.kpi_name,
       field,
       userId,
       role,
       sectorId,
       subsectorId,
+      planId, // Pass planId to modal
+      quarter,
+      year,
     });
   };
 
@@ -221,6 +248,8 @@ function KPIGroupedTable({ data, detailedKpis }) {
         subsectorId,
         kpiName,
         kraId,
+        goal,         // <-- get goal from formData
+        planId,       // <-- get planId from formData
         year,
         performanceMeasure,
         quarter,
@@ -234,6 +263,8 @@ function KPIGroupedTable({ data, detailedKpis }) {
         subsectorId,
         kpi_name: kpiName,
         kraId,
+        goal,        // <-- include goal
+        planId,      // <-- include planId
         year: Number(year),
         performanceMeasure,
         quarter,

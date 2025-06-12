@@ -8,6 +8,7 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
+  const [validationStatus, setValidationStatus] = useState("Pending");
 
   let quarter = null;
   let year = null;
@@ -17,46 +18,19 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
     const parts = modalInfo.period.split("-");
     if (parts.length === 2) {
       if (parts[0].toLowerCase().startsWith("q")) {
-        quarter = parts[0].toUpperCase();
+        quarter = parts[0].toLowerCase();
         year = parts[1];
-      } else if (parts[0].toLowerCase() === "year") {
+      } else {
         year = parts[1];
       }
     }
   }
 
   useEffect(() => {
-    console.log("useEffect triggered with modalInfo:", modalInfo);
-    console.log("Parsed quarter:", quarter, "year:", year);
-
-    async function fetchTarget() {
-      if (
-        !modalInfo.kpiName ||
-        !modalInfo.kraId ||
-        !modalInfo.role ||
-        !modalInfo.userId ||
-        !year
-      ) {
-        console.log("fetchTarget early return due to missing params");
-        setWarning(
-          "Missing required data to fetch target: " +
-            [
-              !modalInfo.kpiName && "kpiName",
-              !modalInfo.kraId && "kraId",
-              !modalInfo.role && "role",
-              !modalInfo.userId && "userId",
-              !year && "year",
-            ]
-              .filter(Boolean)
-              .join(", ")
-        );
-        setTarget("");
-        return;
-      }
-
-      setWarning("");
+    // Fetch target and validation status
+    const fetchTarget = async () => {
       setLoading(true);
-
+      setError("");
       try {
         const params = {
           kpiName: modalInfo.kpiName,
@@ -67,58 +41,65 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
           userId: modalInfo.userId,
           year,
         };
-        if (quarter) {
-          params.quarter = quarter;
-        }
+        if (quarter) params.quarter = quarter;
 
-        console.log("Fetching target with params:", params);
-
-         const res = await axios.get(`${BASE_URL}/api/plans/target`, { params });
-
-        console.log("Fetched target response:", res.data);
-
-
+        const res = await axios.get(`${BASE_URL}/api/plans/target`, { params });
         setTarget(res.data?.target?.toString() || "");
-        setError("");
+        // Set validation status (default to Pending if not present)
+        setValidationStatus(
+          res.data?.validationStatus ??
+            res.data?.validationStatusYear ??
+            "Pending"
+        );
       } catch (err) {
-        console.error("Error fetching target:", err);
-        setTarget("");
-        setError("Could not fetch target for this period.");
+        setError("Error fetching target.");
       } finally {
         setLoading(false);
       }
-    }
-
+    };
     fetchTarget();
   }, [modalInfo, year, quarter]);
 
   const handleTargetChange = (e) => {
     setTarget(e.target.value);
-    setError(""); // Reset error on input change
+    setError("");
   };
 
   const onSubmit = (e) => {
     e.preventDefault();
-
-    if (target === "" || isNaN(target)) {
-      alert("Please enter a valid target.");
+    if (loading || !!error || !!warning) return;
+    if (validationStatus === "Approved") return;
+    if (target === "" || isNaN(Number(target))) {
+      setError("Please enter a valid target.");
       return;
     }
-
-    const data = {
+    // Submit logic here...
+    handleFormSubmit({
       ...modalInfo,
+      target: Number(target),
       year,
       quarter,
-      target: parseFloat(target),
-    };
-
-    handleFormSubmit(data);
+    });
     closeModal();
   };
 
+  // UI
   return (
     <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded shadow-md w-96">
+      <div className="bg-white p-6 rounded shadow-md w-96 relative">
+        {/* Validation Status Badge */}
+        <div className="absolute right-6 top-6">
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              validationStatus === "Approved"
+                ? "bg-green-100 text-green-700 border border-green-400"
+                : "bg-yellow-100 text-yellow-700 border border-yellow-400"
+            }`}
+          >
+            {validationStatus}
+          </span>
+        </div>
+
         <h2 className="text-lg font-bold mb-4">Edit KPI Target</h2>
 
         {warning && (
@@ -158,7 +139,7 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
               onChange={handleTargetChange}
               className="w-full border px-3 py-1 rounded"
               required
-              disabled={loading || !!warning}
+              disabled={loading || !!warning || validationStatus === "Approved"}
             />
             {error && (
               <p className="text-red-600 text-sm mt-1 font-semibold">{error}</p>
@@ -176,8 +157,12 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
             </button>
             <button
               type="submit"
-              className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
-              disabled={loading || !!error || !!warning}
+              className={`px-3 py-1 rounded ${
+                validationStatus === "Approved"
+                  ? "bg-gray-400 text-white cursor-not-allowed"
+                  : "bg-green-600 text-white hover:bg-green-700"
+              }`}
+              disabled={loading || !!error || !!warning || validationStatus === "Approved"}
             >
               {loading ? "Loading..." : "Save"}
             </button>

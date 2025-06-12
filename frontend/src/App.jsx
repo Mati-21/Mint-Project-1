@@ -25,8 +25,6 @@ import KpiYearAssignmentPage from "./pages/SystemAdmin/AdminComponents/KpiYearAs
 import AddGoalKraKpi from "./pages/SystemAdmin/AdminComponents/GoalKpiKra/AddGoalKraKpi";
 import AllSector from "./components/Sector/AllSector";
 import AllSubsector from "./components/Sector/AllSubsector";
-import SectorialPlan from "./components/Sector/SectorialPlan";
-import Ministries from "./components/Sector/Ministries";
 import PerformanceValidation from "./pages/Strategic/StrategicComponents/PerformanceValidation";
 import TargetValidation from "./pages/Strategic/StrategicComponents/TargetValidation";
 import PageNotFound from "./pages/PageNotFound/PageNotFound";
@@ -82,8 +80,6 @@ function App() {
         >
           {/* <Route index element={<Navigate to="sectorial-plan" replace />} /> */}
           <Route index element={<Dashboard />} />
-          <Route path="sectorial-plan" element={<SectorialPlan />} />
-          <Route path="ministries" element={<Ministries />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
         </Route>
@@ -97,8 +93,6 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
-          <Route path="sectorial-plan" element={<SectorialPlan />} />
-          <Route path="ministries" element={<Ministries />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
         </Route>
@@ -114,7 +108,6 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
-          <Route path="sectorial-plan" element={<SectorialPlan />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
 
@@ -151,7 +144,6 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
-          <Route path="sectorial-plan" element={<SectorialPlan />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />

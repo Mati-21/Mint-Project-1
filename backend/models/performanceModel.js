@@ -30,11 +30,6 @@ const performanceSchema = new mongoose.Schema({
     ref: 'Subsector',
     default: null,
   },
-  deskId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Desk',
-    default: null,
-  },
   kpiId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'KPI2',
@@ -68,6 +63,24 @@ const performanceSchema = new mongoose.Schema({
     value: { type: Number, default: 0 },
     description: { type: String, default: '' },
   },
+
+  // Validation status for each period (like plan model)
+  validationStatusYear: { type: String, default: 'Pending' },
+  validationStatusQ1: { type: String, default: 'Pending' },
+  validationStatusQ2: { type: String, default: 'Pending' },
+  validationStatusQ3: { type: String, default: 'Pending' },
+  validationStatusQ4: { type: String, default: 'Pending' },
+
+  // Validation description for each period (like plan model)
+  validationDescriptionYear: { type: String, default: '' },
+  validationDescriptionQ1: { type: String, default: '' },
+  validationDescriptionQ2: { type: String, default: '' },
+  validationDescriptionQ3: { type: String, default: '' },
+  validationDescriptionQ4: { type: String, default: '' },
+
+  goalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Goal2' },
+  kraId: { type: mongoose.Schema.Types.ObjectId, ref: 'KRA2' },
+
   createdAt: {
     type: Date,
     default: Date.now,

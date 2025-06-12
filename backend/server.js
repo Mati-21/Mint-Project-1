@@ -24,6 +24,8 @@ import kpiYearAssignmentRouter from "./routes/kpiYearAssignmentRoutes.js";
 import planRoutes from "./routes/planRoutes.js";
 import performanceRoutes from "./routes/performanceRoutes.js";
 import cookieParser from "cookie-parser";
+import targetRouter from "./routes/targetValidationRoutes.js";
+import performanceValidationRouter from "./routes/performanceValidationRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -61,6 +63,8 @@ app.use("/api/menu", menuRouter); // fixed here
 app.use("/api/year", kpiYearAssignmentRouter);
 app.use("/api", planRoutes);
 app.use("/api", performanceRoutes);
+app.use("/api/target-validation", targetRouter);
+app.use("/api/performance-validation", performanceValidationRouter); // fixed here
 
 // ✅ Run server
 const PORT = process.env.PORT || 1221;
