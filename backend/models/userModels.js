@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
     },
     sector: { type: mongoose.Schema.Types.ObjectId, ref: "Sector", default: null },
     subsector: { type: mongoose.Schema.Types.ObjectId, ref: "Subsector", default: null },
+    image: {
+      type: String,
+  
+    },
   },
   { timestamps: true }
 );

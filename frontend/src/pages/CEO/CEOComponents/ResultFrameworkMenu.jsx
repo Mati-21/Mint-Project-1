@@ -69,7 +69,7 @@ const ResultFrameworkMenu = ({ open = true }) => {
         {subsectors.map((subsector) => (
           <li key={subsector._id} className="mt-2 rounded overflow-hidden">
             <Link
-              to={`/allSubsector/${subsector._id}?userId=${user._id}`}
+              to={`/ceo/allSubsector/${subsector._id}?userId=${user._id}`}
               className="block px-2 py-1 rounded text-white bg-green-200/30 hover:bg-green-300/40 duration-300"
             >
               {subsector.subsector_name || subsector.name}

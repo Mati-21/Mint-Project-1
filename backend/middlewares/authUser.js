@@ -3,27 +3,32 @@ import User from "../models/userModels.js";
 
 const authUser = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Authorization token missing or malformed" });
+    const token = req.cookies.token;
+    console.log(token);
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization token missing",
+      });
     }
 
-    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id).select("-password");
     if (!user) {
-      return res.status(401).json({ success: false, message: "User not found" });
+      return res
+        .status(401)
+        .json({ success: false, message: "User not found" });
     }
+    console.log("User authenticated:", user);
 
-    req.user = user; // attach user info to the request
+    req.userId = decoded.id; // attach user info to the request
     next();
   } catch (error) {
     console.error("authUser error:", error.message);
-    return res.status(401).json({ success: false, message: "Invalid or expired token" });
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid or expired token" });
   }
 };
 

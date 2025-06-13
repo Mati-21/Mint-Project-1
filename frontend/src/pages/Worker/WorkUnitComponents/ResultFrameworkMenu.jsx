@@ -18,14 +18,18 @@ const ResultFrameworkMenu = ({ open = true }) => {
   useEffect(() => {
     const fetchSubsectors = async () => {
       try {
-        const res = await axios.get(`${backendUrl}/api/subsector/get-subsector`);
+        const res = await axios.get(
+          `${backendUrl}/api/subsector/get-subsector`
+        );
         let allSubsectors = Array.isArray(res.data) ? res.data : [];
 
         // Optional filtering by role and user sector/subsector:
         if (role === "chief ceo") {
           // Filter subsectors belonging to user's sector
           allSubsectors = allSubsectors.filter(
-            (sub) => sub.sectorId === userSectorId || sub.sectorId?._id === userSectorId
+            (sub) =>
+              sub.sectorId === userSectorId ||
+              sub.sectorId?._id === userSectorId
           );
         } else if (role === "ceo" || role === "worker") {
           // Only the user's own subsector
@@ -45,7 +49,8 @@ const ResultFrameworkMenu = ({ open = true }) => {
     fetchSubsectors();
   }, [role, userSectorId, userSubsectorId]);
 
-  if (loading) return <div className="text-white p-4">Loading subsectors...</div>;
+  if (loading)
+    return <div className="text-white p-4">Loading subsectors...</div>;
   if (error) return <div className="text-red-400 p-4">{error}</div>;
 
   return (
@@ -69,7 +74,7 @@ const ResultFrameworkMenu = ({ open = true }) => {
         {subsectors.map((subsector) => (
           <li key={subsector._id} className="mt-2 rounded overflow-hidden">
             <Link
-              to={`/allSubsector/${subsector._id}?userId=${user._id}`}
+              to={`/worker/allSubsector/${subsector._id}?userId=${user._id}`}
               className="block px-2 py-1 rounded text-white bg-green-200/30 hover:bg-green-300/40 duration-300"
             >
               {subsector.subsector_name || subsector.name}

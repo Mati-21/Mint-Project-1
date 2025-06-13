@@ -27,7 +27,9 @@ const ResultFrameworkMenu = ({ open = true }) => {
 
         if (role === "chief ceo") {
           // Filter only the user's sector
-          filteredData = fullData.filter((sector) => sector._id === userSectorId);
+          filteredData = fullData.filter(
+            (sector) => sector._id === userSectorId
+          );
         } else if (role === "ceo" || role === "worker") {
           // Find sector that contains the user's subsector
           filteredData = fullData
@@ -122,7 +124,7 @@ const ResultFrameworkMenu = ({ open = true }) => {
                 {sector.subsectors.map((subsector) => (
                   <li key={subsector._id}>
                     <Link
-                      to={`/allSubsector/${subsector._id}?userId=${user._id}`}
+                      to={`/chief-ceo/allSubsector/${subsector._id}?userId=${user._id}`}
                       className="block px-2 py-1 rounded text-white bg-green-200/30 hover:bg-green-300/40 duration-300"
                     >
                       {subsector.name}

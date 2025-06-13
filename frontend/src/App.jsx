@@ -82,6 +82,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+          <Route path="user-profile" element={<UserProfile />} />
         </Route>
 
         <Route
@@ -95,9 +96,8 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+          <Route path="user-profile" element={<UserProfile />} />
         </Route>
-
-        
 
         <Route
           path="/strategic"
@@ -128,7 +128,6 @@ function App() {
             </ProtectRoute>
           }
         >
-
           <Route index element={<Dashboard />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
@@ -147,7 +146,6 @@ function App() {
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
-          
         </Route>
 
         {/* Page Not Found  */}

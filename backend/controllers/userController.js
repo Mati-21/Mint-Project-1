@@ -1,9 +1,11 @@
 import generateToken from "../utils/generateToken.js";
 import User from "../models/userModels.js";
-// import Sector from "../models/sectorModel.js";
-// import Subsector from "../models/subsectorModel.js";
+
+import fs from "fs";
+import path from "path";
 
 import { hashPassword, verifyPassword } from "../utils/hashPassword.js";
+import { log } from "console";
 
 // Create new user
 export const createUser = async (req, res) => {
@@ -107,8 +109,8 @@ export const loginUser = async (req, res) => {
 // Get all users with populated sector/subsector names
 export const getUsers = async (req, res) => {
   try {
-    console.log("⏳ [getUsers] Fetching all users...");
-    const users = await User.find()
+    const userId = req.userId;
+    const users = await User.find(userId)
       .populate("sector", "sector_name")
       .populate("subsector", "subsector_name");
     console.log(`✅ [getUsers] Fetched ${users.length} users.`);
@@ -122,23 +124,22 @@ export const getUsers = async (req, res) => {
 // Get profile of logged-in user by ID
 export const getProfile = async (req, res) => {
   try {
-    console.log("⏳ [getProfile] Fetching profile for user ID:", req.userId);
     const user = await User.findById(req.userId)
       .select("-password")
       .populate("sector", "sector_name")
       .populate("subsector", "subsector_name");
 
     if (!user) {
-      console.warn("⚠️ [getProfile] User not found:", req.userId);
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
 
-    console.log("✅ [getProfile] Profile found for:", user.email);
-    res.json({ success: true, user });
+    console.log("✅ Populated user:", JSON.stringify(user, null, 2));
+
+    res.status(200).json({ success: true, user });
   } catch (error) {
-    console.error("❌ [getProfile] Server error:", error);
+    console.error("❌ Error fetching user profile:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -180,61 +181,55 @@ export const getActiveUsersStats = async (req, res) => {
   }
 };
 
-//
-
-//
-
-//
-
-//
-
-//
-
-//
-
 // Optional: Update user profile (uncomment and adjust if you want to enable)
-/*
+
 export const updateProfile = async (req, res) => {
   try {
-    console.log("⏳ [updateProfile] Incoming update:", req.body);
-    const { userId, name, phone, address, dob, gender } = req.body;
+    // console.log("⏳ [updateProfile] Incoming update:", req.body);
+    const { userId, fullName, email, sector, subsector } = req.body;
     const imageFile = req.file;
 
-    if (!name || !phone || !address || !dob || !gender) {
-      console.warn("⚠️ [updateProfile] Missing required fields");
-      return res.status(400).json({ success: false, message: "Missing Information" });
+    if (!fullName || !email || !sector || !subsector) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing Information" });
     }
 
-    let parsedAddress;
-    try {
-      parsedAddress = typeof address === "string" ? JSON.parse(address) : address;
-    } catch (error) {
-      console.warn("⚠️ [updateProfile] Invalid address JSON");
-      return res.status(400).json({ success: false, message: "Invalid address format" });
-    }
-
-    const user = await User.findById(userId);
+    const user = await User.findOne({ email });
     if (!user) {
-      console.warn("⚠️ [updateProfile] User not found:", userId);
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    let updatedData = { name, phone, address: parsedAddress, dob, gender };
+    let updatedData = {
+      fullName,
+      email,
+      sector: user.sector,
+      subsector: user.subsector,
+    };
+    console.log("joo", imageFile);
 
     if (imageFile) {
       const imagePath = `/uploads/${imageFile.filename}`;
-      if (user.profileImage && fs.existsSync(path.join(__dirname, "..", user.profileImage))) {
-        fs.unlinkSync(path.join(__dirname, "..", user.profileImage));
+      if (user.image && fs.existsSync(path.join("uploads", user.image))) {
+        fs.unlinkSync(path.join("uploads", user.image));
       }
-      updatedData.profileImage = imagePath;
+      updatedData.image = imagePath; // ✅ Save to correct field
     }
+    console.log("final", updatedData);
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, { new: true });
-    console.log("✅ [updateProfile] Profile updated for:", updatedUser.email);
-    res.json({ success: true, message: "Profile updated successfully", profileImage: updatedUser.profileImage });
+    const updatedUser = await User.findByIdAndUpdate(user._id, updatedData, {
+      new: true,
+    });
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
   } catch (error) {
     console.error("❌ [updateProfile] Server error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-*/

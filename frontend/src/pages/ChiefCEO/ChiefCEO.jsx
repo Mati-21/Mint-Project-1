@@ -13,7 +13,7 @@ function ChiefCEO() {
         <div>
           <TopNavBar />
         </div>
-        <main>
+        <main className="bg-gray-500">
           <Outlet />
         </main>
       </div>
