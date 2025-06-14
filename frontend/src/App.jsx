@@ -30,6 +30,9 @@ import TargetValidation from "./pages/Strategic/StrategicComponents/TargetValida
 import PageNotFound from "./pages/PageNotFound/PageNotFound";
 import Dashboard from "./components/DashboardComponent/Dashboard";
 
+import ChatPage from "./components/Chat/ChatPage";
+import GoalKraKpiManagement from "./pages/SystemAdmin/AdminComponents/GoalKpiKra/GoalKraKpiManagement";
+
 function App() {
   const { checkAuth, isAuthenticated, user, isCheckingAuth } = useAuthStore();
 
@@ -68,6 +71,8 @@ function App() {
           <Route path="Goal-Kra-Kpi" element={<AddGoalKraKpi />} />
           <Route path="Goal-" element={<AddGoalKraKpi />} />
           <Route path="Kpi-Year-Assign" element={<KpiYearAssignmentPage />} />
+          <Route path="goal-kra-kpi-management" element={<GoalKraKpiManagement />} />
+          <Route path="chat" element={<ChatPage />} />
         </Route>
 
         <Route
@@ -83,6 +88,7 @@ function App() {
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
+          <Route path="chat" element={<ChatPage />} />
         </Route>
 
         <Route
@@ -97,6 +103,7 @@ function App() {
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
+          <Route path="chat" element={<ChatPage />} />
         </Route>
 
         <Route
@@ -110,6 +117,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+          <Route path="chat" element={<ChatPage />} />
 
           <Route
             path="performance-validation"
@@ -132,6 +140,7 @@ function App() {
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
+          <Route path="chat" element={<ChatPage />} />
         </Route>
 
         <Route
@@ -146,6 +155,7 @@ function App() {
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
+          <Route path="chat" element={<ChatPage />} />
         </Route>
 
         {/* Page Not Found  */}
@@ -159,3 +169,4 @@ function App() {
 }
 
 export default App;
+

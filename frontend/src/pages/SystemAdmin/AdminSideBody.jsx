@@ -41,7 +41,26 @@ const settings = [
     emoji: <MdNotificationsActive />,
     link: "Kpi-Year-Assign",
   },
-  
+  {
+    setting: "Goal,Kra&Kpi Management",
+    emoji: <MdNotificationsActive />,
+    link: "goal-kra-kpi-management",
+  },
+  {
+    setting: "Chat",
+    emoji: <MdNotificationsActive />,
+    link: "chat",
+  },
+  {
+    setting: "User Profile",
+    emoji: <MdNotificationsActive />,
+    link: "user-profile",
+  },
+  {
+    setting: "Setting",
+    emoji: <IoSettings />,
+    link: "setting",
+  },
 ];
 
 function AdminSideBody() {

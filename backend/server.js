@@ -6,6 +6,8 @@ import fileUpload from "express-fileupload";
 import cookieParser from "cookie-parser";
 import { fileURLToPath } from "url";
 import path, { dirname } from "path";
+import http from "http";
+import { Server } from "socket.io";
 
 // Routes and Middleware
 import authMiddleware from "./middlewares/authMiddleware.js";
@@ -30,6 +32,8 @@ import planRoutes from "./routes/planRoutes.js";
 import performanceRoutes from "./routes/performanceRoutes.js";
 import targetRouter from "./routes/targetValidationRoutes.js";
 import performanceValidationRouter from "./routes/performanceValidationRoutes.js";
+import chatRouter from "./routes/chatRouter.js";
+
 
 // Setup __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -55,13 +59,6 @@ app.use(
 );
 //app.options("*", cors());
 
-app.use(
-  fileUpload({
-    useTempFiles: true,
-    tempFileDir: "/tmp/",
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
-  })
-);
 
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -88,7 +85,36 @@ app.use("/api", planRoutes); // this may duplicate /api/plan
 app.use("/api", performanceRoutes);
 app.use("/api/target-validation", targetRouter);
 app.use("/api/performance-validation", performanceValidationRouter);
+app.use("/api/chat", chatRouter);
+
+// Socket.io setup
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    credentials: true,
+  },
+});
+
+const onlineUsers = new Map();
+
+io.on("connection", (socket) => {
+  socket.on("identify", (userId) => {
+    onlineUsers.set(userId, socket.id);
+  });
+
+  socket.on("disconnect", () => {
+    for (const [userId, socketId] of onlineUsers.entries()) {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+        break;
+      }
+    }
+  });
+});
+
+export { io, onlineUsers, server };
 
 // Run server
 const PORT = process.env.PORT || 1221;
-app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
+server.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
