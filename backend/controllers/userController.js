@@ -109,15 +109,12 @@ export const loginUser = async (req, res) => {
 // Get all users with populated sector/subsector names
 export const getUsers = async (req, res) => {
   try {
-    const userId = req.userId;
-    const users = await User.find(userId)
+    const users = await User.find()
       .populate("sector", "sector_name")
       .populate("subsector", "subsector_name");
-    console.log(`✅ [getUsers] Fetched ${users.length} users.`);
     res.json(users);
   } catch (error) {
-    console.error("❌ [getUsers] Server error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -230,6 +227,55 @@ export const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ [updateProfile] Server error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Update user by admin
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullName, email, role, sector, subsector } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    user.fullName = fullName || user.fullName;
+    user.email = email || user.email;
+    user.role = role || user.role;
+    user.sector = sector || user.sector;
+    user.subsector = subsector || user.subsector;
+
+    await user.save();
+
+    res.json({ success: true, message: "User updated", user });
+  } catch (error) {
+    console.error("[updateUser] Error:", error.message, error.stack);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+// Update user password by admin
+export const updateUserPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters." });
+    }
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    const { hash, salt } = hashPassword(password);
+    user.password = hash;
+    user.salt = salt;
+    await user.save();
+    res.json({ success: true, message: "Password updated successfully" });
+  } catch (error) {
+    console.error("[updateUserPassword] Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

@@ -7,6 +7,8 @@ import {
   getProfile,
   logout,
   updateProfile,
+  updateUser,
+  updateUserPassword,
 } from "../controllers/userController.js";
 
 import { validatePasswordStrength } from "../middlewares/validatePasswordStrength.js";
@@ -29,6 +31,8 @@ userRouter.put(
   authUser,
   updateProfile
 );
+userRouter.put("/update-user/:id", authUser, updateUser);
+userRouter.put("/update-password/:id", authUser, updateUserPassword);
 
 userRouter.get("/checkauth", checkAuth);
 
