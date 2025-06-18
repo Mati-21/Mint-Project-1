@@ -1,9 +1,9 @@
-import express from 'express'
+import express from "express";
 
-import { createReport, getReports } from '../controllers/reportController.js';
-const reportRouter = express.Router(); 
+import { generateUserReport } from "../controllers/reportController.js";
+import authUser from "../middlewares/authUser.js";
+const reportRouter = express.Router();
 
-reportRouter.post('/create-report', createReport);
-reportRouter.get('/get-report', getReports);
+reportRouter.get("/generate-report", authUser, generateUserReport);
 
 export default reportRouter;

@@ -32,6 +32,7 @@ import Dashboard from "./components/DashboardComponent/Dashboard";
 
 import ChatPage from "./components/Chat/ChatPage";
 import GoalKraKpiManagement from "./pages/SystemAdmin/AdminComponents/GoalKpiKra/GoalKraKpiManagement";
+import UserReportTable from "./components/UserReportTble";
 
 function App() {
   const { checkAuth, isAuthenticated, user, isCheckingAuth } = useAuthStore();
@@ -118,6 +119,7 @@ function App() {
           <Route path="allSector/:sectorId" element={<AllSector />} />
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="user-report" element={<UserReportTable/>} />
 
           <Route
             path="performance-validation"
@@ -156,6 +158,7 @@ function App() {
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="user-report" element={<UserReportTable/>} />
         </Route>
 
         {/* Page Not Found  */}

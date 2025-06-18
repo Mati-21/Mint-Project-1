@@ -12,7 +12,7 @@ import {
 } from "../controllers/userController.js";
 
 import { validatePasswordStrength } from "../middlewares/validatePasswordStrength.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+
 import { checkAuth } from "../middlewares/checkAuth.js";
 import authUser from "../middlewares/authUser.js";
 import  upload  from "../middlewares/multer.js";

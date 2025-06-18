@@ -1,68 +1,73 @@
-import Report from "../models/reportModels.js";
-import User from "../models/userModels.js"; 
+import User from "../models/userModels.js";
+import Plan from "../models/planModels.js";
 
-export const createReport = async (req, res) => {
+
+
+export const generateUserReport = async (req, res) => {
   try {
-    const { email, title, content, narration, performance } = req.body; 
+    const userId = req.userId; 
 
-    if (!email || !title || !content || !narration || !performance) {
-      return res.status(400).json({ error: "All fields are required." });
-    }
+    const user = await User.findById(userId)
+      .select("-password")
+      .populate("sector", "sector_name")
+      .populate("subsector", "subsector_name");
 
-    // Find the user by email
-    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ error: "User not found." });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // Calculate the current quarter and year
-    const currentDate = new Date();
-    const quarter = Math.ceil((currentDate.getMonth() + 1) / 3); // Divide month by 3 to get the quarter
-    const year = currentDate.getFullYear();
+    const plans = await Plan.find({ userId })
+      .populate("goalId", "goal_name")
+      .populate("kraId", "kra_name")
+      .populate("kpiId", "kpi_name");
 
-    // Calculate percentage based on performance
-    let percentage;
-    switch (performance.toLowerCase()) {
-      case "excellent":
-        percentage = 90;
-        break;
-      case "good":
-        percentage = 75;
-        break;
-      case "average":
-        percentage = 50;
-        break;
-      case "poor":
-        percentage = 25;
-        break;
-      default:
-        return res.status(400).json({ error: "Invalid performance value." });
-    }
+    const report = {};
 
-    // Create a new report with calculated percentage
-    const newReport = new Report({ 
-      userId: user._id, 
-      title, 
-      content, 
-      narration, 
-      performance, 
-      percentage, 
-      quarter, 
-      year 
+    plans.forEach((plan) => {
+      const goalName = plan.goalId?.goal_name || "Unknown Goal";
+      const kraName = plan.kraId?.kra_name || "Unknown KRA";
+      const kpiName = plan.kpiId?.kpi_name || plan.kpi_name || "Unknown KPI";
+
+      if (!report[goalName]) report[goalName] = {};
+      if (!report[goalName][kraName]) report[goalName][kraName] = [];
+
+      report[goalName][kraName].push({
+        kpi: kpiName,
+        target: plan.target,
+        q1: plan.q1,
+        q2: plan.q2,
+        q3: plan.q3,
+        q4: plan.q4,
+        year: plan.year,
+        validationStatus: {
+          year: plan.validationStatusYear,
+          q1: plan.validationStatusQ1,
+          q2: plan.validationStatusQ2,
+          q3: plan.validationStatusQ3,
+          q4: plan.validationStatusQ4,
+        },
+        validationDescription: {
+          year: plan.validationDescriptionYear,
+          q1: plan.validationDescriptionQ1,
+          q2: plan.validationDescriptionQ2,
+          q3: plan.validationDescriptionQ3,
+          q4: plan.validationDescriptionQ4,
+        },
+      });
     });
-    await newReport.save();
 
-    res.status(201).json({ message: "Report created", data: newReport });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const getReports = async (req, res) => {
-  try {
-    const reports = await Report.find();
-    res.json(reports);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(200).json({
+      userProfile: {
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        sector: user.sector?.sector_name || "N/A",
+        subSector: user.subsector?.subsector_name || "N/A",
+      },
+      report,
+    });
+  } catch (error) {
+    console.error("Report Error:", error);
+    res.status(500).json({ message: "Server error while generating report" });
   }
 };
