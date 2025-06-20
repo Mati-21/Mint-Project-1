@@ -47,7 +47,7 @@ function ImageDropdown() {
       ref={myref}
     >
       <img
-        src={user.image}
+        src={manjpg}
         alt="user"
         className=" w-full h-auto cursor-pointer"
         onClick={toggleProfile}

@@ -10,7 +10,6 @@ const useAuthStore = create((set) => ({
   error: null,
   isAuthenticated: false,
   isCheckingAuth: true,
-  isLoading: false,
 
   adminLogin: async (normalizedEmail, password) => {
     try {
@@ -65,43 +64,6 @@ const useAuthStore = create((set) => ({
         isAuthenticated: false,
       });
       console.log(error.message);
-    }
-  },
-
-  updateProfile: async (formData) => {
-    try {
-      set({ isLoading: true, error: null });
-      const res = await axios.put(
-        "http://localhost:1221/api/users/update-profile",
-        formData
-      );
-      set({ user: res.data.user, isLoading: false, error: null });
-      if (res.data.success) {
-        alert("Profile updated successfully!");
-      } else {
-        alert("Update failed.");
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      alert("Error updating profile.");
-    }
-  },
-
-  fetchProfile: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await axios.get(
-        "http://localhost:1221/api/users/get-profile",
-        {
-          withCredentials: true,
-        }
-      );
-
-      if (res.data.success && res.data.user) {
-        set({ user: res.data.user, isLoading: false, error: null });
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
     }
   },
 }));

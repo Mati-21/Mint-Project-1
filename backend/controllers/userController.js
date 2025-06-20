@@ -6,13 +6,21 @@ import path from "path";
 
 import { hashPassword, verifyPassword } from "../utils/hashPassword.js";
 import { log } from "console";
-import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 
 // Create new user
 export const createUser = async (req, res) => {
   try {
     let { fullName, role, email, password, sector, subsector } = req.body;
     email = email.trim().toLowerCase();
+
+    console.log("[createUser] Incoming request body:", {
+      fullName,
+      role,
+      email,
+      sector,
+      subsector,
+    });
+    console.log("[createUser] Raw password:", password);
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -23,6 +31,8 @@ export const createUser = async (req, res) => {
     }
 
     const { hash, salt } = hashPassword(password);
+    console.log("[createUser] Hashed password:", hash);
+    console.log("[createUser] Salt:", salt);
 
     const newUser = new User({
       fullName,
@@ -36,12 +46,15 @@ export const createUser = async (req, res) => {
 
     await newUser.save();
 
+    console.log("[createUser] User created successfully:", email);
+
     res.status(201).json({
       success: true,
       message: "User created successfully",
       user: newUser,
     });
   } catch (error) {
+    console.error("[createUser] Error creating user:", error);
     res
       .status(500)
       .json({ success: false, message: "Server error during user creation" });
@@ -119,6 +132,8 @@ export const getProfile = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
+    console.log("✅ Populated user:", JSON.stringify(user, null, 2));
+
     res.status(200).json({ success: true, user });
   } catch (error) {
     console.error("❌ Error fetching user profile:", error);
@@ -134,12 +149,20 @@ export const logout = (req, res) => {
 // Get statistics about active users
 export const getActiveUsersStats = async (req, res) => {
   try {
+    console.log("⏳ [getActiveUsersStats] Fetching user statistics...");
     const totalUsers = await User.countDocuments({});
     const lastMonthCount = await User.countDocuments({
       createdAt: {
         $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
       },
     });
+
+    console.log(
+      "✅ [getActiveUsersStats] Total:",
+      totalUsers,
+      "Last Month:",
+      lastMonthCount
+    );
 
     res.status(200).json({
       count: totalUsers,
@@ -159,8 +182,8 @@ export const getActiveUsersStats = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { fullName, email, sector, subsector } = req.body;
-    const userId = req.userId;
+    // console.log("⏳ [updateProfile] Incoming update:", req.body);
+    const { userId, fullName, email, sector, subsector } = req.body;
     const imageFile = req.file;
 
     if (!fullName || !email || !sector || !subsector) {
@@ -169,7 +192,7 @@ export const updateProfile = async (req, res) => {
         .json({ success: false, message: "Missing Information" });
     }
 
-    const user = await User.findById(userId);
+    const user = await User.findOne({ email });
     if (!user) {
       return res
         .status(404)
@@ -179,16 +202,21 @@ export const updateProfile = async (req, res) => {
     let updatedData = {
       fullName,
       email,
-      sector,
-      subsector,
+      sector: user.sector,
+      subsector: user.subsector,
     };
+    console.log("joo", imageFile);
 
     if (imageFile) {
-      const response = await uploadToCloudinary(imageFile);
-      updatedData.image = response.secure_url; // ✅ Save to the `image` field in schema
+      const imagePath = `/uploads/${imageFile.filename}`;
+      if (user.image && fs.existsSync(path.join("uploads", user.image))) {
+        fs.unlinkSync(path.join("uploads", user.image));
+      }
+      updatedData.image = imagePath; // ✅ Save to correct field
     }
+    console.log("final", updatedData);
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
+    const updatedUser = await User.findByIdAndUpdate(user._id, updatedData, {
       new: true,
     });
 
@@ -211,9 +239,7 @@ export const updateUser = async (req, res) => {
 
     const user = await User.findById(id);
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     user.fullName = fullName || user.fullName;
@@ -226,9 +252,8 @@ export const updateUser = async (req, res) => {
 
     res.json({ success: true, message: "User updated", user });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    console.error("[updateUser] Error:", error.message, error.stack);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
 
@@ -238,16 +263,11 @@ export const updateUserPassword = async (req, res) => {
     const { id } = req.params;
     const { password } = req.body;
     if (!password || password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters.",
-      });
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters." });
     }
     const user = await User.findById(id);
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
     const { hash, salt } = hashPassword(password);
     user.password = hash;
