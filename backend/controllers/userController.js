@@ -163,6 +163,7 @@ export const updateProfile = async (req, res) => {
     const userId = req.userId;
     const imageFile = req.file;
 
+    // console.log("ur", fullName, email, sector, subsector);
     if (!fullName || !email || !sector || !subsector) {
       return res
         .status(400)
@@ -175,16 +176,19 @@ export const updateProfile = async (req, res) => {
         .status(404)
         .json({ success: false, message: "User not found" });
     }
+    // console.log("userrrr", user);
+    console.log(imageFile);
 
     let updatedData = {
       fullName,
       email,
-      sector,
-      subsector,
+      sector: user.sector,
+      subsector: user.subsector,
     };
 
     if (imageFile) {
-      const response = await uploadToCloudinary(imageFile);
+      const response = await uploadToCloudinary(imageFile.buffer);
+
       updatedData.image = response.secure_url; // ✅ Save to the `image` field in schema
     }
 
