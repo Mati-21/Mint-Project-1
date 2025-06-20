@@ -21,7 +21,7 @@ const KpiGaugeChart = ({ value = 53.577 }) => {
     const centerX = 200;
     const centerY = 130;
     const r = 80;
-    const baseWidth = 5; // Reduced thickness from 10 to 5
+    const baseWidth = 5;
 
     const theta = (Math.PI * (180 - angleDeg)) / 180;
     const tipX = centerX + r * Math.cos(theta);
@@ -37,7 +37,7 @@ const KpiGaugeChart = ({ value = 53.577 }) => {
   };
 
   const renderTicks = () => {
-    const radius = 120; // Increased spacing from arc
+    const radius = 120;
     const centerX = 200;
     const centerY = 130;
 
@@ -65,33 +65,39 @@ const KpiGaugeChart = ({ value = 53.577 }) => {
 
   return (
     <div className="flex flex-col items-center">
-      <h2 className="text-xl font-semibold mb-6">Avg KPI scoreCard</h2>
-      <ResponsiveContainer width={400} height={250}>
-        <PieChart>
-          <Pie
-            data={gaugeData}
-            dataKey="value"
-            startAngle={180}
-            endAngle={0}
-            innerRadius={80}
-            outerRadius={100}
-            paddingAngle={2}
-            stroke="none"
-          >
-            {gaugeData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
+      <h2 className="text-xl font-semibold mb-6">Avg KPI ScoreCard</h2>
+      <div className="w-[400px] h-[250px] relative">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={gaugeData}
+              dataKey="value"
+              startAngle={180}
+              endAngle={0}
+              innerRadius={80}
+              outerRadius={100}
+              paddingAngle={2}
+              stroke="none"
+            >
+              {gaugeData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
 
-          {/* Custom Needle */}
-          <svg>
-            <path d={getNeedlePath()} fill="#444" />
-          </svg>
+            {/* Needle is absolutely positioned and rendered outside chart context */}
+            {/* Ticks inside renderTicks function */}
+            {renderTicks()}
+          </PieChart>
+        </ResponsiveContainer>
 
-          {/* Tick Numbers */}
-          {renderTicks()}
-        </PieChart>
-      </ResponsiveContainer>
+        {/* Custom Needle rendered on top using absolute SVG overlay */}
+        <svg
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          viewBox="0 0 400 250"
+        >
+          <path d={getNeedlePath()} fill="#444" />
+        </svg>
+      </div>
 
       <p className="text-lg font-bold mt-[-10px]">{clamped.toFixed(2)} %</p>
     </div>
