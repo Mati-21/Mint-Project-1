@@ -3,33 +3,45 @@ import mongoose from 'mongoose';
 
 // Fetch all performances with populated references
 export const getAllPerformances = async (req, res) => {
-  console.log("==== /api/performance GET called ===="); // Always prints
+  console.log("==== /api/performance GET called ====");
   try {
     const { year, quarter, sectorId, subsectorId } = req.query;
+    const role = req.user?.role || "";
+    const userSectorId = req.user?.sectorId;
+    const userSubsectorId = req.user?.subsectorId;
+
     const filter = {};
     if (year) filter.year = String(year);
-    if (sectorId) filter.sectorId = sectorId;
-    if (subsectorId) filter.subsectorId = subsectorId;
     if (quarter && quarter !== "year") {
       filter[`${quarter}Performance.value`] = { $ne: null };
     } else if (quarter === "year") {
       filter.performanceYear = { $ne: null };
     }
 
-    // Print the raw query and the built filter
+    // Role-based access filtering
+    if (role === 'CEO') {
+      filter.subsectorId = userSubsectorId;
+    } else if (role === 'Chief CEO') {
+      filter.sectorId = userSectorId;
+    } else if (sectorId) {
+      filter.sectorId = sectorId;
+    }
+    if (subsectorId) {
+      filter.subsectorId = subsectorId;
+    }
+
     console.log("Raw query params:", req.query);
     console.log("MongoDB filter object:", filter);
 
     const performances = await Performance.find(filter)
-      .populate('sectorId')
-      .populate('subsectorId')
+      .populate('sectorId', 'name')
+      .populate('subsectorId', 'name')
       .populate('kpiId', 'kpi_name')
       .populate('kraId', 'kra_name')
       .populate('goalId', 'goal_desc')
       .exec();
 
     console.log("Performances found:", performances.length);
-
     res.status(200).json(performances);
   } catch (error) {
     console.error('Error fetching performances:', error);
@@ -37,42 +49,44 @@ export const getAllPerformances = async (req, res) => {
   }
 };
 
-// Update validation status and description only (for year or quarter)
+// PATCH validation
 export const validatePerformance = async (req, res) => {
+  console.log("==== [PATCH] /api/performance-validation/validate/:id called ====");
   try {
     const { id } = req.params;
-    const {
-      type,        // one of: 'year', 'q1', 'q2', 'q3', 'q4'
-      status,      // one of: 'Approved', 'Rejected', 'Pending'
-      description, // validation comment for that period
-    } = req.body;
+    const { type, status, description, role: clientRole } = req.body;
+
+    const role = req.user?.role || clientRole || "";
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid performance ID.' });
     }
 
     const allowedTypes = ['year', 'q1', 'q2', 'q3', 'q4'];
-    if (!allowedTypes.includes(type)) {
-      return res.status(400).json({ message: 'Invalid type. Must be one of year, q1, q2, q3, q4.' });
-    }
-
     const allowedStatuses = ['Approved', 'Rejected', 'Pending'];
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status. Must be Approved, Rejected, or Pending.' });
+
+    if (!allowedTypes.includes(type) || !allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid type or status.' });
     }
 
-    // Build dynamic field names for validation status and description
-    const validationStatusField = type === 'year'
-      ? 'validationStatusYear'
-      : `validationStatus${type.toUpperCase()}`; // e.g. validationStatusQ1
+    // Determine which field set to update based on role
+    let fieldPrefix = '';
+    if (role === 'CEO') fieldPrefix = 'ceoValidation';
+    else if (role === 'Chief CEO') fieldPrefix = 'chiefCeoValidation';
+    else if (role === 'Strategic Unit') fieldPrefix = 'strategicValidation';
+    else if (role === 'Minister') fieldPrefix = 'validationStatus';
+    else return res.status(403).json({ message: 'Unauthorized role for validation.' });
 
-    const validationDescriptionField = type === 'year'
-      ? 'validationDescriptionYear'
-      : `validationDescription${type.toUpperCase()}`; // e.g. validationDescriptionQ1
+    const statusField = type === 'year'
+      ? `${fieldPrefix}Year`
+      : `${fieldPrefix}${type.toUpperCase()}`;
+    const descField = type === 'year'
+      ? `${fieldPrefix}DescriptionYear`
+      : `${fieldPrefix}Description${type.toUpperCase()}`;
 
     const update = {
-      [validationStatusField]: status,
-      [validationDescriptionField]: description || '',
+      [statusField]: status,
+      [descField]: description || '',
     };
 
     const updatedPerformance = await Performance.findByIdAndUpdate(id, update, { new: true });

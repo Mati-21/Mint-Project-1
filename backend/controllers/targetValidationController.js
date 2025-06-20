@@ -1,13 +1,63 @@
-// controllers/targetValidationController.js
 import Plan from '../models/planModels.js';
 import mongoose from 'mongoose';
 
-// Fetch all plans with populated references
+// Map roles to their validation fields
+const roleValidationFields = {
+  ceo: {
+    statusYear: 'ceoValidationYear',
+    statusQ1: 'ceoValidationQ1',
+    statusQ2: 'ceoValidationQ2',
+    statusQ3: 'ceoValidationQ3',
+    statusQ4: 'ceoValidationQ4',
+    descYear: 'ceoValidationDescriptionYear',
+    descQ1: 'ceoValidationDescriptionQ1',
+    descQ2: 'ceoValidationDescriptionQ2',
+    descQ3: 'ceoValidationDescriptionQ3',
+    descQ4: 'ceoValidationDescriptionQ4',
+  },
+  'chief ceo': {
+    statusYear: 'chiefCeoValidationYear',
+    statusQ1: 'chiefCeoValidationQ1',
+    statusQ2: 'chiefCeoValidationQ2',
+    statusQ3: 'chiefCeoValidationQ3',
+    statusQ4: 'chiefCeoValidationQ4',
+    descYear: 'chiefCeoValidationDescriptionYear',
+    descQ1: 'chiefCeoValidationDescriptionQ1',
+    descQ2: 'chiefCeoValidationDescriptionQ2',
+    descQ3: 'chiefCeoValidationDescriptionQ3',
+    descQ4: 'chiefCeoValidationDescriptionQ4',
+  },
+  'strategic unit': {
+    statusYear: 'strategicValidationYear',
+    statusQ1: 'strategicValidationQ1',
+    statusQ2: 'strategicValidationQ2',
+    statusQ3: 'strategicValidationQ3',
+    statusQ4: 'strategicValidationQ4',
+    descYear: 'strategicValidationDescriptionYear',
+    descQ1: 'strategicValidationDescriptionQ1',
+    descQ2: 'strategicValidationDescriptionQ2',
+    descQ3: 'strategicValidationDescriptionQ3',
+    descQ4: 'strategicValidationDescriptionQ4',
+  },
+  minister: {
+    statusYear: 'validationStatusYear',
+    statusQ1: 'validationStatusQ1',
+    statusQ2: 'validationStatusQ2',
+    statusQ3: 'validationStatusQ3',
+    statusQ4: 'validationStatusQ4',
+    descYear: 'validationDescriptionYear',
+    descQ1: 'validationDescriptionQ1',
+    descQ2: 'validationDescriptionQ2',
+    descQ3: 'validationDescriptionQ3',
+    descQ4: 'validationDescriptionQ4',
+  },
+};
+
 export const getAllPlans = async (req, res) => {
   try {
     const plans = await Plan.find()
-      .populate('sectorId', 'name')       // populate only necessary fields for lighter payload
-      .populate('subsectorId', 'name')
+      .populate('sectorId', 'sector_name')
+      .populate('subsectorId', 'subsector_name')
       .populate('kpiId', 'kpi_name')
       .populate('kraId', 'kra_name')
       .populate('goalId', 'goal_desc')
@@ -20,19 +70,17 @@ export const getAllPlans = async (req, res) => {
   }
 };
 
-// Update validation status and description only (for year or quarter)
 export const validateTarget = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      type,        // one of: 'year', 'q1', 'q2', 'q3', 'q4'
-      status,      // one of: 'Approved', 'Rejected', 'Pending'
-      description, // validation comment for that period
-    } = req.body;
+    let { type, status, description, role } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid plan ID.' });
     }
+
+    type = type?.toLowerCase();
+    role = role?.toLowerCase();
 
     const allowedTypes = ['year', 'q1', 'q2', 'q3', 'q4'];
     if (!allowedTypes.includes(type)) {
@@ -44,21 +92,33 @@ export const validateTarget = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status. Must be Approved, Rejected, or Pending.' });
     }
 
-    // Build dynamic field names for validation status and description
-    const validationStatusField = type === 'year'
-      ? 'validationStatusYear'
-      : `validationStatus${type.toUpperCase()}`; // e.g. validationStatusQ1
+    if (!role) {
+      return res.status(400).json({ message: 'Role is required for validation.' });
+    }
 
-    const validationDescriptionField = type === 'year'
-      ? 'validationDescriptionYear'
-      : `validationDescription${type.toUpperCase()}`; // e.g. validationDescriptionQ1
+    const fields = roleValidationFields[role];
+    if (!fields) {
+      return res.status(400).json({ message: `No validation fields configured for role: ${role}` });
+    }
+
+    const statusField = type === 'year' ? fields.statusYear : fields[`status${type.toUpperCase()}`];
+    const descField = type === 'year' ? fields.descYear : fields[`desc${type.toUpperCase()}`];
+
+    if (!statusField || !descField) {
+      return res.status(400).json({ message: 'Validation fields not found for the given type.' });
+    }
 
     const update = {
-      [validationStatusField]: status,
-      [validationDescriptionField]: description || '',
+      [statusField]: status,
+      [descField]: description || '',
     };
 
-    const updatedPlan = await Plan.findByIdAndUpdate(id, update, { new: true });
+    const updatedPlan = await Plan.findByIdAndUpdate(id, update, { new: true })
+      .populate('sectorId', 'sector_name')
+      .populate('subsectorId', 'subsector_name')
+      .populate('kpiId', 'kpi_name')
+      .populate('kraId', 'kra_name')
+      .populate('goalId', 'goal_desc');
 
     if (!updatedPlan) {
       return res.status(404).json({ message: 'Plan not found.' });

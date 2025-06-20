@@ -25,8 +25,8 @@ import KpiYearAssignmentPage from "./pages/SystemAdmin/AdminComponents/KpiYearAs
 import AddGoalKraKpi from "./pages/SystemAdmin/AdminComponents/GoalKpiKra/AddGoalKraKpi";
 import AllSector from "./components/Sector/AllSector";
 import AllSubsector from "./components/Sector/AllSubsector";
-import PerformanceValidation from "./pages/Strategic/StrategicComponents/PerformanceValidation";
-import TargetValidation from "./pages/Strategic/StrategicComponents/TargetValidation";
+import PerformanceValidation from "./components/PerformanceValidation";
+import TargetValidation from "./components/TargetValidation";
 import PageNotFound from "./pages/PageNotFound/PageNotFound";
 import Dashboard from "./components/DashboardComponent/Dashboard";
 
@@ -90,6 +90,8 @@ function App() {
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="performance-validation" element={<PerformanceValidation />} />
+          <Route path="Target-validation" element={<TargetValidation />} />
         </Route>
 
         <Route
@@ -105,6 +107,9 @@ function App() {
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="performance-validation" element={<PerformanceValidation />} />
+          <Route path="Target-validation" element={<TargetValidation />} />
+          
         </Route>
 
         <Route
@@ -120,13 +125,8 @@ function App() {
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="user-report" element={<UserReportTable/>} />
-
-          <Route
-            path="performance-validation"
-            element={<PerformanceValidation />}
-          />
+<Route path="performance-validation" element={<PerformanceValidation />} />
           <Route path="Target-validation" element={<TargetValidation />} />
-
           <Route path="user-profile" element={<UserProfile />} />
         </Route>
 
@@ -143,6 +143,9 @@ function App() {
           <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
           <Route path="user-profile" element={<UserProfile />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="performance-validation" element={<PerformanceValidation />} />
+          <Route path="Target-validation" element={<TargetValidation />} />
+          
         </Route>
 
         <Route

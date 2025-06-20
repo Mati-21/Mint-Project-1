@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import useAuthStore from "../store/auth.store"; // <-- update this path
 
 const BACKEND_PORT = 1221;
 const backendUrl = `http://localhost:${BACKEND_PORT}`;
@@ -12,9 +13,8 @@ function useSectors() {
     async function fetchSectors() {
       try {
         const res = await axios.get(`${backendUrl}/api/sector/get-sector`);
-        console.log("Sector API response:", res); // <--- Add this
+        console.log("Sector API response:", res);
         setSectors(res.data.data || []);
-        console.log("Fetched sectors:", res.data.data);
         setError(null);
       } catch (err) {
         setError("Failed to load sectors");
@@ -35,8 +35,7 @@ function useSubsectors() {
       try {
         const res = await axios.get(`${backendUrl}/api/subsector/get-subsector`);
         console.log("Subsector API response:", res);
-        setSubsectors(res.data || []); // <-- Fix here
-        console.log("Fetched subsectors:", res.data); // <-- Fix here
+        setSubsectors(res.data || []);
         setError(null);
       } catch (err) {
         setError("Failed to load subsectors");
@@ -59,10 +58,9 @@ const Filter = ({
   filteredSubsectors,
   subsector,
   setSubsector,
-  onFilter, // <-- Add this prop
-  loadingPlans, // <-- Add this prop
+  onFilter,
+  loadingPlans,
 }) => {
-  const years = [2016, 2024, 2025];
   const quarters = ["year", "q1", "q2", "q3", "q4"];
 
   return (
@@ -130,6 +128,7 @@ const Filter = ({
           ))}
         </select>
       </div>
+
       <button
         onClick={onFilter}
         className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
@@ -142,6 +141,9 @@ const Filter = ({
 };
 
 const TargetValidation = () => {
+  const { user } = useAuthStore(); // Get current logged in user
+  const userRole = user?.role?.toLowerCase() || "";
+
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingPlans, setLoadingPlans] = useState(false);
@@ -157,36 +159,11 @@ const TargetValidation = () => {
   const [edits, setEdits] = useState({});
   const [selectAll, setSelectAll] = useState(false);
 
-  // Fetch all plans (no filters)
-  const fetchAllPlans = async () => {
-    setLoadingPlans(true);
-    setLoading(true);
-    try {
-      const res = await axios.get(`${backendUrl}/api/plans`);
-      console.log("Raw /api/plans response:", res);
-
-      // Use res.data directly, since it's an array
-      const fetchedPlans = Array.isArray(res.data) ? res.data : [];
-      setPlans(fetchedPlans);
-      console.log("Fetched all plans (raw):", fetchedPlans);
-      setError(null);
-    } catch (err) {
-      setError("Failed to load all plans");
-      console.error("Error fetching all plans:", err);
-    } finally {
-      setLoading(false);
-      setLoadingPlans(false);
-    }
-  };
-
-  // **Updated subsector filtering - matches Result Framework logic**
-  // Filter subsectors where ss.sectorId?._id (or ss.sectorId) equals selected sector id
-  // Allow "All" if no sector selected
+  // Filter subsectors based on selected sector
   const filteredSubsectors = subsectors.filter((ss) => {
-    if (!sector) return true; // no sector selected: show all subsectors
-    // sectorId may be object or string - normalize
+    if (!sector) return true;
     const ssSectorId = ss.sectorId?._id || ss.sectorId;
-    if (!ssSectorId) return false; // subsector without sectorId shouldn't show if sector selected
+    if (!ssSectorId) return false;
     return String(ssSectorId) === String(sector);
   });
 
@@ -195,7 +172,6 @@ const TargetValidation = () => {
     setLoadingPlans(true);
     setLoading(true);
     try {
-      // Build query params
       const params = {
         year,
         quarter,
@@ -203,7 +179,6 @@ const TargetValidation = () => {
       if (sector) params.sector = sector;
       if (subsector) params.subsector = subsector;
 
-      // Add this console to see what is sent as request params
       console.log("Fetching plans with params:", params);
 
       const res = await axios.get(`${backendUrl}/api/plans`, { params });
@@ -218,13 +193,11 @@ const TargetValidation = () => {
     }
   };
 
-  // Initial fetch
   useEffect(() => {
     fetchPlans();
-    // eslint-disable-next-line
   }, []);
 
-  // Filter plans based on year, quarter, sector, subsector and target existence
+  // Filter plans client side (just in case)
   const filteredPlans = plans.filter((plan) => {
     if (String(plan.year) !== String(year)) return false;
     if (quarter === "year") {
@@ -239,17 +212,25 @@ const TargetValidation = () => {
     return true;
   });
 
-  // Group plans by goal and kra
-  const groupedPlans = {};
-  filteredPlans.forEach((plan) => {
+  // Group plans by goal then KRA
+  const groupedByGoal = filteredPlans.reduce((acc, plan) => {
     const goal = plan.goalId?.goal_desc || "-";
-    const kra = plan.kraId?.kra_name || "-";
-    const key = `${goal}|||${kra}`;
-    if (!groupedPlans[key]) groupedPlans[key] = [];
-    groupedPlans[key].push(plan);
-  });
+    if (!acc[goal]) acc[goal] = [];
+    acc[goal].push(plan);
+    return acc;
+  }, {});
 
-  // Handlers for edits
+  const groupedByGoalKra = {};
+  for (const goal in groupedByGoal) {
+    groupedByGoalKra[goal] = groupedByGoal[goal].reduce((acc, plan) => {
+      const kra = plan.kraId?.kra_name || "-";
+      if (!acc[kra]) acc[kra] = [];
+      acc[kra].push(plan);
+      return acc;
+    }, {});
+  }
+
+  // Handlers for validation checkbox
   const handleCheckboxChange = (planId) => {
     setEdits((prev) => ({
       ...prev,
@@ -264,8 +245,8 @@ const TargetValidation = () => {
     const newState = !selectAll;
     setSelectAll(newState);
     const newEdits = {};
-    Object.values(groupedPlans)
-      .flat()
+    Object.values(groupedByGoalKra)
+      .flatMap((kraGroup) => Object.values(kraGroup).flat())
       .forEach((plan) => {
         newEdits[plan._id] = {
           ...edits[plan._id],
@@ -292,6 +273,7 @@ const TargetValidation = () => {
         type: quarter,
         status,
         description,
+        role: userRole, // <-- send role here
       });
       alert("Validation updated.");
     } catch (err) {
@@ -300,8 +282,32 @@ const TargetValidation = () => {
     }
   };
 
-  console.log("plans:", plans);
-  console.log("year filter:", year, "quarter filter:", quarter, "sector filter:", sector, "subsector filter:", subsector);
+  // Bulk validate selected rows with role
+  const validateSelected = async () => {
+    const selectedPlanIds = Object.entries(edits)
+      .filter(([_, edit]) => edit.status === "Approved")
+      .map(([planId]) => planId);
+
+    if (selectedPlanIds.length === 0) {
+      alert("No rows selected for validation.");
+      return;
+    }
+
+    for (const planId of selectedPlanIds) {
+      const { status = "Approved", description = "" } = edits[planId] || {};
+      try {
+        await axios.patch(`${backendUrl}/api/target-validation/validate/${planId}`, {
+          type: quarter,
+          status,
+          description,
+          role: userRole, // <-- send role here too
+        });
+      } catch (err) {
+        console.error(`Failed to validate plan ${planId}:`, err);
+      }
+    }
+    alert("Selected rows validated.");
+  };
 
   if (loading) return <p className="text-gray-700">Loading...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
@@ -314,13 +320,6 @@ const TargetValidation = () => {
         KPI Target Validation - {year} / {quarter.toUpperCase()}
       </h1>
       <p className="mb-5 text-gray-600">Use filters below to validate KPI targets.</p>
-
-      <button
-        onClick={fetchAllPlans}
-        className="mb-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      >
-        Fetch All Plans (Show in Console)
-      </button>
 
       <Filter
         year={year}
@@ -337,145 +336,101 @@ const TargetValidation = () => {
         loadingPlans={loadingPlans}
       />
 
-      {/* Group by goal first */}
-      {Object.entries(
-        Object.groupBy
-          ? Object.groupBy(filteredPlans, (plan) => plan.goalId?.goal_desc || "-")
-          : filteredPlans.reduce((acc, plan) => {
-              const goal = plan.goalId?.goal_desc || "-";
-              acc[goal] = acc[goal] || [];
-              acc[goal].push(plan);
-              return acc;
-            }, {})
-      ).map(([goal, plansForGoal]) => {
-        // Group by KRA within each goal
-        const kraGroups = plansForGoal.reduce((acc, plan) => {
-          const kra = plan.kraId?.kra_name || "-";
-          acc[kra] = acc[kra] || [];
-          acc[kra].push(plan);
-          return acc;
-        }, {});
-
-        return (
-          <div key={goal} className="mb-10">
-            <div className="bg-yellow-100 font-bold text-lg px-4 py-2 rounded-t">
-              Goal: {goal}
-            </div>
-            {Object.entries(kraGroups).map(([kra, plansInKra]) => (
-              <table
-                key={kra}
-                className="w-full border border-collapse mt-0 shadow-2xl mb-6"
-              >
-                <thead>
-                  <tr className="bg-gray-200">
-                    <th colSpan={5} className="text-left px-4 py-2 font-semibold">
-                      KRA: {kra}
-                    </th>
+      {Object.entries(groupedByGoalKra).map(([goal, kraGroups]) => (
+        <div key={goal} className="mb-10">
+          <div className="bg-yellow-100 font-bold text-lg px-4 py-2 rounded-t">
+            Goal: {goal}
+          </div>
+          {Object.entries(kraGroups).map(([kra, plansInKra]) => (
+            <table
+              key={kra}
+              className="w-full border border-collapse mt-0 shadow-2xl mb-6"
+            >
+              <thead>
+                <tr className="bg-gray-200">
+                  <th colSpan={5} className="text-left px-4 py-2 font-semibold">
+                    KRA: {kra}
+                  </th>
+                </tr>
+                <tr className="bg-gray-100">
+                  <th className="border p-3 text-left">Indicator</th>
+                  <th className="border p-3 text-left">Value</th>
+                  <th className="border p-3 text-left">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectAll}
+                        onChange={handleSelectAllChange}
+                      />
+                      <span>Validate</span>
+                    </div>
+                  </th>
+                  <th className="border p-3 text-left">Comments</th>
+                  <th className="border p-3 text-left">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {plansInKra.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center p-4 text-gray-500">
+                      No KPI targets found for the selected filters.
+                    </td>
                   </tr>
-                  <tr className="bg-gray-100">
-                    <th className="border p-3 text-left">Indicator</th>
-                    <th className="border p-3 text-left">Value</th>
-                    <th className="border p-3 text-left">
-                      <div className="flex items-center gap-2">
+                )}
+                {plansInKra.map((plan) => {
+                  const value = quarter === "year" ? plan.target : plan[quarter];
+                  const status = edits[plan._id]?.status ?? plan.status ?? "Pending";
+                  const description =
+                    edits[plan._id]?.description ?? plan.validation_description ?? "";
+
+                  return (
+                    <tr key={plan._id} className="hover:bg-gray-50">
+                      <td className="border p-2">{plan.kpiId?.kpi_name || "Unknown KPI"}</td>
+                      <td className="border p-2">{value ?? "-"}</td>
+                      <td className="border p-2 text-center">
                         <input
                           type="checkbox"
-                          checked={selectAll}
-                          onChange={handleSelectAllChange}
+                          checked={status === "Approved"}
+                          onChange={() => handleCheckboxChange(plan._id)}
                         />
-                        <span>Validate</span>
-                      </div>
-                    </th>
-                    <th className="border p-3 text-left">Comments</th>
-                    <th className="border p-3 text-left">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {plansInKra.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="text-center p-4 text-gray-500">
-                        No KPI targets found for the selected filters.
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="text"
+                          value={description}
+                          onChange={(e) => handleCommentChange(plan._id, e.target.value)}
+                          className="w-full border rounded px-2 py-1"
+                          placeholder="Add comment"
+                        />
+                      </td>
+                      <td className="border p-2 text-center">
+                        <button
+                          onClick={() => submitValidation(plan._id)}
+                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                        >
+                          Save
+                        </button>
                       </td>
                     </tr>
-                  )}
-                  {plansInKra.map((plan) => {
-                    const value = quarter === "year" ? plan.target : plan[quarter];
-                    const status = edits[plan._id]?.status ?? plan.status ?? "Pending";
-                    const description =
-                      edits[plan._id]?.description ?? plan.validation_description ?? "";
+                  );
+                })}
+              </tbody>
+            </table>
+          ))}
+        </div>
+      ))}
 
-                    return (
-                      <tr key={plan._id} className="hover:bg-gray-50">
-                        <td className="border p-2">{plan.kpiId?.kpi_name || "Unknown KPI"}</td>
-                        <td className="border p-2">{value ?? "-"}</td>
-                        <td className="border p-2 text-center">
-                          <input
-                            type="checkbox"
-                            checked={status === "Approved"}
-                            onChange={() => handleCheckboxChange(plan._id)}
-                          />
-                        </td>
-                        <td className="border p-2">
-                          <input
-                            type="text"
-                            value={description}
-                            onChange={(e) => handleCommentChange(plan._id, e.target.value)}
-                            className="w-full border rounded px-2 py-1"
-                            placeholder="Add comment"
-                          />
-                        </td>
-                        <td className="border p-2 text-center">
-                          <button
-                            onClick={() => submitValidation(plan._id)}
-                            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                          >
-                            Save
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            ))}
-          </div>
-        );
-      })}
-      {/* If no plans at all */}
       {filteredPlans.length === 0 && (
         <div className="text-center p-4 text-gray-500">
           No KPI targets found for the selected filters.
         </div>
       )}
+
       {filteredPlans.length > 0 && (
         <div className="flex justify-end mt-4">
           <button
             className="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800"
-            onClick={async () => {
-              // Get all selected (approved) plan IDs
-              const selectedPlanIds = Object.entries(edits)
-                .filter(([_, edit]) => edit.status === "Approved")
-                .map(([planId]) => planId);
-
-              if (selectedPlanIds.length === 0) {
-                alert("No rows selected for validation.");
-                return;
-              }
-
-              // Validate all selected plans
-              for (const planId of selectedPlanIds) {
-                const { status = "Approved", description = "" } = edits[planId] || {};
-                try {
-                  await axios.patch(`${backendUrl}/api/target-validation/validate/${planId}`, {
-                    type: quarter,
-                    status,
-                    description,
-                  });
-                } catch (err) {
-                  console.error(`Failed to validate plan ${planId}:`, err);
-                }
-              }
-              alert("Selected rows validated.");
-            }}
+            onClick={validateSelected}
           >
             Validate All Selected
           </button>

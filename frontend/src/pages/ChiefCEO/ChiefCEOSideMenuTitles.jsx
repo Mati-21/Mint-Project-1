@@ -19,7 +19,7 @@ const Datas = [
 
   {
     sectionTitle: "Validation",
-    link: "Target-validation",
+    link: "Target-validation", 
     menu: ["Target Validation"],
     icon: <FcPlanner size={23} className="text-white" />,
   },
