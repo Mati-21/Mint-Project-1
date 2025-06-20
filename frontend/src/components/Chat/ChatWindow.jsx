@@ -75,14 +75,35 @@ export default function ChatWindow({ user, group }) {
   const messagesEndRef = useRef(null);
 
   // Fetch messages
-  useEffect(() => {
-    if (group) {
-      axios.get(`${backendUrl}/api/chat/group-messages/${group._id}`, { withCredentials: true })
-        .then(res => setMessages(res.data));
-    } else if (user) {
-      axios.get(`${backendUrl}/api/chat/messages/${user._id}`, { withCredentials: true })
-        .then(res => setMessages(res.data));
-    }
+ useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        if (group) {
+          const res = await axios.get(
+            `${backendUrl}/api/chat/group-messages/${group._id}`,
+            { withCredentials: true }
+          );
+          setMessages(res.data);
+        } else if (user) {
+          const res = await axios.get(
+            `${backendUrl}/api/chat/messages/${user._id}`,
+            { withCredentials: true }
+          );
+          setMessages(res.data);
+
+          // Mark messages as seen
+          await axios.post(
+            `${backendUrl}/api/chat/mark-seen/${user._id}`,
+            {},
+            { withCredentials: true }
+          );
+        }
+      } catch (err) {
+        console.error("Failed to fetch messages:", err);
+      }
+    };
+
+    fetchMessages();
   }, [user, group]);
 
   // Scroll to bottom

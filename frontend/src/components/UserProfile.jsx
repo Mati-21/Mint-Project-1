@@ -3,67 +3,95 @@ import axios from "axios";
 import useAuthStore from "../store/auth.store";
 
 const UserProfile = () => {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [sector, setSector] = useState("");
-  const [subsector, setSubsector] = useState("");
-  const [profileImage, setProfileImage] = useState(null);
+  const [profile, setProfile] = useState({
+    fullName: "",
+    email: "",
+
+    sector: "",
+    subsector: "",
+  });
+  const [profileImage, setProfileImage] = useState("");
   const [editMode, setEditMode] = useState(false);
 
   const { updateProfile, user, fetchProfile, isLoading } = useAuthStore();
   console.log(user);
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:1221/api/users/get-profile",
+          {
+            withCredentials: true,
+          }
+        );
 
-  useEffect(() => {
-    if (user) {
-      setFullName(user.fullName || "");
-      setEmail(user.email || "");
-      setSector(user.sector.sector_name || "");
-      setSubsector(user.subsector.subsector_name || "");
-      if (user.image) setProfileImage(user.image);
-    }
-  }, [user]);
+        if (res.data.success && res.data.user) {
+          const user = res.data.user;
+
+          console.log(user);
+          setProfile({
+            fullName: user.fullName || "N/A",
+            email: user.email || "N/A",
+
+            sector: user.sector?.sector_name || "N/A",
+            subsector: user.subsector?.subsector_name || "N/A",
+          });
+
+          setProfileImage(user.profileImage || "");
+        }
+
+        console.log(profile);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    switch (name) {
-      case "fullName":
-        setFullName(value);
-        break;
-      case "email":
-        setEmail(value);
-        break;
-      case "sector":
-        setSector(value);
-        break;
-      case "subsector":
-        setSubsector(value);
-        break;
-      default:
-        break;
-    }
+    setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    setProfileImage(file);
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      setProfileImage(reader.result);
+    };
+
+    if (file) {
+      reader.readAsDataURL(file);
+    }
   };
 
   const saveChanges = async () => {
-    const formData = new FormData();
-    formData.append("fullName", fullName);
-    formData.append("email", email);
-    formData.append("sector", sector);
-    formData.append("subsector", subsector);
-    if (profileImage instanceof File) {
-      formData.append("image", profileImage);
-    }
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You must be logged in to update profile.");
+        return;
+      }
 
-    await updateProfile(formData);
-    setEditMode(false);
+      const res = await axios.put(
+        "http://localhost:1221/api/users/update-profile",
+        { ...profile, profileImage },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (res.data.success) {
+        alert("Profile updated successfully!");
+        setEditMode(false);
+      } else {
+        alert("Update failed.");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Error updating profile.");
+    }
   };
 
   return (
@@ -73,11 +101,7 @@ const UserProfile = () => {
       <div className="flex items-center gap-4 mb-6">
         {profileImage ? (
           <img
-            src={
-              profileImage instanceof File
-                ? URL.createObjectURL(profileImage)
-                : profileImage
-            }
+            src={profileImage}
             alt="Profile"
             className="w-24 h-24 rounded-full object-cover border"
           />
@@ -97,65 +121,24 @@ const UserProfile = () => {
       </div>
 
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium">Full Name</label>
-          {editMode ? (
-            <input
-              type="text"
-              name="fullName"
-              value={fullName}
-              onChange={handleChange}
-              className="w-full border rounded p-2"
-            />
-          ) : (
-            <p className="text-gray-700">{fullName || "N/A"}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Email</label>
-          {editMode ? (
-            <input
-              type="email"
-              name="email"
-              value={email}
-              onChange={handleChange}
-              className="w-full border rounded p-2"
-            />
-          ) : (
-            <p className="text-gray-700">{email || "N/A"}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Sector</label>
-          {editMode ? (
-            <input
-              type="text"
-              name="sector"
-              value={sector}
-              onChange={handleChange}
-              className="w-full border rounded p-2"
-            />
-          ) : (
-            <p className="text-gray-700">{sector || "N/A"}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Subsector</label>
-          {editMode ? (
-            <input
-              type="text"
-              name="subsector"
-              value={subsector}
-              onChange={handleChange}
-              className="w-full border rounded p-2"
-            />
-          ) : (
-            <p className="text-gray-700">{subsector || "N/A"}</p>
-          )}
-        </div>
+        {["fullName", "email", "sector", "subsector"].map((field) => (
+          <div key={field}>
+            <label className="block text-sm font-medium capitalize">
+              {field}
+            </label>
+            {editMode ? (
+              <input
+                type={field === "email" ? "email" : "text"}
+                name={field}
+                value={profile[field]}
+                onChange={handleChange}
+                className="w-full border rounded p-2"
+              />
+            ) : (
+              <p className="text-gray-700">{profile[field] || "N/A"}</p>
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="mt-6 flex justify-between">
