@@ -47,9 +47,9 @@ function ImageDropdown() {
       ref={myref}
     >
       <img
-        src={user.image}
+        src={user?.image || null}
         alt="user"
-        className=" w-full h-auto cursor-pointer"
+        className=" w-10 h-10 cursor-pointer object-cover "
         onClick={toggleProfile}
       />
 
@@ -63,9 +63,9 @@ function ImageDropdown() {
         <div className="flex gap-4 border-b border-black items-center pb-2">
           <div className="w-10 h-10 bg-amber-600 rounded-full overflow-hidden">
             <img
-              src={manjpg}
+              src={user?.image || null}
               alt="user"
-              className=" w-full h-auto cursor-pointer"
+              className=" w-10 h-10 rounded-full object-cover cursor-pointer"
             />
           </div>
           <div className="flex flex-col gap-1 ">

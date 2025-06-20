@@ -10,7 +10,7 @@ const UserProfile = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
-  const { updateProfile, user, fetchProfile } = useAuthStore();
+  const { updateProfile, user, fetchProfile, isLoading } = useAuthStore();
   console.log(user);
   useEffect(() => {
     fetchProfile();
@@ -163,7 +163,8 @@ const UserProfile = () => {
           <>
             <button
               onClick={saveChanges}
-              className="px-4 py-2 bg-green-600 text-white rounded"
+              className="px-4 py-2 bg-green-600 text-white rounded cursor-pointer"
+              disabled={isLoading}
             >
               Save Changes
             </button>
@@ -177,7 +178,7 @@ const UserProfile = () => {
         ) : (
           <button
             onClick={() => setEditMode(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
+            className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer"
           >
             Edit Profile
           </button>
