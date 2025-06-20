@@ -155,11 +155,11 @@ export const updateProfile = async (req, res) => {
     const imageFile = req.file;
 
     // console.log("ur", fullName, email, sector, subsector);
-    if (!fullName || !email || !sector || !subsector) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing Information" });
-    }
+    // if (!fullName || !email || !sector || !subsector) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "Missing Information" });
+    // }
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -172,8 +172,8 @@ export const updateProfile = async (req, res) => {
     let updatedData = {
       fullName,
       email,
-      sector: user.sector,
-      subsector: user.subsector,
+      sector: user?.sector || null,
+      subsector: user?.subsector || null,
     };
 
     if (imageFile) {

@@ -14,11 +14,10 @@ const UserProfile = () => {
 
   useEffect(() => {
     if (user) {
-      console.log(user);
       setFullName(user.fullName || "");
       setEmail(user.email || "");
-      setSector(user.sector.sector_name || "");
-      setSubsector(user.subsector.subsector_name || "");
+      setSector(user.sector?.sector_name || "");
+      setSubsector(user.subsector?.subsector_name || "");
       if (user.image) setProfileImage(user.image);
     }
   }, [user]);
@@ -46,7 +45,7 @@ const UserProfile = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    console.log(file);
+
     setProfileImage(file);
   };
 
@@ -68,9 +67,19 @@ const UserProfile = () => {
       <h2 className="text-2xl font-semibold mb-6">User Profile</h2>
 
       <div className="flex items-center gap-4 mb-6">
-        {user ? (
+        {profileImage ? (
           <img
-            src={user?.image}
+            src={
+              profileImage instanceof File
+                ? URL.createObjectURL(profileImage)
+                : profileImage
+            }
+            alt="Profile"
+            className="w-24 h-24 rounded-full object-cover border"
+          />
+        ) : user?.image ? (
+          <img
+            src={user.image}
             alt="Profile"
             className="w-24 h-24 rounded-full object-cover border"
           />
@@ -79,6 +88,7 @@ const UserProfile = () => {
             No Image
           </div>
         )}
+
         {editMode && (
           <input
             type="file"
