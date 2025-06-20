@@ -62,6 +62,7 @@ export const markSeen = async (req, res) => {
 };
 
 // Unread count
+// GET /api/chat/unread-count
 export const getUnreadCount = async (req, res) => {
   try {
     const userId = req.userId;
