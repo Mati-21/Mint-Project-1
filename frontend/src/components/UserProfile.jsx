@@ -3,95 +3,64 @@ import axios from "axios";
 import useAuthStore from "../store/auth.store";
 
 const UserProfile = () => {
-  const [profile, setProfile] = useState({
-    fullName: "",
-    email: "",
-
-    sector: "",
-    subsector: "",
-  });
-  const [profileImage, setProfileImage] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [sector, setSector] = useState("");
+  const [subsector, setSubsector] = useState("");
+  const [profileImage, setProfileImage] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
-  const { updateProfile, user, fetchProfile, isLoading } = useAuthStore();
-  console.log(user);
+  const { user, updateProfile, logout, isLoading } = useAuthStore();
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get(
-          "http://localhost:1221/api/users/get-profile",
-          {
-            withCredentials: true,
-          }
-        );
-
-        if (res.data.success && res.data.user) {
-          const user = res.data.user;
-
-          console.log(user);
-          setProfile({
-            fullName: user.fullName || "N/A",
-            email: user.email || "N/A",
-
-            sector: user.sector?.sector_name || "N/A",
-            subsector: user.subsector?.subsector_name || "N/A",
-          });
-
-          setProfileImage(user.profileImage || "");
-        }
-
-        console.log(profile);
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      }
-    };
-
-    fetchProfile();
-  }, []);
+    if (user) {
+      console.log(user);
+      setFullName(user.fullName || "");
+      setEmail(user.email || "");
+      setSector(user.sector.sector_name || "");
+      setSubsector(user.subsector.subsector_name || "");
+      if (user.image) setProfileImage(user.image);
+    }
+  }, [user]);
 
   const handleChange = (e) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    switch (name) {
+      case "fullName":
+        setFullName(value);
+        break;
+      case "email":
+        setEmail(value);
+        break;
+      case "sector":
+        setSector(value);
+        break;
+      case "subsector":
+        setSubsector(value);
+        break;
+      default:
+        break;
+    }
   };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      setProfileImage(reader.result);
-    };
-
-    if (file) {
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    console.log(file);
+    setProfileImage(file);
   };
 
   const saveChanges = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("You must be logged in to update profile.");
-        return;
-      }
+    const formData = new FormData();
+    formData.append("fullName", fullName);
+    formData.append("email", email);
+    formData.append("sector", sector);
+    formData.append("subsector", subsector);
 
-      const res = await axios.put(
-        "http://localhost:1221/api/users/update-profile",
-        { ...profile, profileImage },
-        {
-          withCredentials: true,
-        }
-      );
+    formData.append("image", profileImage);
 
-      if (res.data.success) {
-        alert("Profile updated successfully!");
-        setEditMode(false);
-      } else {
-        alert("Update failed.");
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      alert("Error updating profile.");
-    }
+    await updateProfile(formData);
+    setEditMode(false);
   };
 
   return (
@@ -99,9 +68,9 @@ const UserProfile = () => {
       <h2 className="text-2xl font-semibold mb-6">User Profile</h2>
 
       <div className="flex items-center gap-4 mb-6">
-        {profileImage ? (
+        {user ? (
           <img
-            src={profileImage}
+            src={user?.image}
             alt="Profile"
             className="w-24 h-24 rounded-full object-cover border"
           />
@@ -121,24 +90,65 @@ const UserProfile = () => {
       </div>
 
       <div className="space-y-4">
-        {["fullName", "email", "sector", "subsector"].map((field) => (
-          <div key={field}>
-            <label className="block text-sm font-medium capitalize">
-              {field}
-            </label>
-            {editMode ? (
-              <input
-                type={field === "email" ? "email" : "text"}
-                name={field}
-                value={profile[field]}
-                onChange={handleChange}
-                className="w-full border rounded p-2"
-              />
-            ) : (
-              <p className="text-gray-700">{profile[field] || "N/A"}</p>
-            )}
-          </div>
-        ))}
+        <div>
+          <label className="block text-sm font-medium">Full Name</label>
+          {editMode ? (
+            <input
+              type="text"
+              name="fullName"
+              value={fullName}
+              onChange={handleChange}
+              className="w-full border rounded p-2"
+            />
+          ) : (
+            <p className="text-gray-700">{fullName || "N/A"}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Email</label>
+          {editMode ? (
+            <input
+              type="email"
+              name="email"
+              value={email}
+              onChange={handleChange}
+              className="w-full border rounded p-2"
+            />
+          ) : (
+            <p className="text-gray-700">{email || "N/A"}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Sector</label>
+          {editMode ? (
+            <input
+              type="text"
+              name="sector"
+              value={sector}
+              onChange={handleChange}
+              className="w-full border rounded p-2"
+            />
+          ) : (
+            <p className="text-gray-700">{sector || "N/A"}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Subsector</label>
+          {editMode ? (
+            <input
+              type="text"
+              name="subsector"
+              value={subsector}
+              onChange={handleChange}
+              className="w-full border rounded p-2"
+            />
+          ) : (
+            <p className="text-gray-700">{subsector || "N/A"}</p>
+          )}
+        </div>
       </div>
 
       <div className="mt-6 flex justify-between">
@@ -146,10 +156,10 @@ const UserProfile = () => {
           <>
             <button
               onClick={saveChanges}
-              className="px-4 py-2 bg-green-600 text-white rounded cursor-pointer"
+              className="px-4 py-2 bg-green-600 text-white rounded"
               disabled={isLoading}
             >
-              Save Changes
+              {isLoading ? "Updating..." : "Save Changes"}
             </button>
             <button
               onClick={() => setEditMode(false)}
@@ -161,7 +171,7 @@ const UserProfile = () => {
         ) : (
           <button
             onClick={() => setEditMode(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer"
+            className="px-4 py-2 bg-blue-600 text-white rounded"
           >
             Edit Profile
           </button>

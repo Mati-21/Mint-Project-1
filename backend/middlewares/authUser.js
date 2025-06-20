@@ -4,7 +4,7 @@ import User from "../models/userModels.js";
 const authUser = async (req, res, next) => {
   try {
     const token = req.cookies.token;
-    console.log(token);
+
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -20,7 +20,7 @@ const authUser = async (req, res, next) => {
         .status(401)
         .json({ success: false, message: "User not found" });
     }
-    console.log("User authenticated:", user);
+    // console.log("User authenticated:", user);
 
     req.userId = decoded.id; // attach user info to the request
     next();

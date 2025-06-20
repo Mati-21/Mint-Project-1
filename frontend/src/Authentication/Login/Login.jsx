@@ -13,7 +13,7 @@ function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
-  const { adminLogin, userLogin, user } = useAuthStore();
+  const { userLogin, user } = useAuthStore();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -21,27 +21,21 @@ function Login() {
 
     const normalizedEmail = email.trim().toLowerCase();
 
+    console.log(normalizedEmail, password);
+
     try {
       const userData = await userLogin(normalizedEmail, password);
-
       console.log(userData);
 
-      if (userData.success) {
-        localStorage.setItem("uToken", userData.token);
-        localStorage.setItem("user", JSON.stringify(userData.user));
+      if (userData) {
         toast.success("User login successful!");
 
-        console.log("✅ Logged-in User Object:", userData.user);
+        const role = (userData?.role || "").toLowerCase();
+        const userId = userData?.id || null;
+        const sector = userData?.sector?.sector_name;
+        const subsector = userData?.subsector?.subsector_name;
 
-        const role = (userData.user?.role || "").toLowerCase();
-        const userId = userData.user.id || userData.user._id;
-        const sector = userData.user.sector;
-        const subsector = userData.user.subsector;
-
-        console.log("Role:", role);
-        console.log("User ID:", userId);
-        console.log("Sector:", sector);
-        console.log("Subsector:", subsector);
+        console.log(sector, subsector);
 
         switch (role) {
           case "system admin":

@@ -1,26 +1,15 @@
 import generateToken from "../utils/generateToken.js";
 import User from "../models/userModels.js";
 
-import fs from "fs";
-import path from "path";
-
 import { hashPassword, verifyPassword } from "../utils/hashPassword.js";
-import { log } from "console";
+
+import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 
 // Create new user
 export const createUser = async (req, res) => {
   try {
     let { fullName, role, email, password, sector, subsector } = req.body;
     email = email.trim().toLowerCase();
-
-    console.log("[createUser] Incoming request body:", {
-      fullName,
-      role,
-      email,
-      sector,
-      subsector,
-    });
-    console.log("[createUser] Raw password:", password);
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -31,8 +20,6 @@ export const createUser = async (req, res) => {
     }
 
     const { hash, salt } = hashPassword(password);
-    console.log("[createUser] Hashed password:", hash);
-    console.log("[createUser] Salt:", salt);
 
     const newUser = new User({
       fullName,
@@ -45,8 +32,6 @@ export const createUser = async (req, res) => {
     });
 
     await newUser.save();
-
-    console.log("[createUser] User created successfully:", email);
 
     res.status(201).json({
       success: true,
@@ -67,7 +52,9 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
     const normalizedEmail = email.trim().toLowerCase();
 
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail })
+      .populate("sector", "sector_name")
+      .populate("subsector", "subsector_name");
 
     if (!user) {
       console.warn(`[loginUser] No user found for email: ${normalizedEmail}`);
@@ -85,18 +72,9 @@ export const loginUser = async (req, res) => {
     }
 
     generateToken(user._id, res);
-
-    res.json({
-      success: true,
-      message: "Login successful",
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        fullName: user.fullName,
-        sector: user.sector,
-        subsector: user.subsector,
-      },
+    res.status(200).json({
+      succuss: true,
+      user,
     });
   } catch (error) {
     console.error("[loginUser] Error during login:", error);
@@ -132,8 +110,6 @@ export const getProfile = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    console.log("✅ Populated user:", JSON.stringify(user, null, 2));
-
     res.status(200).json({ success: true, user });
   } catch (error) {
     console.error("❌ Error fetching user profile:", error);
@@ -149,20 +125,12 @@ export const logout = (req, res) => {
 // Get statistics about active users
 export const getActiveUsersStats = async (req, res) => {
   try {
-    console.log("⏳ [getActiveUsersStats] Fetching user statistics...");
     const totalUsers = await User.countDocuments({});
     const lastMonthCount = await User.countDocuments({
       createdAt: {
         $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
       },
     });
-
-    console.log(
-      "✅ [getActiveUsersStats] Total:",
-      totalUsers,
-      "Last Month:",
-      lastMonthCount
-    );
 
     res.status(200).json({
       count: totalUsers,
@@ -200,7 +168,6 @@ export const updateProfile = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
     // console.log("userrrr", user);
-    console.log(imageFile);
 
     let updatedData = {
       fullName,
@@ -208,18 +175,18 @@ export const updateProfile = async (req, res) => {
       sector: user.sector,
       subsector: user.subsector,
     };
-    console.log("joo", imageFile);
 
     if (imageFile) {
       const response = await uploadToCloudinary(imageFile.buffer);
 
       updatedData.image = response.secure_url; // ✅ Save to the `image` field in schema
     }
-    console.log("final", updatedData);
 
     const updatedUser = await User.findByIdAndUpdate(user._id, updatedData, {
       new: true,
-    });
+    })
+      .populate("sector", "sector_name")
+      .populate("subsector", "subsector_name");
 
     res.json({
       success: true,
@@ -268,12 +235,10 @@ export const updateUserPassword = async (req, res) => {
     const { id } = req.params;
     const { password } = req.body;
     if (!password || password.length < 6) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Password must be at least 6 characters.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters.",
+      });
     }
     const user = await User.findById(id);
     if (!user) {

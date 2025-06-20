@@ -14,7 +14,9 @@ export const checkAuth = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await userModels
       .findById(decoded.id)
-      .select("-password -salt"); // Exclude sensitive fields
+      .select("-password -salt")
+      .populate("sector", "sector_name")
+      .populate("subsector", "subsector_name"); // Exclude sensitive fields
 
     if (!user) {
       return res
