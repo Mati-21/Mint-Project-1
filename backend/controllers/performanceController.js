@@ -41,7 +41,6 @@ export const createOrUpdatePerformance = async (req, res) => {
       ...(subsectorId && { subsectorId }),
     });
 
-    // Do not save if no plan found
     if (!plan) {
       return res.status(404).json({ message: "No plan found." });
     }
@@ -52,14 +51,6 @@ export const createOrUpdatePerformance = async (req, res) => {
     } else {
       target = plan.target || 0;
     }
-
-    return res.json({
-      planId: plan._id,
-      plan, // optional, but helps
-      target,
-      year: plan.year,
-      validationStatus: plan.validationStatus || "Pending"
-    });
 
     const perfFilter = {
       userId,
@@ -81,15 +72,14 @@ export const createOrUpdatePerformance = async (req, res) => {
       sectorId,
       subsectorId,
       planId: plan._id,
-      goalId, // always set from KPI
-      kraId,  // always set from KPI
+      goalId,
+      kraId,
     };
 
     if (quarter) {
       const q = quarter.toLowerCase();
       const perfField = `${q}Performance`;
 
-      // Get existing performance data if present
       const q1 = existingPerformance?.q1Performance?.value || 0;
       const q2 = existingPerformance?.q2Performance?.value || 0;
       const q3 = existingPerformance?.q3Performance?.value || 0;
@@ -101,13 +91,11 @@ export const createOrUpdatePerformance = async (req, res) => {
       if (q === 'q4' && performanceMeasure < q3)
         return res.status(400).json({ message: "Q4 performance must be ≥ Q3." });
 
-      // Set quarter-specific performance
       update[perfField] = {
         value: performanceMeasure,
         description: description || '',
       };
 
-      // Recalculate yearly performance
       const quarterFields = ['q4Performance', 'q3Performance', 'q2Performance', 'q1Performance'];
       let latest = 0;
 
@@ -119,7 +107,6 @@ export const createOrUpdatePerformance = async (req, res) => {
         }
       }
 
-      // Compare with last year
       const lastYearPerf = await Performance.findOne({
         userId,
         kpiId: kpi._id,
@@ -127,6 +114,7 @@ export const createOrUpdatePerformance = async (req, res) => {
         sectorId,
         ...(subsectorId && { subsectorId }),
       });
+
       const lastYearPerformance = lastYearPerf?.performanceYear || 0;
 
       if (latest < lastYearPerformance) {
@@ -138,7 +126,6 @@ export const createOrUpdatePerformance = async (req, res) => {
       update.performanceYear = latest;
       update.performanceDescription = description || '';
     } else {
-      // Yearly performance only
       const lastYearPerf = await Performance.findOne({
         userId,
         kpiId: kpi._id,
@@ -148,6 +135,7 @@ export const createOrUpdatePerformance = async (req, res) => {
       });
 
       const lastYearPerformance = lastYearPerf?.performanceYear || 0;
+
       if (performanceMeasure < lastYearPerformance) {
         return res.status(400).json({
           message: `Current year performance (${performanceMeasure}) must be ≥ last year's (${lastYearPerformance}).`,
@@ -164,7 +152,11 @@ export const createOrUpdatePerformance = async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    return res.status(201).json(result);
+    return res.status(201).json({
+      message: "Performance saved successfully.",
+      result,
+    });
+
   } catch (error) {
     console.error("createOrUpdatePerformance error:", error);
     return res.status(500).json({ message: "Server error." });

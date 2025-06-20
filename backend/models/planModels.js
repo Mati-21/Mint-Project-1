@@ -21,14 +21,48 @@ const planSchema = new mongoose.Schema({
   q3: { type: Number, default: 0 },
   q4: { type: Number, default: 0 },
 
-  // Validation status for each period
+  // CEO validation
+  ceoValidationYear: { type: String, default: 'Pending' },
+  ceoValidationQ1: { type: String, default: 'Pending' },
+  ceoValidationQ2: { type: String, default: 'Pending' },
+  ceoValidationQ3: { type: String, default: 'Pending' },
+  ceoValidationQ4: { type: String, default: 'Pending' },
+  ceoValidationDescriptionYear: { type: String, default: '' },
+  ceoValidationDescriptionQ1: { type: String, default: '' },
+  ceoValidationDescriptionQ2: { type: String, default: '' },
+  ceoValidationDescriptionQ3: { type: String, default: '' },
+  ceoValidationDescriptionQ4: { type: String, default: '' },
+
+  // Chief CEO validation
+  chiefCeoValidationYear: { type: String, default: 'Pending' },
+  chiefCeoValidationQ1: { type: String, default: 'Pending' },
+  chiefCeoValidationQ2: { type: String, default: 'Pending' },
+  chiefCeoValidationQ3: { type: String, default: 'Pending' },
+  chiefCeoValidationQ4: { type: String, default: 'Pending' },
+  chiefCeoValidationDescriptionYear: { type: String, default: '' },
+  chiefCeoValidationDescriptionQ1: { type: String, default: '' },
+  chiefCeoValidationDescriptionQ2: { type: String, default: '' },
+  chiefCeoValidationDescriptionQ3: { type: String, default: '' },
+  chiefCeoValidationDescriptionQ4: { type: String, default: '' },
+
+  // Strategic validation
+  strategicValidationYear: { type: String, default: 'Pending' },
+  strategicValidationQ1: { type: String, default: 'Pending' },
+  strategicValidationQ2: { type: String, default: 'Pending' },
+  strategicValidationQ3: { type: String, default: 'Pending' },
+  strategicValidationQ4: { type: String, default: 'Pending' },
+  strategicValidationDescriptionYear: { type: String, default: '' },
+  strategicValidationDescriptionQ1: { type: String, default: '' },
+  strategicValidationDescriptionQ2: { type: String, default: '' },
+  strategicValidationDescriptionQ3: { type: String, default: '' },
+  strategicValidationDescriptionQ4: { type: String, default: '' },
+
+  // Minister (Final) validation
   validationStatusYear: { type: String, default: 'Pending' },
   validationStatusQ1: { type: String, default: 'Pending' },
   validationStatusQ2: { type: String, default: 'Pending' },
   validationStatusQ3: { type: String, default: 'Pending' },
   validationStatusQ4: { type: String, default: 'Pending' },
-
-  // Validation description for each period
   validationDescriptionYear: { type: String, default: '' },
   validationDescriptionQ1: { type: String, default: '' },
   validationDescriptionQ2: { type: String, default: '' },
