@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import useAuthStore from "../store/auth.store"; // adjust import as needed
+import useAuthStore from "../store/auth.store"; // adjust path if needed
 
 const BACKEND_PORT = 1221;
 const backendUrl = `http://localhost:${BACKEND_PORT}`;
@@ -92,7 +92,7 @@ const Filter = ({
 // Main Component
 const PerformanceValidation = () => {
   const { user } = useAuthStore();
-  const myRole = user?.role;
+  const myRole = user?.role || "";
 
   const { sectors, error: sectorError } = useSectors();
   const { subsectors, error: subsectorError } = useSubsectors();
@@ -118,16 +118,36 @@ const PerformanceValidation = () => {
   const fetchPerformances = async () => {
     setLoadingFetch(true);
     setLoading(true);
+    if (!year) {
+      setError("Year is required to filter performances.");
+      setLoading(false);
+      setLoadingFetch(false);
+      return;
+    }
     try {
-      const params = { year };
-      if (quarter !== "year") params.quarter = quarter;
+      const params = { year: String(year) };
+      if (quarter && quarter !== "year") params.quarter = quarter;
       if (sector) params.sectorId = sector;
       if (subsector) params.subsectorId = subsector;
 
-      const res = await axios.get(`${backendUrl}/api/performance`, { params });
+      console.log("📤 Fetching performances with params:", params);
+
+      const res = await axios.get(`${backendUrl}/api/performance-validation`, {
+        params,
+        withCredentials: true,
+        headers: {
+          "x-user-role": user?.role || "",
+          "x-sector-id": user?.sector?._id || "",
+          "x-subsector-id": user?.subsector?._id || ""
+        }
+      });
+
+      console.log("📦 Performances fetched:", res.data);
+
       setPerformances(res.data || []);
       setError(null);
-    } catch {
+    } catch (e) {
+      console.error("❌ Error fetching performances:", e);
       setError("Failed to load performances");
     } finally {
       setLoading(false);
@@ -188,8 +208,10 @@ const PerformanceValidation = () => {
       await axios.patch(`${backendUrl}/api/performance-validation/validate/${id}`, {
         type: quarter,
         status,
-        description,
-        role: myRole
+        description
+      }, {
+        withCredentials: true,
+        headers: { "x-user-role": myRole }
       });
       alert("Validation saved.");
     } catch {
@@ -208,8 +230,10 @@ const PerformanceValidation = () => {
       await axios.patch(`${backendUrl}/api/performance-validation/validate/${id}`, {
         type: quarter,
         status,
-        description,
-        role: myRole
+        description
+      }, {
+        withCredentials: true,
+        headers: { "x-user-role": myRole }
       }).catch(console.error);
     }
 

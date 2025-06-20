@@ -1,153 +1,135 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import useAuthStore from "../store/auth.store"; // <-- update this path
+import useAuthStore from "../store/auth.store"; // adjust path if needed
 
 const BACKEND_PORT = 1221;
 const backendUrl = `http://localhost:${BACKEND_PORT}`;
 
-// Custom hook to fetch sectors
 function useSectors() {
   const [sectors, setSectors] = useState([]);
   const [error, setError] = useState(null);
   useEffect(() => {
-    async function fetchSectors() {
-      try {
-        const res = await axios.get(`${backendUrl}/api/sector/get-sector`);
-        console.log("Sector API response:", res);
-        setSectors(res.data.data || []);
-        setError(null);
-      } catch (err) {
-        setError("Failed to load sectors");
-        console.error("Error fetching sectors:", err);
-      }
-    }
-    fetchSectors();
+    axios.get(`${backendUrl}/api/sector/get-sector`)
+      .then(res => setSectors(res.data.data || []))
+      .catch(() => setError("Failed to load sectors"));
   }, []);
   return { sectors, error };
 }
 
-// Custom hook to fetch subsectors
 function useSubsectors() {
   const [subsectors, setSubsectors] = useState([]);
   const [error, setError] = useState(null);
   useEffect(() => {
-    async function fetchSubsectors() {
-      try {
-        const res = await axios.get(`${backendUrl}/api/subsector/get-subsector`);
-        console.log("Subsector API response:", res);
-        setSubsectors(res.data || []);
-        setError(null);
-      } catch (err) {
-        setError("Failed to load subsectors");
-        console.error("Error fetching subsectors:", err);
-      }
-    }
-    fetchSubsectors();
+    axios.get(`${backendUrl}/api/subsector/get-subsector`)
+      .then(res => setSubsectors(res.data || []))
+      .catch(() => setError("Failed to load subsectors"));
   }, []);
   return { subsectors, error };
 }
 
+// Helper: map role string to proper validation prefix key in camelCase
+function getValidationPrefix(role) {
+  role = role.toLowerCase();
+  if (role === "ceo") return "ceo";
+  if (role === "chief ceo" || role === "chiefceo") return "chiefCeo";
+  if (role === "strategic unit" || role === "strategicunit") return "strategic";
+  if (role === "minister") return "minister"; // adjust if needed
+  return ""; // fallback
+}
+
 const Filter = ({
-  year,
-  setYear,
-  quarter,
-  setQuarter,
-  sectors,
-  sector,
-  setSector,
-  filteredSubsectors,
-  subsector,
-  setSubsector,
-  onFilter,
-  loadingPlans,
+  year, setYear,
+  quarter, setQuarter,
+  sectors, sector, setSector,
+  filteredSubsectors, subsector, setSubsector,
+  statusFilter, setStatusFilter,
+  onFilter, loading
 }) => {
   const quarters = ["year", "q1", "q2", "q3", "q4"];
+  const statuses = ["", "Approved", "Pending", "Rejected"];
 
   return (
-    <div className="mb-6 bg-white p-4 rounded shadow flex flex-wrap gap-4 items-end">
-      <div className="flex flex-col">
-        <label className="text-sm font-medium mb-1 text-gray-700">Year</label>
+    <div className="bg-white p-4 rounded shadow flex flex-wrap gap-4 items-end mb-6">
+      <div>
+        <label>Year</label>
         <input
           type="number"
           value={year}
-          onChange={(e) => setYear(e.target.value)}
-          className="border rounded px-3 py-1.5"
+          onChange={e => setYear(e.target.value)}
           min="2000"
           max="2100"
-          placeholder="Year"
+          className="border px-3 py-1.5 rounded"
         />
       </div>
-
-      <div className="flex flex-col">
-        <label className="text-sm font-medium mb-1 text-gray-700">Period</label>
+      <div>
+        <label>Period</label>
         <select
           value={quarter}
-          onChange={(e) => setQuarter(e.target.value)}
-          className="border rounded px-3 py-1.5"
+          onChange={e => setQuarter(e.target.value)}
+          className="border px-3 py-1.5 rounded"
         >
-          {quarters.map((q) => (
-            <option key={q} value={q}>
-              {q.toUpperCase()}
-            </option>
+          {quarters.map(q => (
+            <option key={q} value={q}>{q.toUpperCase()}</option>
           ))}
         </select>
       </div>
-
-      <div className="flex flex-col">
-        <label className="text-sm font-medium mb-1 text-gray-700">Sector</label>
+      <div>
+        <label>Sector</label>
         <select
           value={sector}
-          onChange={(e) => {
+          onChange={e => {
             setSector(e.target.value);
-            setSubsector(""); // reset subsector when sector changes
+            setSubsector("");
           }}
-          className="border rounded px-3 py-1.5"
+          className="border px-3 py-1.5 rounded"
         >
           <option value="">All</option>
-          {sectors.map((sec) => (
-            <option key={sec._id} value={sec._id}>
-              {sec.sector_name}
-            </option>
+          {sectors.map(sec => (
+            <option key={sec._id} value={sec._id}>{sec.sector_name}</option>
           ))}
         </select>
       </div>
-
-      <div className="flex flex-col">
-        <label className="text-sm font-medium mb-1 text-gray-700">Subsector</label>
+      <div>
+        <label>Subsector</label>
         <select
           value={subsector}
-          onChange={(e) => setSubsector(e.target.value)}
-          className="border rounded px-3 py-1.5"
+          onChange={e => setSubsector(e.target.value)}
           disabled={!sector}
+          className="border px-3 py-1.5 rounded"
         >
           <option value="">All</option>
-          {filteredSubsectors.map((ss) => (
-            <option key={ss._id} value={ss._id}>
-              {ss.subsector_name}
-            </option>
+          {filteredSubsectors.map(ss => (
+            <option key={ss._id} value={ss._id}>{ss.subsector_name}</option>
           ))}
         </select>
       </div>
-
+      <div>
+        <label>Status</label>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="border px-3 py-1.5 rounded"
+        >
+          {statuses.map(s => (
+            <option key={s} value={s}>{s === "" ? "All" : s}</option>
+          ))}
+        </select>
+      </div>
       <button
         onClick={onFilter}
-        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        disabled={loadingPlans}
+        disabled={loading}
+        className="bg-green-600 text-white px-4 py-2 rounded"
       >
-        {loadingPlans ? "Filtering..." : "Filter"}
+        {loading ? "Filtering..." : "Filter"}
       </button>
     </div>
   );
 };
 
 const TargetValidation = () => {
-  const { user } = useAuthStore(); // Get current logged in user
-  const userRole = user?.role?.toLowerCase() || "";
-
-  const [plans, setPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingPlans, setLoadingPlans] = useState(false);
-  const [error, setError] = useState(null);
+  const { user } = useAuthStore();
+  const myRole = user?.role || "";
+  const prefix = getValidationPrefix(myRole);
 
   const { sectors, error: sectorError } = useSectors();
   const { subsectors, error: subsectorError } = useSubsectors();
@@ -156,257 +138,241 @@ const TargetValidation = () => {
   const [quarter, setQuarter] = useState("year");
   const [sector, setSector] = useState("");
   const [subsector, setSubsector] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  const [plans, setPlans] = useState([]);
   const [edits, setEdits] = useState({});
   const [selectAll, setSelectAll] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingFetch, setLoadingFetch] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Filter subsectors based on selected sector
-  const filteredSubsectors = subsectors.filter((ss) => {
+  const filteredSubsectors = subsectors.filter(ss => {
     if (!sector) return true;
-    const ssSectorId = ss.sectorId?._id || ss.sectorId;
-    if (!ssSectorId) return false;
-    return String(ssSectorId) === String(sector);
+    const id = ss.sectorId?._id || ss.sectorId;
+    return String(id) === String(sector);
   });
 
-  // Fetch plans with filters
   const fetchPlans = async () => {
-    setLoadingPlans(true);
+    setLoadingFetch(true);
     setLoading(true);
+    if (!year) {
+      setError("Year is required to filter plans.");
+      setLoading(false);
+      setLoadingFetch(false);
+      return;
+    }
     try {
-      const params = {
-        year,
-        quarter,
-      };
+      const params = { year: String(year), quarter };
       if (sector) params.sector = sector;
       if (subsector) params.subsector = subsector;
+      if (statusFilter) params.statusFilter = statusFilter;
+      params.role = myRole.toLowerCase();
 
-      console.log("Fetching plans with params:", params);
+      console.log("[Frontend] Sending filter request with params:", params);
 
-      const res = await axios.get(`${backendUrl}/api/plans`, { params });
-      setPlans(Array.isArray(res.data) ? res.data : res.data.plans || []);
+      const res = await axios.get(`${backendUrl}/api/target-validation`, {
+        params,
+        withCredentials: true,
+        headers: {
+          "x-user-role": myRole,
+          "x-sector-id": user?.sector?._id || "",
+          "x-subsector-id": user?.subsector?._id || ""
+        }
+      });
+
+      console.log("[Frontend] Received plans response:", res.data);
+
+      setPlans(res.data || []);
       setError(null);
-    } catch (err) {
+    } catch (e) {
+      console.error("[Frontend] Error fetching plans:", e);
       setError("Failed to load plans");
-      console.error("Error fetching plans:", err);
     } finally {
       setLoading(false);
-      setLoadingPlans(false);
+      setLoadingFetch(false);
     }
   };
 
-  useEffect(() => {
-    fetchPlans();
-  }, []);
+  useEffect(() => { fetchPlans(); }, []);
 
-  // Filter plans client side (just in case)
-  const filteredPlans = plans.filter((plan) => {
+  // Filter by year, sector, subsector and validation field presence
+  const filtered = plans.filter(plan => {
     if (String(plan.year) !== String(year)) return false;
-    if (quarter === "year") {
-      if (plan.target == null) return false;
-    } else {
-      if (plan[quarter] == null) return false;
-    }
-    const planSectorId = plan.sectorId?._id || plan.sectorId;
-    const planSubsectorId = plan.subsectorId?._id || plan.subsectorId;
-    if (sector && String(planSectorId) !== String(sector)) return false;
-    if (subsector && String(planSubsectorId) !== String(subsector)) return false;
+    // Check the validation status field exists on the plan
+    if (quarter === "year" && plan[`${prefix}ValidationYear`] === undefined) return false;
+    if (quarter !== "year" && plan[`${prefix}Validation${quarter.toUpperCase()}`] === undefined) return false;
+    if (sector && String(plan.sectorId?._id || plan.sectorId) !== String(sector)) return false;
+    if (subsector && String(plan.subsectorId?._id || plan.subsectorId) !== String(subsector)) return false;
+    if (statusFilter && statusFilter !== "" && plan[quarter === "year"
+      ? `${prefix}ValidationYear`
+      : `${prefix}Validation${quarter.toUpperCase()}`] !== statusFilter) return false;
     return true;
   });
 
-  // Group plans by goal then KRA
-  const groupedByGoal = filteredPlans.reduce((acc, plan) => {
+  // Group by Goal and KRA
+  const grouped = filtered.reduce((acc, plan) => {
     const goal = plan.goalId?.goal_desc || "-";
-    if (!acc[goal]) acc[goal] = [];
-    acc[goal].push(plan);
+    const kra = plan.kraId?.kra_name || "-";
+    const key = `${goal}|||${kra}`;
+    acc[key] = acc[key] || [];
+    acc[key].push(plan);
     return acc;
   }, {});
 
-  const groupedByGoalKra = {};
-  for (const goal in groupedByGoal) {
-    groupedByGoalKra[goal] = groupedByGoal[goal].reduce((acc, plan) => {
-      const kra = plan.kraId?.kra_name || "-";
-      if (!acc[kra]) acc[kra] = [];
-      acc[kra].push(plan);
-      return acc;
-    }, {});
-  }
-
-  // Handlers for validation checkbox
-  const handleCheckboxChange = (planId) => {
-    setEdits((prev) => ({
+  const handleCheckbox = (id) => {
+    setEdits(prev => ({
       ...prev,
-      [planId]: {
-        ...prev[planId],
-        status: prev[planId]?.status === "Approved" ? "Pending" : "Approved",
-      },
+      [id]: {
+        ...prev[id],
+        status: prev[id]?.status === "Approved" ? "Pending" : "Approved"
+      }
     }));
   };
 
-  const handleSelectAllChange = () => {
-    const newState = !selectAll;
-    setSelectAll(newState);
+  const handleSelectAll = () => {
+    const newVal = !selectAll;
+    setSelectAll(newVal);
     const newEdits = {};
-    Object.values(groupedByGoalKra)
-      .flatMap((kraGroup) => Object.values(kraGroup).flat())
-      .forEach((plan) => {
-        newEdits[plan._id] = {
-          ...edits[plan._id],
-          status: newState ? "Approved" : "Pending",
-        };
-      });
+    Object.values(grouped).flat().forEach(plan => {
+      newEdits[plan._id] = { ...edits[plan._id], status: newVal ? "Approved" : "Pending" };
+    });
     setEdits(newEdits);
   };
 
-  const handleCommentChange = (planId, value) => {
-    setEdits((prev) => ({
+  const handleComment = (id, val) => {
+    setEdits(prev => ({
       ...prev,
-      [planId]: {
-        ...prev[planId],
-        description: value,
-      },
+      [id]: { ...prev[id], description: val }
     }));
   };
 
-  const submitValidation = async (planId) => {
-    const { status = "Pending", description = "" } = edits[planId] || {};
+  const submitOne = async (id) => {
+    const { status = "Pending", description = "" } = edits[id] || {};
+
     try {
-      await axios.patch(`${backendUrl}/api/target-validation/validate/${planId}`, {
+      await axios.patch(`${backendUrl}/api/target-validation/validate/${id}`, {
         type: quarter,
         status,
         description,
-        role: userRole, // <-- send role here
+        role: myRole.toLowerCase()
+      }, {
+        withCredentials: true,
+        headers: { "x-user-role": myRole }
       });
-      alert("Validation updated.");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update validation.");
+      alert("Validation saved.");
+    } catch {
+      alert("Failed to save validation.");
     }
   };
 
-  // Bulk validate selected rows with role
-  const validateSelected = async () => {
-    const selectedPlanIds = Object.entries(edits)
-      .filter(([_, edit]) => edit.status === "Approved")
-      .map(([planId]) => planId);
+  const submitBulk = async () => {
+    const ids = Object.entries(edits)
+      .filter(([, e]) => e.status === "Approved")
+      .map(([id]) => id);
+    if (!ids.length) return alert("No selections made.");
 
-    if (selectedPlanIds.length === 0) {
-      alert("No rows selected for validation.");
-      return;
+    for (const id of ids) {
+      const { status = "Approved", description = "" } = edits[id] || {};
+      await axios.patch(`${backendUrl}/api/target-validation/validate/${id}`, {
+        type: quarter,
+        status,
+        description,
+        role: myRole.toLowerCase()
+      }, {
+        withCredentials: true,
+        headers: { "x-user-role": myRole }
+      }).catch(console.error);
     }
 
-    for (const planId of selectedPlanIds) {
-      const { status = "Approved", description = "" } = edits[planId] || {};
-      try {
-        await axios.patch(`${backendUrl}/api/target-validation/validate/${planId}`, {
-          type: quarter,
-          status,
-          description,
-          role: userRole, // <-- send role here too
-        });
-      } catch (err) {
-        console.error(`Failed to validate plan ${planId}:`, err);
-      }
-    }
-    alert("Selected rows validated.");
+    alert("Bulk validation sent.");
   };
 
-  if (loading) return <p className="text-gray-700">Loading...</p>;
-  if (error) return <p className="text-red-600">{error}</p>;
-  if (sectorError) return <p className="text-red-600">{sectorError}</p>;
-  if (subsectorError) return <p className="text-red-600">{subsectorError}</p>;
+  if (loading) return <p className="p-6">Loading...</p>;
+  if (error) return <p className="p-6 text-red-600">{error}</p>;
+  if (sectorError || subsectorError) return <p className="p-6 text-red-600">Loading filters failed.</p>;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto font-sans">
+    <div className="p-6 max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold mb-2">
-        KPI Target Validation - {year} / {quarter.toUpperCase()}
+        KPI Target Validation — {year} / {quarter.toUpperCase()}
       </h1>
-      <p className="mb-5 text-gray-600">Use filters below to validate KPI targets.</p>
+      <p className="mb-5 text-gray-600">Filter and validate KPI targets.</p>
+
+      <button
+        onClick={fetchPlans}
+        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
+      >
+        Fetch All Plans
+      </button>
 
       <Filter
-        year={year}
-        setYear={setYear}
-        quarter={quarter}
-        setQuarter={setQuarter}
-        sectors={sectors}
-        sector={sector}
-        setSector={setSector}
+        year={year} setYear={setYear}
+        quarter={quarter} setQuarter={setQuarter}
+        sectors={sectors} sector={sector} setSector={setSector}
         filteredSubsectors={filteredSubsectors}
-        subsector={subsector}
-        setSubsector={setSubsector}
+        subsector={subsector} setSubsector={setSubsector}
+        statusFilter={statusFilter} setStatusFilter={setStatusFilter}
         onFilter={fetchPlans}
-        loadingPlans={loadingPlans}
+        loading={loadingFetch}
       />
 
-      {Object.entries(groupedByGoalKra).map(([goal, kraGroups]) => (
-        <div key={goal} className="mb-10">
-          <div className="bg-yellow-100 font-bold text-lg px-4 py-2 rounded-t">
-            Goal: {goal}
-          </div>
-          {Object.entries(kraGroups).map(([kra, plansInKra]) => (
-            <table
-              key={kra}
-              className="w-full border border-collapse mt-0 shadow-2xl mb-6"
-            >
-              <thead>
-                <tr className="bg-gray-200">
-                  <th colSpan={5} className="text-left px-4 py-2 font-semibold">
-                    KRA: {kra}
+      {Object.entries(grouped).map(([key, items]) => {
+        const [goal, kra] = key.split("|||");
+        return (
+          <div key={key} className="mb-10">
+            <div className="bg-yellow-100 p-2 font-bold">{`Goal: ${goal}`}</div>
+            <div className="bg-gray-200 p-2 font-semibold">{`KRA: ${kra}`}</div>
+            <table className="w-full border-collapse shadow-lg mb-6">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="border p-2">Indicator</th>
+                  <th className="border p-2">Value</th>
+                  <th className="border p-2">
+                    <input type="checkbox" checked={selectAll} onChange={handleSelectAll} /> Validate
                   </th>
-                </tr>
-                <tr className="bg-gray-100">
-                  <th className="border p-3 text-left">Indicator</th>
-                  <th className="border p-3 text-left">Value</th>
-                  <th className="border p-3 text-left">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectAll}
-                        onChange={handleSelectAllChange}
-                      />
-                      <span>Validate</span>
-                    </div>
-                  </th>
-                  <th className="border p-3 text-left">Comments</th>
-                  <th className="border p-3 text-left">Action</th>
+                  <th className="border p-2">Comments</th>
+                  <th className="border p-2">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {plansInKra.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="text-center p-4 text-gray-500">
-                      No KPI targets found for the selected filters.
-                    </td>
-                  </tr>
-                )}
-                {plansInKra.map((plan) => {
-                  const value = quarter === "year" ? plan.target : plan[quarter];
-                  const status = edits[plan._id]?.status ?? plan.status ?? "Pending";
-                  const description =
-                    edits[plan._id]?.description ?? plan.validation_description ?? "";
+                {items.map(plan => {
+                  const validationStatusField = quarter === "year"
+                    ? `${prefix}ValidationYear`
+                    : `${prefix}Validation${quarter.toUpperCase()}`;
+
+                  const validationDescField = quarter === "year"
+                    ? `${prefix}ValidationDescriptionYear`
+                    : `${prefix}ValidationDescription${quarter.toUpperCase()}`;
+
+                  const value = plan.target ?? plan.value ?? "-";
+
+                  const status = edits[plan._id]?.status ?? plan[validationStatusField] ?? "Pending";
+                  const description = edits[plan._id]?.description ?? plan[validationDescField] ?? "";
 
                   return (
                     <tr key={plan._id} className="hover:bg-gray-50">
-                      <td className="border p-2">{plan.kpiId?.kpi_name || "Unknown KPI"}</td>
-                      <td className="border p-2">{value ?? "-"}</td>
+                      <td className="border p-2">{plan.kpiId?.kpi_name}</td>
+                      <td className="border p-2">{value}</td>
                       <td className="border p-2 text-center">
                         <input
                           type="checkbox"
                           checked={status === "Approved"}
-                          onChange={() => handleCheckboxChange(plan._id)}
+                          onChange={() => handleCheckbox(plan._id)}
                         />
                       </td>
                       <td className="border p-2">
                         <input
                           type="text"
                           value={description}
-                          onChange={(e) => handleCommentChange(plan._id, e.target.value)}
+                          onChange={e => handleComment(plan._id, e.target.value)}
                           className="w-full border rounded px-2 py-1"
-                          placeholder="Add comment"
                         />
                       </td>
                       <td className="border p-2 text-center">
                         <button
-                          onClick={() => submitValidation(plan._id)}
-                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                          onClick={() => submitOne(plan._id)}
+                          className="bg-blue-600 text-white px-3 py-1 rounded"
                         >
                           Save
                         </button>
@@ -416,21 +382,17 @@ const TargetValidation = () => {
                 })}
               </tbody>
             </table>
-          ))}
-        </div>
-      ))}
+          </div>
+        );
+      })}
 
-      {filteredPlans.length === 0 && (
-        <div className="text-center p-4 text-gray-500">
-          No KPI targets found for the selected filters.
-        </div>
-      )}
+      {filtered.length === 0 && <p className="text-center text-gray-500">No KPI targets found.</p>}
 
-      {filteredPlans.length > 0 && (
-        <div className="flex justify-end mt-4">
+      {filtered.length > 0 && (
+        <div className="flex justify-end">
           <button
-            className="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800"
-            onClick={validateSelected}
+            onClick={submitBulk}
+            className="bg-green-700 text-white px-6 py-2 rounded"
           >
             Validate All Selected
           </button>

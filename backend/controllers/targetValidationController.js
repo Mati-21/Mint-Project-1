@@ -1,7 +1,7 @@
 import Plan from '../models/planModels.js';
 import mongoose from 'mongoose';
 
-// Map roles to their validation fields
+// Validation fields by role, adjusted to your requested checks
 const roleValidationFields = {
   ceo: {
     statusYear: 'ceoValidationYear',
@@ -16,6 +16,20 @@ const roleValidationFields = {
     descQ4: 'ceoValidationDescriptionQ4',
   },
   'chief ceo': {
+    // Chief CEO checks CEO validation fields
+    statusYear: 'ceoValidationYear',
+    statusQ1: 'ceoValidationQ1',
+    statusQ2: 'ceoValidationQ2',
+    statusQ3: 'ceoValidationQ3',
+    statusQ4: 'ceoValidationQ4',
+    descYear: 'ceoValidationDescriptionYear',
+    descQ1: 'ceoValidationDescriptionQ1',
+    descQ2: 'ceoValidationDescriptionQ2',
+    descQ3: 'ceoValidationDescriptionQ3',
+    descQ4: 'ceoValidationDescriptionQ4',
+  },
+  'strategic unit': {
+    // Strategic Unit checks Chief CEO validation fields
     statusYear: 'chiefCeoValidationYear',
     statusQ1: 'chiefCeoValidationQ1',
     statusQ2: 'chiefCeoValidationQ2',
@@ -27,7 +41,8 @@ const roleValidationFields = {
     descQ3: 'chiefCeoValidationDescriptionQ3',
     descQ4: 'chiefCeoValidationDescriptionQ4',
   },
-  'strategic unit': {
+  minister: {
+    // Minister checks Strategic Unit validation fields
     statusYear: 'strategicValidationYear',
     statusQ1: 'strategicValidationQ1',
     statusQ2: 'strategicValidationQ2',
@@ -39,23 +54,87 @@ const roleValidationFields = {
     descQ3: 'strategicValidationDescriptionQ3',
     descQ4: 'strategicValidationDescriptionQ4',
   },
-  minister: {
-    statusYear: 'validationStatusYear',
-    statusQ1: 'validationStatusQ1',
-    statusQ2: 'validationStatusQ2',
-    statusQ3: 'validationStatusQ3',
-    statusQ4: 'validationStatusQ4',
-    descYear: 'validationDescriptionYear',
-    descQ1: 'validationDescriptionQ1',
-    descQ2: 'validationDescriptionQ2',
-    descQ3: 'validationDescriptionQ3',
-    descQ4: 'validationDescriptionQ4',
-  },
 };
 
+
 export const getAllPlans = async (req, res) => {
+  console.log("==== /api/target-validation GET called ====");
   try {
-    const plans = await Plan.find()
+    const {
+      year,
+      quarter = 'year',
+      sector: querySectorId,
+      subsector: querySubsectorId,
+      statusFilter, // optional explicit status filter (Approved, Pending, Rejected)
+    } = req.query;
+
+    // Role and user's sector/subsector from headers sent by frontend
+    const role = (req.headers["x-user-role"] || "").toLowerCase();
+    const userSectorId = req.headers["x-sector-id"] || null;
+    const userSubsectorId = req.headers["x-subsector-id"] || null;
+
+    console.log("Incoming role:", role);
+    console.log("User sector ID:", userSectorId);
+    console.log("User subsector ID:", userSubsectorId);
+    console.log("Query params:", req.query);
+
+    if (!year) {
+      return res.status(400).json({ message: "Year is required" });
+    }
+
+    // Base filter
+    const filter = { year: Number(year) };
+
+    // Role-based validation field determination and filtering logic
+    let validationField = null;
+
+    if (role === 'ceo') {
+      if (!userSubsectorId) {
+        console.warn("CEO role but no subsectorId attached.");
+      } else {
+        filter.subsectorId = userSubsectorId;
+      }
+      // CEO does not filter by validation status
+      console.log("[Backend] CEO role: no validation status filter");
+    } else if (role === 'chief ceo') {
+      if (!userSectorId) {
+        console.warn("Chief CEO role but no sectorId attached.");
+      } else {
+        filter.sectorId = userSectorId;
+      }
+      // Chief CEO filters on CEO validation fields
+      validationField = quarter === "year" ? "ceoValidationYear" : `ceoValidation${quarter.toUpperCase()}`;
+    } else if (role === 'strategic unit') {
+      // Strategic Unit filters on Chief CEO validation fields
+      validationField = quarter === "year" ? "chiefCeoValidationYear" : `chiefCeoValidation${quarter.toUpperCase()}`;
+    } else if (role === 'minister') {
+      // Minister filters on Strategic Unit validation fields
+      validationField = quarter === "year" ? "strategicValidationYear" : `strategicValidation${quarter.toUpperCase()}`;
+    }
+
+    // Apply validation filter if applicable
+    if (validationField) {
+      if (statusFilter && ['Approved', 'Pending', 'Rejected'].includes(statusFilter)) {
+        filter[validationField] = statusFilter;
+        console.log(`[Backend] Filtering on ${validationField} = "${statusFilter}" (explicit statusFilter)`);
+      } else {
+        // Default: only Approved
+        filter[validationField] = "Approved";
+        console.log(`[Backend] Filtering on ${validationField} = "Approved" (default)`);
+      }
+    }
+
+    // Additional filtering by sector and subsector if role allows
+    if (querySectorId && !(role === 'ceo' || role === 'chief ceo')) {
+      filter.sectorId = querySectorId;
+    }
+    if (querySubsectorId && role !== 'ceo') {
+      filter.subsectorId = querySubsectorId;
+    }
+
+    console.log("MongoDB filter object:", JSON.stringify(filter, null, 2));
+
+    const plans = await Plan.find(filter)
       .populate('sectorId', 'sector_name')
       .populate('subsectorId', 'subsector_name')
       .populate('kpiId', 'kpi_name')
@@ -63,17 +142,32 @@ export const getAllPlans = async (req, res) => {
       .populate('goalId', 'goal_desc')
       .exec();
 
+    console.log(`Plans found: ${plans.length}`);
+
+    if (plans.length > 0) {
+      plans.forEach(plan => {
+        console.log(`KPI: ${plan.kpiId?.kpi_name || "N/A"}, Year: ${plan.year}, CEO Validation: ${plan.ceoValidationYear}, Chief CEO Validation: ${plan.chiefCeoValidationYear}, Strategic Validation: ${plan.strategicValidationYear}`);
+      });
+    } else {
+      console.log("No plans matched the filter.");
+    }
+
     res.status(200).json(plans);
+
   } catch (error) {
     console.error('Error fetching plans:', error);
     res.status(500).json({ message: 'Failed to fetch plans' });
   }
 };
 
+
+// PATCH endpoint to update validation status and description
 export const validateTarget = async (req, res) => {
   try {
     const { id } = req.params;
-    let { type, status, description, role } = req.body;
+    let { type, status, description = '', role } = req.body;
+
+    console.log(`[Backend] PATCH /api/target-validation/validate/${id} called with`, req.body);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid plan ID.' });
@@ -92,8 +186,8 @@ export const validateTarget = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status. Must be Approved, Rejected, or Pending.' });
     }
 
-    if (!role) {
-      return res.status(400).json({ message: 'Role is required for validation.' });
+    if (!role || !roleValidationFields[role]) {
+      return res.status(400).json({ message: 'Role is required and must be valid for validation.' });
     }
 
     const fields = roleValidationFields[role];
@@ -110,7 +204,7 @@ export const validateTarget = async (req, res) => {
 
     const update = {
       [statusField]: status,
-      [descField]: description || '',
+      [descField]: description,
     };
 
     const updatedPlan = await Plan.findByIdAndUpdate(id, update, { new: true })
@@ -124,9 +218,11 @@ export const validateTarget = async (req, res) => {
       return res.status(404).json({ message: 'Plan not found.' });
     }
 
+    console.log(`[Backend] Updated plan ${id}: Set ${statusField} = ${status}`);
+
     return res.status(200).json(updatedPlan);
   } catch (error) {
-    console.error('Error validating target:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('[Backend] Error validating target:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 };
