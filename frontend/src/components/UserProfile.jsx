@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import useAuthStore from "../store/auth.store";
 
 const UserProfile = () => {
@@ -10,7 +9,7 @@ const UserProfile = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
-  const { user, updateProfile, logout, isLoading } = useAuthStore();
+  const { user, updateProfile, isLoading } = useAuthStore();
 
   useEffect(() => {
     if (user) {
@@ -45,7 +44,6 @@ const UserProfile = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setProfileImage(file);
   };
 
@@ -55,7 +53,6 @@ const UserProfile = () => {
     formData.append("email", email);
     formData.append("sector", sector);
     formData.append("subsector", subsector);
-
     formData.append("image", profileImage);
 
     await updateProfile(formData);
@@ -63,117 +60,109 @@ const UserProfile = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-4 border rounded shadow-md bg-white">
-      <h2 className="text-2xl font-semibold mb-6">User Profile</h2>
+    <div className="max-w-3xl mx-auto mt-10 p-6 bg-white border border-gray-200 rounded-lg shadow-md">
+      <h2 className="text-xl font-semibold text-gray-800 mb-6">👤 Profile Details</h2>
 
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-6 mb-6">
         {profileImage ? (
           <img
-            src={
-              profileImage instanceof File
-                ? URL.createObjectURL(profileImage)
-                : profileImage
-            }
+            src={profileImage instanceof File ? URL.createObjectURL(profileImage) : profileImage}
             alt="Profile"
-            className="w-24 h-24 rounded-full object-cover border"
-          />
-        ) : user?.image ? (
-          <img
-            src={user.image}
-            alt="Profile"
-            className="w-24 h-24 rounded-full object-cover border"
+            className="w-24 h-24 rounded-full object-cover border-2 border-green-600 shadow"
           />
         ) : (
-          <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+          <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm border">
             No Image
           </div>
         )}
 
         {editMode && (
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="ml-4"
-          />
+          <div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="text-sm text-gray-600 file:border-0 file:bg-green-100 file:px-3 file:py-1 file:rounded file:text-green-700"
+            />
+          </div>
         )}
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium">Full Name</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Full Name</label>
           {editMode ? (
             <input
               type="text"
               name="fullName"
               value={fullName}
               onChange={handleChange}
-              className="w-full border rounded p-2"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-200"
             />
           ) : (
-            <p className="text-gray-700">{fullName || "N/A"}</p>
+            <p className="text-sm text-gray-800">{fullName || "N/A"}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Email</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
           {editMode ? (
             <input
               type="email"
               name="email"
               value={email}
               onChange={handleChange}
-              className="w-full border rounded p-2"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-200"
             />
           ) : (
-            <p className="text-gray-700">{email || "N/A"}</p>
+            <p className="text-sm text-gray-800">{email || "N/A"}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Sector</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Sector</label>
           {editMode ? (
             <input
               type="text"
               name="sector"
               value={sector}
               onChange={handleChange}
-              className="w-full border rounded p-2"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-200"
             />
           ) : (
-            <p className="text-gray-700">{sector || "N/A"}</p>
+            <p className="text-sm text-gray-800">{sector || "N/A"}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Subsector</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Subsector</label>
           {editMode ? (
             <input
               type="text"
               name="subsector"
               value={subsector}
               onChange={handleChange}
-              className="w-full border rounded p-2"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-200"
             />
           ) : (
-            <p className="text-gray-700">{subsector || "N/A"}</p>
+            <p className="text-sm text-gray-800">{subsector || "N/A"}</p>
           )}
         </div>
       </div>
 
-      <div className="mt-6 flex justify-between">
+      <div className="mt-6">
         {editMode ? (
           <>
             <button
               onClick={saveChanges}
-              className="px-4 py-2 bg-green-600 text-white rounded"
               disabled={isLoading}
+              className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition mr-2"
             >
               {isLoading ? "Updating..." : "Save Changes"}
             </button>
             <button
               onClick={() => setEditMode(false)}
-              className="px-4 py-2 bg-gray-400 text-white rounded"
+              className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 transition"
             >
               Cancel
             </button>
@@ -181,7 +170,7 @@ const UserProfile = () => {
         ) : (
           <button
             onClick={() => setEditMode(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
+            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
           >
             Edit Profile
           </button>

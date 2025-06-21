@@ -15,7 +15,7 @@ import { validatePasswordStrength } from "../middlewares/validatePasswordStrengt
 
 import { checkAuth } from "../middlewares/checkAuth.js";
 import authUser from "../middlewares/authUser.js";
-import  upload  from "../middlewares/multer.js";
+import  {uploadMemory}  from "../middlewares/multer.js";
 
 const userRouter = express.Router();
 
@@ -27,7 +27,7 @@ userRouter.get("/get-profile", authUser, getProfile);
 userRouter.get("/active-users", getActiveUsersStats);
 userRouter.put(
   "/update-profile",
-  upload.single("image"),
+  uploadMemory.single("image"),
   authUser,
   updateProfile
 );

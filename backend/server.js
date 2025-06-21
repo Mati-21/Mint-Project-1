@@ -2,12 +2,14 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
-import fileUpload from "express-fileupload";
 import cookieParser from "cookie-parser";
 import { fileURLToPath } from "url";
 import path, { dirname } from "path";
 import http from "http";
 import { Server } from "socket.io";
+
+// Import multer middleware
+import {upload} from "./middlewares/multer.js";
 
 // Routes and Middleware
 import authMiddleware from "./middlewares/authMiddleware.js";
@@ -34,19 +36,14 @@ import targetRouter from "./routes/targetValidationRoutes.js";
 import performanceValidationRouter from "./routes/performanceValidationRoutes.js";
 import chatRouter from "./routes/chatRouter.js";
 
-
-// Setup __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load env and connect DB
 dotenv.config();
 connectDB();
 
-// Initialize express app
 const app = express();
 
-// Middleware
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -57,14 +54,12 @@ app.use(
     credentials: true,
   })
 );
-//app.options("*", cors());
 
-
-// Serve uploaded files statically
+// Serve uploaded files statically from absolute path
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
-app.get("/api/profile", authMiddleware, profileRouter); // Profile GET
+// Routes setup
+app.get("/api/profile", authMiddleware, profileRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/plan", planRouter);
@@ -81,11 +76,12 @@ app.use("/api/kras2", kra2Router);
 app.use("/api/assign", kpiAssignmentRouter);
 app.use("/api/menu", menuRouter);
 app.use("/api/year", kpiYearAssignmentRouter);
-app.use("/api", planRoutes); // this may duplicate /api/plan
+app.use("/api", planRoutes);
 app.use("/api", performanceRoutes);
 app.use("/api/target-validation", targetRouter);
 app.use("/api/performance-validation", performanceValidationRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/users/update-profile", profileRouter);
 
 // Socket.io setup
 const server = http.createServer(app);
@@ -115,6 +111,5 @@ io.on("connection", (socket) => {
 
 export { io, onlineUsers, server };
 
-// Run server
 const PORT = process.env.PORT || 1221;
 server.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));

@@ -1,5 +1,5 @@
 import express from "express";
-import upload from "./multer.js"; // Use your custom multer config
+import {upload} from "./multer.js"; // Use your custom multer config
 
 export function dualBodyParser(fieldName = "file") {
   return (req, res, next) => {
