@@ -175,6 +175,9 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
       performanceMeasure: perfValue,
       description,
     };
+    console.log("PerformanceModal useEffect with modalInfo:", modalInfo);
+console.log("Parsed quarter:", quarter, "year:", year);
+
 
     handleFormSubmit(data);
     closeModal();

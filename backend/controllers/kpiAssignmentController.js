@@ -4,6 +4,7 @@ import subsectorModel from "../models/subsectorModel.js";
 import KRA2 from "../models/kraModel2.js";
 import KPI2 from "../models/kpiModel2.js";
 
+
 // Common population configuration for assigned KPIs
 const fullPopulateConfig = [
   { path: "sectorId", select: "sector_name" },
@@ -291,3 +292,39 @@ export const getAssignedKpisWithGoalDetailsForSector = async (req, res) => {
   }
 };
 
+export const getDetailedKpisBySubsector = async (req, res) => {
+  try {
+    const { subsectorId } = req.params;
+
+    if (!subsectorId) {
+      console.warn("No subsectorId provided");
+      return res.status(400).json({ message: "Subsector ID is required" });
+    }
+
+    const assignments = await KpiAssignment.find({ subsectorId })
+      .populate({
+        path: "kpiId",
+        populate: {
+          path: "kraId",
+          select: "kra_name goalId",
+          populate: {
+            path: "goalId",
+            select: "goal_desc"
+          }
+        }
+      });
+
+    console.log("Raw assignments fetched for subsector:", assignments);
+
+    const detailedKpis = assignments
+      .map(a => a.kpiId)
+      .filter(k => k !== null); // Avoid nulls in case of bad data
+
+    console.log("Detailed KPIs after extraction:", detailedKpis);
+
+    res.json(detailedKpis);
+  } catch (error) {
+    console.error("Error fetching KPI details by subsector:", error);
+    res.status(500).json({ message: "Failed to fetch KPI details" });
+  }
+};

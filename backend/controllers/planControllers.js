@@ -10,7 +10,7 @@ export const createOrUpdatePlan = async (req, res) => {
     const {
       userId,
       role,
-      kpi_name,
+      kpiName,       // Expect camelCase from client
       year,
       target,
       description,
@@ -20,6 +20,9 @@ export const createOrUpdatePlan = async (req, res) => {
       sectorId: inputSectorId,
       subsectorId: inputSubsectorId,
     } = req.body;
+
+    // Map camelCase kpiName to snake_case kpi_name internally
+    const kpi_name = kpiName;
 
     // Basic validations
     if (!userId || !role || !kpi_name || !year) {
@@ -66,22 +69,20 @@ export const createOrUpdatePlan = async (req, res) => {
     // Try to find existing plan
     let existingPlan = await Plan.findOne(planFilter);
 
-    // Replace quarterly target update block with this:
+    // Handle quarterly target update/create
     if (quarter && target !== undefined) {
       const qKey = quarter.toLowerCase(); // e.g. 'q1'
       if (!['q1', 'q2', 'q3', 'q4'].includes(qKey)) {
         return res.status(400).json({ message: "Invalid quarter value. Must be one of q1, q2, q3, q4." });
       }
 
-      const quarterTargetNum = Number(target); // use target as quarter target
+      const quarterTargetNum = Number(target);
       if (isNaN(quarterTargetNum)) {
         return res.status(400).json({ message: "Quarter target must be a valid number." });
       }
 
       if (existingPlan) {
         existingPlan[qKey] = quarterTargetNum;
-        // Optional: also update yearly target if needed
-        // existingPlan.target = targetNum; 
         if (description !== undefined) existingPlan.description = description;
         const updatedPlan = await existingPlan.save();
         return res.status(200).json(updatedPlan);
@@ -106,7 +107,7 @@ export const createOrUpdatePlan = async (req, res) => {
       }
     }
 
-    // Handle yearly target update/create (when no quarter is provided)
+    // Handle yearly target update/create (when no quarter provided)
     if (target === undefined) {
       return res.status(400).json({ message: "Target is required when quarter info is not provided." });
     }
@@ -146,7 +147,7 @@ export const createOrUpdatePlan = async (req, res) => {
   }
 };
 
-
+// Other controllers unchanged, full versions below
 
 // Get all plans (with optional filters)
 export const getPlans = async (req, res) => {
@@ -258,30 +259,26 @@ export const deletePlan = async (req, res) => {
 };
 
 // Get plan target by KPI name, KRA, role, sector, user, year, optional quarter
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
 export const getPlanTarget = async (req, res) => {
   try {
     const kpi_name = req.query.kpi_name || req.query.kpiName;
-    const {
-      kraId,
-      role,
-      sectorId,
-      subsectorId,
-      userId,
-      year,
-      quarter,
-    } = req.query;
+    const { kraId, role, sectorId, subsectorId, userId, year, quarter } = req.query;
 
+    // Validate required params
     if (!kpi_name || !kraId || !role || !sectorId || !userId || !year) {
-      return res
-        .status(400)
-        .json({ message: "Missing required query parameters." });
+      return res.status(400).json({ message: "Missing required query parameters." });
+    }
+
+    // Validate ObjectId format for IDs (except role and year)
+    if (![kraId, sectorId, subsectorId, userId].every(id => !id || isValidObjectId(id))) {
+      return res.status(400).json({ message: "One or more provided IDs are invalid." });
     }
 
     const kpiDoc = await KPI.findOne({ kpi_name });
     if (!kpiDoc) {
-      return res
-        .status(404)
-        .json({ message: `KPI not found for name: ${kpi_name}` });
+      return res.status(404).json({ message: `KPI not found for name: ${kpi_name}` });
     }
 
     const filter = {
@@ -296,9 +293,7 @@ export const getPlanTarget = async (req, res) => {
 
     const plan = await Plan.findOne(filter);
     if (!plan) {
-      return res
-        .status(404)
-        .json({ message: "No plan found for the specified criteria." });
+      return res.status(404).json({ message: "No plan found for the specified criteria." });
     }
 
     if (quarter) {

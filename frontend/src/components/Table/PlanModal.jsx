@@ -10,10 +10,9 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
   const [warning, setWarning] = useState("");
   const [validationStatus, setValidationStatus] = useState("Pending");
 
+  // Parse quarter and year from period string e.g. "q1-2023" or "year-2023"
   let quarter = null;
   let year = null;
-
-  // Parse period string like "q1-2023" or "year-2023"
   if (modalInfo.period) {
     const parts = modalInfo.period.split("-");
     if (parts.length === 2) {
@@ -27,36 +26,45 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
   }
 
   useEffect(() => {
-    // Fetch target and validation status
     const fetchTarget = async () => {
       setLoading(true);
       setError("");
       try {
         const params = {
-          kpiName: modalInfo.kpiName,
-          kraId: modalInfo.kraId,
-          role: modalInfo.role,
-          sectorId: modalInfo.sectorId,
-          subsectorId: modalInfo.subsectorId,
-          userId: modalInfo.userId,
-          year,
+          kpiName: modalInfo.kpiName || "",
+          kraId:
+            typeof modalInfo.kraId === "object"
+              ? modalInfo.kraId._id || ""
+              : modalInfo.kraId || "",
+          role: modalInfo.role || "",
+          sectorId:
+            typeof modalInfo.sectorId === "object"
+              ? modalInfo.sectorId._id || ""
+              : modalInfo.sectorId || "",
+          subsectorId:
+            typeof modalInfo.subsectorId === "object"
+              ? modalInfo.subsectorId._id || ""
+              : modalInfo.subsectorId || undefined,
+          userId: modalInfo.userId || "",
+          year: year || "",
+          quarter: quarter || undefined,
         };
-        if (quarter) params.quarter = quarter;
+
+        console.log("Params for /plans/target:", params);
 
         const res = await axios.get(`${BASE_URL}/api/plans/target`, { params });
         setTarget(res.data?.target?.toString() || "");
-        // Set validation status (default to Pending if not present)
         setValidationStatus(
-          res.data?.validationStatus ??
-            res.data?.validationStatusYear ??
-            "Pending"
+          res.data?.validationStatus ?? res.data?.validationStatusYear ?? "Pending"
         );
       } catch (err) {
         setError("Error fetching target.");
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchTarget();
   }, [modalInfo, year, quarter]);
 
@@ -73,7 +81,7 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
       setError("Please enter a valid target.");
       return;
     }
-    // Submit logic here...
+
     handleFormSubmit({
       ...modalInfo,
       target: Number(target),
@@ -83,11 +91,9 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
     closeModal();
   };
 
-  // UI
   return (
     <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded shadow-md w-96 relative">
-        {/* Validation Status Badge */}
         <div className="absolute right-6 top-6">
           <span
             className={`px-3 py-1 rounded-full text-xs font-semibold ${

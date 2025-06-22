@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { transformAssignedKpisToNested } from "../../utils/transformAssignedKpisToNested";
 import KPIGroupedTable from "../Table/KPIGroupedTable";
+import useAuthStore from "../../store/auth.store";
 
 const BACKEND_PORT = 1221;
 const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
 
 function AllSubsector() {
   const { subsectorId } = useParams();
-    const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const userId = queryParams.get("userId");
+  const { user } = useAuthStore();
 
   const [assignedKpisRaw, setAssignedKpisRaw] = useState(null);
   const [nestedKpis, setNestedKpis] = useState([]);
@@ -19,7 +18,8 @@ function AllSubsector() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!subsectorId) {
+    // Only fetch if user and subsectorId are available
+    if (!user || !subsectorId) {
       setNestedKpis([]);
       setDetailedKpis([]);
       setError(null);
@@ -31,7 +31,7 @@ function AllSubsector() {
       setError(null);
 
       try {
-        // Fetch assigned KPIs with goal details
+        // Fetch assigned KPIs with goal details for the subsector
         const assignedRes = await fetch(
           `${BACKEND_URL}/api/assign/assigned-kpi-with-goal-details/${subsectorId}`,
           { headers: { Accept: "application/json" } }
@@ -53,9 +53,10 @@ function AllSubsector() {
         setNestedKpis(nested);
 
         // Fetch detailed KPIs for subsector
-        const detailedRes = await fetch(`${BACKEND_URL}/api/assign/details/${subsectorId}`, {
-          headers: { Accept: "application/json" },
-        });
+        const detailedRes = await fetch(
+          `${BACKEND_URL}/api/assign/details/by-subsector/${subsectorId}`,
+          { headers: { Accept: "application/json" } }
+        );
 
         if (!detailedRes.ok) {
           console.warn("Failed to fetch detailed KPIs, status:", detailedRes.status);
@@ -81,11 +82,13 @@ function AllSubsector() {
     }
 
     fetchData();
-  }, [subsectorId]);
+  }, [user, subsectorId]);
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Assigned KPIs for Subsector: {subsectorId || "(no subsector ID)"}</h2>
+      <h2 className="text-xl font-bold mb-4">
+        Assigned KPIs for Subsector: {subsectorId || "(no subsector ID)"}
+      </h2>
 
       {loading && <p>Loading assigned KPIs...</p>}
 

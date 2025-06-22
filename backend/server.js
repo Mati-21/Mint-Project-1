@@ -35,6 +35,7 @@ import performanceRoutes from "./routes/performanceRoutes.js";
 import targetRouter from "./routes/targetValidationRoutes.js";
 import performanceValidationRouter from "./routes/performanceValidationRoutes.js";
 import chatRouter from "./routes/chatRouter.js";
+import KpiTableRouter from "./routes/kpiTableRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -77,11 +78,15 @@ app.use("/api/assign", kpiAssignmentRouter);
 app.use("/api/menu", menuRouter);
 app.use("/api/year", kpiYearAssignmentRouter);
 app.use("/api", planRoutes);
+app.use('/api/plans', planRouter);
 app.use("/api", performanceRoutes);
 app.use("/api/target-validation", targetRouter);
 app.use("/api/performance-validation", performanceValidationRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/users/update-profile", profileRouter);
+app.use('/api/performance', performanceRoutes);
+app.use("/api/kpi-table", KpiTableRouter);
+
 
 // Socket.io setup
 const server = http.createServer(app);

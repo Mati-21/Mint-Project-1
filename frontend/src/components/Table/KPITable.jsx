@@ -1,70 +1,92 @@
-
-import React from "react";
+import React, { useState } from "react";
 
 function KPITable({ groupKey, rows, openModal, openPerformanceModal, openRatioModal, currentEthYear }) {
   const [goal, kra] = groupKey.split("||");
+  const [showDebug, setShowDebug] = useState(false);
 
   const recentYear = currentEthYear;
   const previousYear = currentEthYear - 1;
 
-  // Plan cell (Target)
+  // Format ratio value as percentage string
+  const formatRatio = (perf, target) => {
+    if (typeof perf === "number" && typeof target === "number" && target !== 0) {
+      const ratio = (perf / target) * 100;
+      return `${Math.round(ratio)}%`;
+    }
+    return "Ratio";
+  };
+
   function renderPlanCell(row, periodKey) {
     const targetValue = row.targets?.[periodKey];
-    if (targetValue !== undefined && targetValue !== null && targetValue !== "") {
-      return <span className="font-semibold text-green-700">{targetValue}</span>;
-    }
     return (
       <button
         onClick={() => openModal({ ...row, period: periodKey })}
         className="bg-green-500 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
       >
-        Plan
+        {targetValue != null && targetValue !== "" ? `Target: ${targetValue}` : "Plan"}
       </button>
     );
   }
 
-  // Performance cell
   function renderPerformanceCell(row, periodKey) {
     const performanceValue = row.performance?.[periodKey];
-    if (performanceValue !== undefined && performanceValue !== null && performanceValue !== "") {
-      return <span className="font-semibold text-blue-700">{performanceValue}</span>;
-    }
     return (
       <button
         onClick={() => openPerformanceModal({ ...row, period: periodKey })}
         className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
       >
-        Perf.
+        {performanceValue != null && performanceValue !== "" ? `Perf: ${performanceValue}` : "Perf."}
       </button>
     );
   }
 
-  // Ratio cell (button only, no separate header)
   function renderRatioCell(row, periodKey) {
+    const targetValue = row.targets?.[periodKey];
+    const performanceValue = row.performance?.[periodKey];
+
     return (
       <button
         onClick={() => openRatioModal(row, periodKey)}
         className="bg-purple-600 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
       >
-        Ratio
+        {!isNaN(Number(performanceValue)) && !isNaN(Number(targetValue)) && Number(targetValue) !== 0
+          ? formatRatio(Number(performanceValue), Number(targetValue))
+          : "Ratio"}
       </button>
     );
   }
 
   return (
     <div className="mb-8">
+      <div className="mb-2">
+        <strong>Goal:</strong> {goal} &nbsp; | &nbsp; <strong>KRA:</strong> {kra}
+      </div>
+
+      <button
+        onClick={() => setShowDebug((prev) => !prev)}
+        className="mb-4 px-2 py-1 bg-gray-300 rounded text-xs hover:bg-gray-400"
+      >
+        {showDebug ? "Hide debug JSON" : "Show debug JSON"}
+      </button>
+
+      {showDebug && (
+        <pre
+          style={{
+            maxHeight: "300px",
+            overflowY: "auto",
+            backgroundColor: "#f9f9f9",
+            border: "1px solid #ddd",
+            padding: "10px",
+            fontSize: "12px",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {JSON.stringify(rows, null, 2)}
+        </pre>
+      )}
+
       <table className="table-auto border-collapse border border-gray-400 w-full text-sm">
         <thead>
-          <tr>
-            <th colSpan={7} className="border border-gray-400 bg-gray-200 text-center py-2 font-bold">
-              Goal: {goal}
-            </th>
-          </tr>
-          <tr>
-            <th colSpan={7} className="border border-gray-400 bg-gray-100 text-center py-2 font-semibold">
-              KRA: {kra}
-            </th>
-          </tr>
           <tr>
             <th className="border border-gray-400 px-2 py-1">KPI Name</th>
             <th className="border border-gray-400 px-2 py-1 text-center">{previousYear}</th>

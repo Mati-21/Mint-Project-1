@@ -9,101 +9,146 @@ function RatioModal({ modalInfo, closeModal }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const { kpiName, field, kraId, userId, role, sectorId, subsectorId, year, quarter } = modalInfo;
+  if (!modalInfo) return null;
 
-  // Determine the period string for display
-  const period = quarter ? `${quarter} ${year}` : year;
+  // Parse quarter and year from modalInfo.field
+  let quarter = null;
+  let year = null;
+  if (modalInfo.field) {
+    const parts = modalInfo.field.split("-");
+    if (parts.length === 2) {
+      if (parts[0].toLowerCase().startsWith("q")) {
+        quarter = parts[0].toUpperCase();
+        year = parts[1];
+      } else if (parts[0].toLowerCase() === "year") {
+        year = parts[1];
+      }
+    }
+  }
+
+  const period = quarter ? `${quarter} ${year}` : `Year ${year}`;
+
+  const isValidNumber = (val) =>
+    val !== null &&
+    val !== undefined &&
+    val !== "" &&
+    val !== "N/A" &&
+    !isNaN(Number(val));
 
   useEffect(() => {
+    if (isValidNumber(modalInfo.target) && isValidNumber(modalInfo.performance)) {
+      setTarget(Number(modalInfo.target));
+      setPerformance(Number(modalInfo.performance));
+      setLoading(false);
+      return;
+    }
+
     async function fetchData() {
       setLoading(true);
       setError("");
       try {
-        // Fetch target
-        const targetParams = {
-          kpiName,
-          kraId,
-          userId,
-          role,
-          sectorId,
-          subsectorId,
+        const params = {
+          kpiName: modalInfo.kpiName,
+          kraId: modalInfo.kraId,
+          role: modalInfo.role,
+          userId: modalInfo.userId,
+          sectorId: modalInfo.sectorId,
+          subsectorId: modalInfo.subsectorId,
           year,
         };
-        if (quarter) targetParams.quarter = quarter;
+        if (quarter) params.quarter = quarter;
 
-        const targetRes = await axios.get(`${BASE_URL}/api/plans/target`, { params: targetParams });
-        setTarget(targetRes.data?.target ?? null);
+        const planRes = await axios.get(`${BASE_URL}/api/plans/target`, { params });
+        const perfRes = await axios.get(`${BASE_URL}/api/performance/measure`, { params });
 
-        // Fetch performance
-        const perfParams = {
-          kpiName,
-          kraId,
-          userId,
-          role,
-          sectorId,
-          subsectorId,
-          year,
-        };
-        if (quarter) perfParams.quarter = quarter;
+        const fetchedTarget = planRes.data?.target ?? null;
+        const fetchedPerformance = perfRes.data?.performanceMeasure ?? null;
 
-        const perfRes = await axios.get(`${BASE_URL}/api/performance/measure`, { params: perfParams });
-        setPerformance(perfRes.data?.performanceMeasure ?? null);
+        setTarget(isValidNumber(fetchedTarget) ? Number(fetchedTarget) : null);
+        setPerformance(isValidNumber(fetchedPerformance) ? Number(fetchedPerformance) : null);
       } catch (err) {
+        console.error("Error fetching data:", err);
         setError("Failed to fetch target or performance.");
+        setTarget(null);
+        setPerformance(null);
       } finally {
         setLoading(false);
       }
     }
+
     fetchData();
-  }, [kpiName, kraId, userId, role, sectorId, subsectorId, year, quarter]);
+  }, [modalInfo, quarter, year]);
 
   let ratio = "N/A";
   if (
-    target !== null &&
-    performance !== null &&
-    !isNaN(target) &&
-    !isNaN(performance) &&
+    isValidNumber(target) &&
+    isValidNumber(performance) &&
     Number(target) !== 0
   ) {
-    ratio = ((Number(performance) / Number(target)) * 100).toFixed(2) + "%";
+    ratio = ((performance / target) * 100).toFixed(2) + "%";
   }
-
-  if (!modalInfo) return null;
 
   return (
     <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded shadow-md w-96 relative">
-        <h2 className="text-lg font-bold mb-4 text-center">Performance-to-Target Ratio</h2>
+        <h2 className="text-lg font-bold mb-4">Performance-to-Target Ratio</h2>
 
-        {loading && <p className="text-center text-gray-600 mb-4">Loading...</p>}
-        {error && (
+        {loading ? (
+          <p className="text-center text-gray-600 mb-4">Loading...</p>
+        ) : error ? (
           <p className="text-center text-red-600 mb-4 font-semibold">{error}</p>
-        )}
-
-        {!loading && !error && (
+        ) : (
           <>
-            <p className="text-sm mb-2">
-              KPI: <span className="font-medium">{kpiName}</span>
-            </p>
-            <p className="text-sm mb-2">
-              Period: <span className="font-medium">{period}</span>
-            </p>
-            <p className="text-sm mb-2">
-              Target: <span className="font-medium">{target ?? "N/A"}</span>
-            </p>
-            <p className="text-sm mb-2">
-              Performance: <span className="font-medium">{performance ?? "N/A"}</span>
-            </p>
-            <p className="text-xl font-semibold mt-4 text-center text-indigo-600">
-              {ratio}
-            </p>
+            <div className="mb-4 space-y-2">
+              <div>
+                <label className="block font-semibold text-gray-700">KPI</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={modalInfo.kpiName}
+                  className="w-full border rounded px-3 py-1 bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-gray-700">Period</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={period}
+                  className="w-full border rounded px-3 py-1 bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-gray-700">Target</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={target !== null ? target : "N/A"}
+                  className="w-full border rounded px-3 py-1 bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-gray-700">Performance</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={performance !== null ? performance : "N/A"}
+                  className="w-full border rounded px-3 py-1 bg-gray-100"
+                />
+              </div>
+            </div>
+
+            <p className="text-xl font-semibold text-green-600 text-center">{ratio}</p>
           </>
         )}
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 flex justify-end space-x-2">
           <button
             onClick={closeModal}
-            className="bg-indigo-600 text-white px-4 py-1 rounded hover:bg-indigo-700"
+            className="px-4 py-1 rounded border border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white transition"
           >
             Close
           </button>

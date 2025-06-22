@@ -7,6 +7,7 @@ import {
   deleteAssignedKpi,
   getKpiDetails,
   getAssignedKpisBySector,
+  getDetailedKpisBySubsector,
 } from "../controllers/kpiAssignmentController.js";
 
 import KPI2 from "../models/kpiModel2.js";
@@ -40,6 +41,9 @@ kpiAssignmentRouter.delete("/unassign-kpi/:id", deleteAssignedKpi);
 // GET /details?ids=id1,id2,...
 // Get KPI details by list of IDs in query
 kpiAssignmentRouter.get("/details", getKpiDetails);
+
+kpiAssignmentRouter.get("/details/by-subsector/:subsectorId", getDetailedKpisBySubsector);
+
 
 // GET /details/:id
 // Get single KPI detail by ID
