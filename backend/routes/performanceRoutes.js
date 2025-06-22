@@ -3,6 +3,7 @@ import {
   createOrUpdatePerformance,
   getPerformances,
   getPerformanceAndTarget,
+  upsertPerformance,
 } from '../controllers/performanceController.js';
 
 const performanceRouter = express.Router();
@@ -16,5 +17,8 @@ performanceRouter.get('/performance', getPerformances);
 
 // GET: Retrieve both performanceMeasure + description + plan target (for modal/viewing)
 performanceRouter.get('/performance/measure', getPerformanceAndTarget);
+
+// POST: Upsert performance record (create or update)
+performanceRouter.post('/performance/upsert', upsertPerformance);
 
 export default performanceRouter;

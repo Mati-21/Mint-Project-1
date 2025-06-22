@@ -1,6 +1,7 @@
+
 import React from "react";
 
-function KPITable({ groupKey, rows, openModal, openPerformanceModal, currentEthYear }) {
+function KPITable({ groupKey, rows, openModal, openPerformanceModal, openRatioModal, currentEthYear }) {
   const [goal, kra] = groupKey.split("||");
 
   const recentYear = currentEthYear;
@@ -34,6 +35,18 @@ function KPITable({ groupKey, rows, openModal, openPerformanceModal, currentEthY
         className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
       >
         Perf.
+      </button>
+    );
+  }
+
+  // Ratio cell (button only, no separate header)
+  function renderRatioCell(row, periodKey) {
+    return (
+      <button
+        onClick={() => openRatioModal(row, periodKey)}
+        className="bg-purple-600 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
+      >
+        Ratio
       </button>
     );
   }
@@ -72,6 +85,7 @@ function KPITable({ groupKey, rows, openModal, openPerformanceModal, currentEthY
                   <div className="flex flex-col items-center space-y-1">
                     {renderPlanCell(row, periodKey)}
                     {renderPerformanceCell(row, periodKey)}
+                    {renderRatioCell(row, periodKey)}
                   </div>
                 </td>
               ))}
@@ -83,6 +97,7 @@ function KPITable({ groupKey, rows, openModal, openPerformanceModal, currentEthY
                     <div className="flex flex-col items-center space-y-1">
                       {renderPlanCell(row, periodKey)}
                       {renderPerformanceCell(row, periodKey)}
+                      {renderRatioCell(row, periodKey)}
                     </div>
                   </td>
                 );

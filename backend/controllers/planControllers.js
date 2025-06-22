@@ -272,18 +272,20 @@ export const getPlanTarget = async (req, res) => {
     } = req.query;
 
     if (!kpi_name || !kraId || !role || !sectorId || !userId || !year) {
-      return res.status(400).json({ message: "Missing required query parameters." });
+      return res
+        .status(400)
+        .json({ message: "Missing required query parameters." });
     }
 
     const kpiDoc = await KPI.findOne({ kpi_name });
     if (!kpiDoc) {
-      return res.status(404).json({ message: `KPI not found for name: ${kpi_name}` });
+      return res
+        .status(404)
+        .json({ message: `KPI not found for name: ${kpi_name}` });
     }
 
-    const kpiId = kpiDoc._id;
-
     const filter = {
-      kpiId,
+      kpiId: kpiDoc._id,
       kraId,
       role,
       sectorId,
@@ -294,28 +296,31 @@ export const getPlanTarget = async (req, res) => {
 
     const plan = await Plan.findOne(filter);
     if (!plan) {
-      return res.status(404).json({ message: "No plan found for the specified criteria." });
+      return res
+        .status(404)
+        .json({ message: "No plan found for the specified criteria." });
     }
 
-    // If quarter specified, return quarter target and its validation status
     if (quarter) {
       const qKey = quarter.toLowerCase();
       const quarterTarget = plan[qKey];
-      const validationStatusKey = `validationStatus${qKey.charAt(0).toUpperCase()}${qKey.slice(1)}`; // e.g. validationStatusQ1
+      const validationStatusKey =
+        "validationStatus" + qKey.charAt(0).toUpperCase() + qKey.slice(1);
       return res.status(200).json({
+        planId: plan._id,
         target: quarterTarget !== undefined ? quarterTarget : "",
-        description: plan.description,
+        description: plan[`${qKey}Description`] || "",
         year: plan.year,
         validationStatus: plan[validationStatusKey] || "Pending",
       });
     }
 
-    // Otherwise return yearly target and its validation status
     return res.status(200).json({
-      target: plan.target ?? "",
       planId: plan._id,
+      target: plan.target ?? "",
+      description: plan.validationDescriptionYear || "",
       validationStatus: plan.validationStatusYear || "Pending",
-      // ...other fields
+      year: plan.year,
     });
   } catch (error) {
     console.error("getPlanTarget error:", error);

@@ -1,8 +1,10 @@
+
 import React, { useState } from "react";
 import KPITable from "./KPITable";
 import Filters from "./Filters";
 import PlanModal from "./PlanModal";
 import PerformanceModal from "./PerformanceModal";
+import RatioModal from "./RatioModal"; // Assuming you created this new modal
 
 const BACKEND_URL = "http://localhost:1221";
 
@@ -29,7 +31,8 @@ function KPIGroupedTable({ data, detailedKpis }) {
 
   const [planModalInfo, setPlanModalInfo] = useState(null);
   const [performanceModalInfo, setPerformanceModalInfo] = useState(null);
-  const [planIds, setPlanIds] = useState({}); // NEW: { [kpiKey]: planId }
+  const [ratioModalInfo, setRatioModalInfo] = useState(null);
+  const [planIds, setPlanIds] = useState({}); // { [kpiKey]: planId }
 
   // Helper to create a unique key for each KPI/period
   const getKpiKey = (row, quarter, year) =>
@@ -92,6 +95,7 @@ function KPIGroupedTable({ data, detailedKpis }) {
     groupedData[groupKey].push(row);
   });
 
+  // Plan modal open
   const openModal = (row, field) => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = user.id || user._id || null;
@@ -116,7 +120,6 @@ function KPIGroupedTable({ data, detailedKpis }) {
 
   const closeModal = () => setPlanModalInfo(null);
 
-  // Update handlePlanFormSubmit to store planId
   const handlePlanFormSubmit = async (formData) => {
     try {
       const {
@@ -184,7 +187,6 @@ function KPIGroupedTable({ data, detailedKpis }) {
       const result = await response.json();
       console.log("Plan saved response:", result);
 
-      // Store planId for this KPI/period
       const kpiKey = getKpiKey(formData, formData.quarter, formData.year);
       setPlanIds((prev) => ({
         ...prev,
@@ -199,7 +201,7 @@ function KPIGroupedTable({ data, detailedKpis }) {
     }
   };
 
-  // When opening PerformanceModal, pass the planId if available
+  // Performance modal open
   const openPerformanceModal = (row, field) => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = user.id || user._id || null;
@@ -212,14 +214,14 @@ function KPIGroupedTable({ data, detailedKpis }) {
       return;
     }
 
-    // Parse quarter and year from row/field
-    let quarter = null, year = row.year;
+    let quarter = null,
+      year = row.year;
     if (field && field.toLowerCase().startsWith("q")) {
       quarter = field.toUpperCase();
     }
 
     const kpiKey = getKpiKey(row, quarter, year);
-    const planId = planIds[kpiKey] || ""; // Get planId if exists
+    const planId = planIds[kpiKey] || "";
 
     setPerformanceModalInfo({
       ...row,
@@ -229,7 +231,7 @@ function KPIGroupedTable({ data, detailedKpis }) {
       role,
       sectorId,
       subsectorId,
-      planId, // Pass planId to modal
+      planId,
       quarter,
       year,
     });
@@ -248,8 +250,8 @@ function KPIGroupedTable({ data, detailedKpis }) {
         subsectorId,
         kpiName,
         kraId,
-        goal,         // <-- get goal from formData
-        planId,       // <-- get planId from formData
+        goal,
+        planId,
         year,
         performanceMeasure,
         quarter,
@@ -263,8 +265,8 @@ function KPIGroupedTable({ data, detailedKpis }) {
         subsectorId,
         kpi_name: kpiName,
         kraId,
-        goal,        // <-- include goal
-        planId,      // <-- include planId
+        goal,
+        planId,
         year: Number(year),
         performanceMeasure,
         quarter,
@@ -297,6 +299,52 @@ function KPIGroupedTable({ data, detailedKpis }) {
     }
   };
 
+  // NEW: Open Ratio Modal
+// NEW: Open Ratio Modal
+const openRatioModal = (row, field) => {
+  if (!field) {
+    alert("Period/field missing.");
+    return;
+  }
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = user.id || user._id || null;
+  const role = user.role || null;
+  const sectorId = user.sectorId || user.sector || null;
+  const subsectorId = user.subsectorId || user.subsector || null;
+
+  if (!userId || !role) {
+    alert("User info missing: Please log in again.");
+    return;
+  }
+
+  // Extract year and quarter from the field string
+  const parts = field.split("-");
+  const isQuarter = parts[0].toLowerCase().startsWith("q");
+  const year = parts[1];
+  const quarter = isQuarter ? parts[0].toUpperCase() : null;
+  const period = isQuarter ? `${quarter} ${year}` : year;
+
+  const kpiKey = getKpiKey(row, quarter, year);
+  const planId = planIds[kpiKey] || "";
+
+  setRatioModalInfo({
+    ...row,
+    kpiName: row.kpiName || row.kpi_name,
+    field,
+    userId,
+    role,
+    sectorId,
+    subsectorId,
+    planId,
+    quarter,
+    year,
+    period,
+  });
+};
+
+  const closeRatioModal = () => setRatioModalInfo(null);
+
   return (
     <div className="p-4 overflow-x-auto">
       <Filters
@@ -318,6 +366,7 @@ function KPIGroupedTable({ data, detailedKpis }) {
             rows={rows}
             openModal={openModal}
             openPerformanceModal={openPerformanceModal}
+            openRatioModal={openRatioModal} // pass new modal open fn
             currentEthYear={currentEthYear}
           />
         ))
@@ -340,8 +389,16 @@ function KPIGroupedTable({ data, detailedKpis }) {
           handleFormSubmit={handlePerformanceFormSubmit}
         />
       )}
+
+      {ratioModalInfo && (
+        <RatioModal
+          modalInfo={ratioModalInfo}
+          closeModal={closeRatioModal}
+        />
+      )}
     </div>
   );
 }
 
 export default KPIGroupedTable;
+
