@@ -92,6 +92,7 @@ function App() {
           <Route path="chat" element={<ChatPage />} />
           <Route path="performance-validation" element={<PerformanceValidation />} />
           <Route path="Target-validation" element={<TargetValidation />} />
+          <Route path="user-report" element={<UserReportTable/>} />
         </Route>
 
         <Route
@@ -109,6 +110,7 @@ function App() {
           <Route path="chat" element={<ChatPage />} />
           <Route path="performance-validation" element={<PerformanceValidation />} />
           <Route path="Target-validation" element={<TargetValidation />} />
+          <Route path="user-report" element={<UserReportTable/>} />
           
         </Route>
 
@@ -128,6 +130,7 @@ function App() {
 <Route path="performance-validation" element={<PerformanceValidation />} />
           <Route path="Target-validation" element={<TargetValidation />} />
           <Route path="user-profile" element={<UserProfile />} />
+          <Route path="user-report" element={<UserReportTable/>} />
         </Route>
 
         <Route
