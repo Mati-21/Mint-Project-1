@@ -50,9 +50,10 @@ export const createUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(email, password);
     const normalizedEmail = email.trim().toLowerCase();
 
-    const user = await User.findOne({ email: normalizedEmail })
+    const user = await User.findOne({ email })
       .populate("sector", "sector_name")
       .populate("subsector", "subsector_name");
 
