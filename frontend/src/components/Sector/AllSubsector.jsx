@@ -125,6 +125,7 @@ function AllSubsector() {
 
         const nested = transformAssignedKpisToNested(assignedData);
         setNestedKpis(nested);
+        console.log("Nested KPIs:", nested);
 
         const detailedRes = await axios.get(
           `${BACKEND_URL}/api/assign/details/by-subsector/${filterSubsector}`,

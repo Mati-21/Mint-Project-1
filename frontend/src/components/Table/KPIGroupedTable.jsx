@@ -144,8 +144,10 @@ function KPIGroupedTable({ data, detailedKpis }) {
             const url = `${BACKEND_URL}/api/kpi-table/table-data?${params.toString()}`;
             try {
               const res = await fetch(url);
+             
               if (!res.ok) return [];
               const data = await res.json();
+              console.log(data);
               if (Array.isArray(data)) return data;
               if (data.grouped) return Object.values(data.grouped).flat();
               return [];
@@ -238,13 +240,13 @@ function KPIGroupedTable({ data, detailedKpis }) {
     enrichedGroupedData[groupKey] = enrichRowsWithFetchedValues(rows, groupKey);
   });
 
+  // ---------- MODAL HANDLERS ----------
   const openModal = (row, field) => {
     const sectorId = extractId(authUser.sectorId) || extractId(authUser.sector) || "";
     const subsectorId = extractId(authUser.subsectorId) || extractId(authUser.subsector) || "";
     const userId = extractId(authUser.id || authUser._id);
     setPlanModalInfo({ ...row, field, userId, role: authUser.role, sectorId, subsectorId });
   };
-
   const closeModal = () => setPlanModalInfo(null);
 
   const openPerformanceModal = (row, field) => {
@@ -254,20 +256,11 @@ function KPIGroupedTable({ data, detailedKpis }) {
     const sectorId = extractId(authUser.sectorId) || extractId(authUser.sector) || "";
     const subsectorId = extractId(authUser.subsectorId) || extractId(authUser.subsector) || "";
     const userId = extractId(authUser.id || authUser._id);
-
     setPerformanceModalInfo({
-      ...row,
-      field,
-      quarter,
-      planId,
-      userId,
-      role: authUser.role,
-      sectorId,
-      subsectorId,
+      ...row, field, quarter, planId, userId, role: authUser.role, sectorId, subsectorId,
       kpi_name: row.kpiName,
     });
   };
-
   const closePerformanceModal = () => setPerformanceModalInfo(null);
 
   const openRatioModal = (row, field) => {
@@ -275,50 +268,72 @@ function KPIGroupedTable({ data, detailedKpis }) {
     const quarter = quarterRaw.toUpperCase();
     const kpiKey = getKpiKey(row, quarter, year);
     const planId = planIds[kpiKey] || "";
-
-    const actualTarget = row?.targets?.[quarter.toLowerCase()] ?? row?.target ?? null;
-    const actualPerformance = row?.performance?.[quarter.toLowerCase()] ?? row?.performanceMeasure ?? null;
-
+    const target = row?.targets?.[quarter.toLowerCase()] ?? row?.target;
+    const performance = row?.performance?.[quarter.toLowerCase()] ?? row?.performanceMeasure;
+    const userId = extractId(authUser.id || authUser._id);
     const sectorId = extractId(authUser.sectorId) || extractId(authUser.sector) || "";
     const subsectorId = extractId(authUser.subsectorId) || extractId(authUser.subsector) || "";
-    const userId = extractId(authUser.id || authUser._id);
 
     setRatioModalInfo({
-      ...row,
-      field,
-      quarter,
-      year,
-      planId,
-      target: actualTarget,
-      performance: actualPerformance,
-      userId,
-      role: authUser.role,
-      sectorId,
-      subsectorId,
+      ...row, field, quarter, year, planId, target, performance,
+      userId, role: authUser.role, sectorId, subsectorId,
     });
   };
-
   const closeRatioModal = () => setRatioModalInfo(null);
+
+  const handlePlanFormSubmit = async (formData) => {
+    try {
+      const body = { ...formData };
+      Object.entries(body).forEach(([k, v]) => (!v || v === "N/A") && delete body[k]);
+
+      const res = await fetch(`${BACKEND_URL}/api/plans`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+
+      const kpiKey = getKpiKey(formData, formData.quarter, formData.year);
+      setPlanIds(prev => ({ ...prev, [kpiKey]: result._id || result.planId }));
+      setNotification({ type: "success", message: "Plan saved successfully." });
+      closeModal();
+    } catch (error) {
+      setNotification({ type: "error", message: "Failed to save plan: " + error.message });
+    }
+  };
+
+  const handlePerformanceFormSubmit = async (formData) => {
+    try {
+      const body = { ...formData };
+      Object.entries(body).forEach(([k, v]) => (!v || v === "N/A") && delete body[k]);
+
+      const res = await fetch(`${BACKEND_URL}/api/performance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+
+      setNotification({ type: "success", message: "Performance saved successfully." });
+      closePerformanceModal();
+    } catch (error) {
+      setNotification({ type: "error", message: "Failed to save performance: " + error.message });
+    }
+  };
 
   return (
     <div className="p-4 overflow-x-auto relative">
       {notification && (
-        <div
-          className={`fixed top-4 right-4 z-50 max-w-xs rounded border px-4 py-2 shadow-md ${
-            notification.type === "success"
-              ? "bg-green-100 border-green-400 text-green-700"
-              : "bg-red-100 border-red-400 text-red-700"
-          }`}
-          role="alert"
-        >
+        <div className={`fixed top-4 right-4 z-50 max-w-xs rounded border px-4 py-2 shadow-md ${
+          notification.type === "success" ? "bg-green-100 border-green-400 text-green-700"
+          : "bg-red-100 border-red-400 text-red-700"
+        }`} role="alert">
           {notification.message}
-          <button
-            onClick={() => setNotification(null)}
-            aria-label="Close notification"
-            className="ml-4 font-bold"
-          >
-            ×
-          </button>
+          <button onClick={() => setNotification(null)} className="ml-4 font-bold">×</button>
         </div>
       )}
 
@@ -341,19 +356,11 @@ function KPIGroupedTable({ data, detailedKpis }) {
       )}
 
       {planModalInfo && (
-        <PlanModal
-          modalInfo={planModalInfo}
-          closeModal={closeModal}
-        />
+        <PlanModal modalInfo={planModalInfo} closeModal={closeModal} handleFormSubmit={handlePlanFormSubmit} />
       )}
-
       {performanceModalInfo && (
-        <PerformanceModal
-          modalInfo={performanceModalInfo}
-          closeModal={closePerformanceModal}
-        />
+        <PerformanceModal modalInfo={performanceModalInfo} closeModal={closePerformanceModal} handleFormSubmit={handlePerformanceFormSubmit} />
       )}
-
       {ratioModalInfo && (
         <RatioModal modalInfo={ratioModalInfo} closeModal={closeRatioModal} />
       )}

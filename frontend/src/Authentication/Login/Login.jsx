@@ -85,7 +85,7 @@ function Login() {
 
       {/* LEFT INFO SECTION */}
       <div
-        className={`hidden lg:flex w-1/2 p-10 flex-col justify-between transition-colors duration-300 ${
+        className={`hidden lg:flex lg:flex-2 p-10 flex-col justify-between transition-colors duration-300 ${
           dark
             ? "bg-gray-800 text-gray-200"
             : "bg-gradient-to-br from-blue-900 to-purple-900 text-white"
@@ -95,7 +95,11 @@ function Login() {
           <h1 className="text-3xl font-bold mb-4">
             Ministry of Innovation and Technology
           </h1>
-          <p className={`${dark ? "text-gray-300" : "text-gray-200"} text-sm leading-6`}>
+          <p
+            className={`${
+              dark ? "text-gray-300" : "text-gray-200"
+            } text-sm leading-6`}
+          >
             The Ministry of Innovation and Technology (MInT) leads Ethiopia’s
             science, innovation, and technology advancement strategy. It works
             to transform the country into a technology-driven economy through
@@ -104,32 +108,35 @@ function Login() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 mt-8">
+        <div className="grid grid-cols-4  gap-4 mt-8">
           <img
-            src="https://www.mint.gov.et/sites/default/files/2023-08/banner.jpg"
+            src="http://www.mint.gov.et/documents/d/guest/2-3-jpg?imagePreview=1"
             alt="gallery1"
-            className="rounded-lg h-24 object-cover"
+            className="rounded-lg h-64 object-cover col-span-2"
           />
           <img
-            src="https://www.mint.gov.et/sites/default/files/styles/banner_image/public/2024-01/ICT.jpg"
+            src="http://www.mint.gov.et/documents/d/guest/1-38-jpg?imagePreview=1"
             alt="gallery2"
-            className="rounded-lg h-24 object-cover"
+            className="rounded-lg h-64  object-cover col-span-2"
           />
         </div>
 
-        <footer className={`${dark ? "text-gray-400" : "text-gray-300"} mt-8 text-xs`}>
-          &copy; {new Date().getFullYear()} Ministry of Innovation and Technology – Ethiopia
+        <footer
+          className={`${dark ? "text-gray-400" : "text-gray-300"} mt-8 text-xs`}
+        >
+          &copy; {new Date().getFullYear()} Ministry of Innovation and
+          Technology – Ethiopia
         </footer>
       </div>
 
       {/* RIGHT LOGIN SECTION */}
       <div
-        className={`flex w-full lg:w-1/2 justify-center items-center ${
-          dark ? "bg-gray-900" : "bg-white"
+        className={`flex w-full lg:flex-1 justify-center items-center ${
+          dark ? "bg-gray-900" : " bg-blue-900"
         }`}
       >
         <div
-          className={`relative w-full max-w-md p-8 rounded-xl shadow-lg border transition duration-300 ${
+          className={`relative w-90 max-w-md p-8 rounded-xl shadow-lg border transition duration-300 ${
             dark
               ? "bg-gray-800 border-gray-700 text-white"
               : "bg-white border-gray-200 text-gray-900"

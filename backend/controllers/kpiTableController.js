@@ -12,23 +12,14 @@ export const getKPITableData = async (req, res) => {
       return res.status(400).json({ message: "Missing required query params: userId and year" });
     }
 
-    // Normalize role to handle cases like "Strategic unit"
     role = (role || "").toLowerCase().trim();
-
-    // Normalize role values
     if (role === "strategic unit") role = "strategic";
-    if (role === "chief ceo") role = "chief ceo"; // keep same casing
-    if (role === "minister") role = "minister";
-    if (role === "ceo") role = "ceo";
-    if (role === "worker") role = "worker";
 
     const yearNum = Number(year);
     let relevantUserIds = [userId];
 
     const currentUser = await User.findById(userId).populate("sector").populate("subsector");
-    if (!currentUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!currentUser) return res.status(404).json({ message: "User not found" });
 
     const allUsers = await User.find();
 
@@ -65,7 +56,6 @@ export const getKPITableData = async (req, res) => {
             .map(u => u._id.toString())
         );
       } else {
-        // No sector assigned: get all with relevant roles ignoring sector
         relevantUserIds.push(
           ...allUsers
             .filter(u =>
@@ -86,38 +76,25 @@ export const getKPITableData = async (req, res) => {
       );
     }
 
-    // Deduplicate user IDs
     relevantUserIds = [...new Set(relevantUserIds)];
 
-    // Prepare subsector filtering logic
     let subsectorIds = [];
     if (subsectorId) {
       subsectorIds = [subsectorId];
     } else if (sectorId) {
       subsectorIds = (await Subsector.find({ sectorId })).map(sub => sub._id.toString());
     } else if (!["strategic", "minister"].includes(role)) {
-      // For non-Strategic and non-Minister roles, sectorId is required
       return res.status(400).json({ message: `Missing required sectorId for role ${role}` });
     }
-    // For Strategic and Minister, sectorId and subsectorId can be optional
 
-    // Build query for plans
     const planQuery = {
       userId: { $in: relevantUserIds },
       year: yearNum,
     };
 
-    if (sectorId) {
-      planQuery.sectorId = sectorId;
-    } else if (!["strategic", "minister"].includes(role)) {
-      return res.status(400).json({ message: `Missing sectorId for role ${role}` });
-    }
+    if (sectorId) planQuery.sectorId = sectorId;
+    if (subsectorIds.length > 0) planQuery.subsectorId = { $in: subsectorIds };
 
-    if (subsectorIds.length > 0) {
-      planQuery.subsectorId = { $in: subsectorIds };
-    }
-
-    // Fetch plans
     const allPlans = await Plan.find(planQuery)
       .populate('sectorId', 'name')
       .populate('subsectorId', 'subsector_name')
@@ -126,26 +103,21 @@ export const getKPITableData = async (req, res) => {
       .populate('goalId', 'goal_desc')
       .populate('userId', 'fullName role');
 
-    // Fetch performances with same filters
-    const performanceQuery = {
+    const allPerformances = await Performance.find({
       userId: { $in: relevantUserIds },
       year: yearNum,
-    };
-    if (sectorId) performanceQuery.sectorId = sectorId;
-    if (subsectorIds.length > 0) performanceQuery.subsectorId = { $in: subsectorIds };
+      ...(sectorId && { sectorId }),
+      ...(subsectorIds.length > 0 && { subsectorId: { $in: subsectorIds } })
+    });
 
-    const allPerformances = await Performance.find(performanceQuery);
-
-    // Map performances by planId
     const performanceMap = new Map();
     allPerformances.forEach(perf => {
       if (perf.planId) performanceMap.set(perf.planId.toString(), perf);
     });
 
-    // Compose final KPI table data with ratios
     const kpiTableData = allPlans.map(plan => {
       const planIdStr = plan._id.toString();
-      const performance = performanceMap.get(planIdStr);
+      const perf = performanceMap.get(planIdStr);
 
       const targets = {
         [`year-${plan.year}`]: plan.target || 0,
@@ -156,17 +128,17 @@ export const getKPITableData = async (req, res) => {
       };
 
       const performanceValues = {
-        [`year-${plan.year}`]: performance?.performanceYear || 0,
-        [`q1-${plan.year}`]: performance?.performanceQ1 || 0,
-        [`q2-${plan.year}`]: performance?.performanceQ2 || 0,
-        [`q3-${plan.year}`]: performance?.performanceQ3 || 0,
-        [`q4-${plan.year}`]: performance?.performanceQ4 || 0,
+        [`year-${plan.year}`]: perf?.performanceYear || 0,
+        [`q1-${plan.year}`]: perf?.q1Performance?.value || 0,
+        [`q2-${plan.year}`]: perf?.q2Performance?.value || 0,
+        [`q3-${plan.year}`]: perf?.q3Performance?.value || 0,
+        [`q4-${plan.year}`]: perf?.q4Performance?.value || 0,
       };
 
       const ratio = {};
       for (const period of Object.keys(targets)) {
-        const perfVal = performanceValues[period];
         const targVal = targets[period];
+        const perfVal = performanceValues[period];
         ratio[period] = targVal === 0 ? 0 : Number(((perfVal / targVal) * 100).toFixed(2));
       }
 
@@ -188,8 +160,7 @@ export const getKPITableData = async (req, res) => {
         year: plan.year,
         targets,
         performance: performanceValues,
-        ratio,
-        description: plan.description || '',
+        ratio
       };
     });
 

@@ -82,6 +82,11 @@ function PlanModal({ modalInfo, closeModal, handleFormSubmit }) {
       return;
     }
 
+    if (typeof handleFormSubmit !== "function") {
+      console.error("handleFormSubmit is not a function");
+      return;
+    }
+
     handleFormSubmit({
       ...modalInfo,
       target: Number(target),

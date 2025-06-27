@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import KPI from '../models/kpiModel2.js';
 import KpiAssignment from '../models/kpiAssignmentModel.js';
 
+
 // Create or update a plan (yearly or quarterly target)
 export const createOrUpdatePlan = async (req, res) => {
   console.log("Received createOrUpdatePlan request body:", req.body);
@@ -63,11 +64,23 @@ export const createOrUpdatePlan = async (req, res) => {
       return res.status(400).json({ message: "Sector ID is required and could not be auto-filled." });
     }
 
-    // Filter for unique plan: kpiId + year + sectorId + subsectorId
-    const planFilter = { kpiId, year, sectorId, subsectorId };
+    // Prepare filters
+    // Plan created by this user and role
+    const userPlanFilter = { kpiId, year, sectorId, subsectorId, userId, role };
+    let existingUserPlan = await Plan.findOne(userPlanFilter);
 
-    // Try to find existing plan
-    let existingPlan = await Plan.findOne(planFilter);
+    // Any plan created by CEO or other roles (excluding worker)
+    const otherPlanFilter = { kpiId, year, sectorId, subsectorId, role: { $ne: 'worker' } };
+    const existingOtherPlan = await Plan.findOne(otherPlanFilter);
+
+    // Helper function to validate and convert target to number
+    const parseTarget = (val) => {
+      const num = Number(val);
+      if (isNaN(num)) {
+        return null;
+      }
+      return num;
+    };
 
     // Handle quarterly target update/create
     if (quarter && target !== undefined) {
@@ -76,18 +89,89 @@ export const createOrUpdatePlan = async (req, res) => {
         return res.status(400).json({ message: "Invalid quarter value. Must be one of q1, q2, q3, q4." });
       }
 
-      const quarterTargetNum = Number(target);
-      if (isNaN(quarterTargetNum)) {
+      const quarterTargetNum = parseTarget(target);
+      if (quarterTargetNum === null) {
         return res.status(400).json({ message: "Quarter target must be a valid number." });
       }
 
-      if (existingPlan) {
-        existingPlan[qKey] = quarterTargetNum;
-        if (description !== undefined) existingPlan.description = description;
-        const updatedPlan = await existingPlan.save();
+      if (role === 'worker') {
+        // Workers must not update CEO plans
+
+        if (existingUserPlan) {
+          // Update worker's own plan
+          existingUserPlan[qKey] = quarterTargetNum;
+          if (description !== undefined) existingUserPlan.description = description;
+          const updatedPlan = await existingUserPlan.save();
+          return res.status(200).json(updatedPlan);
+        } else {
+          // Create new plan for worker
+          const newPlan = new Plan({
+            userId,
+            role,
+            sectorId,
+            subsectorId,
+            kpiId,
+            kpi_name,
+            kraId: finalKraId,
+            goalId: finalGoalId,
+            year,
+            target: 0, // yearly target default 0 when only quarter provided
+            [qKey]: quarterTargetNum,
+            description: description || '',
+          });
+          const savedPlan = await newPlan.save();
+          return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
+        }
+      } else {
+        // CEO or other roles - update or create plan normally
+
+        if (existingOtherPlan) {
+          existingOtherPlan[qKey] = quarterTargetNum;
+          if (description !== undefined) existingOtherPlan.description = description;
+          const updatedPlan = await existingOtherPlan.save();
+          return res.status(200).json(updatedPlan);
+        } else {
+          const newPlan = new Plan({
+            userId,
+            role,
+            sectorId,
+            subsectorId,
+            kpiId,
+            kpi_name,
+            kraId: finalKraId,
+            goalId: finalGoalId,
+            year,
+            target: 0,
+            [qKey]: quarterTargetNum,
+            description: description || '',
+          });
+          const savedPlan = await newPlan.save();
+          return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
+        }
+      }
+    }
+
+    // Handle yearly target update/create (when no quarter provided)
+    if (target === undefined) {
+      return res.status(400).json({ message: "Target is required when quarter info is not provided." });
+    }
+
+    const targetNum = parseTarget(target);
+    if (targetNum === null) {
+      return res.status(400).json({ message: "Target must be a valid number." });
+    }
+
+    if (role === 'worker') {
+      // Workers cannot update CEO plans
+
+      if (existingUserPlan) {
+        // update worker's own plan preserving quarterly targets
+        existingUserPlan.target = targetNum;
+        if (description !== undefined) existingUserPlan.description = description;
+        const updatedPlan = await existingUserPlan.save();
         return res.status(200).json(updatedPlan);
       } else {
-        // Create new plan with quarter target set, yearly target 0 by default
+        // create new plan for worker
         const newPlan = new Plan({
           userId,
           role,
@@ -98,54 +182,53 @@ export const createOrUpdatePlan = async (req, res) => {
           kraId: finalKraId,
           goalId: finalGoalId,
           year,
-          target: 0,
-          [qKey]: quarterTargetNum,
+          target: targetNum,
           description: description || '',
+          q1: 0,
+          q2: 0,
+          q3: 0,
+          q4: 0,
+        });
+        const savedPlan = await newPlan.save();
+        return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
+      }
+    } else {
+      // CEO or other roles update or create normally
+
+      if (existingOtherPlan) {
+        // preserve quarterly targets
+        existingOtherPlan.target = targetNum;
+        if (description !== undefined) existingOtherPlan.description = description;
+        const updatedPlan = await existingOtherPlan.save();
+        return res.status(200).json(updatedPlan);
+      } else {
+        const newPlan = new Plan({
+          userId,
+          role,
+          sectorId,
+          subsectorId,
+          kpiId,
+          kpi_name,
+          kraId: finalKraId,
+          goalId: finalGoalId,
+          year,
+          target: targetNum,
+          description: description || '',
+          q1: 0,
+          q2: 0,
+          q3: 0,
+          q4: 0,
         });
         const savedPlan = await newPlan.save();
         return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
       }
     }
-
-    // Handle yearly target update/create (when no quarter provided)
-    if (target === undefined) {
-      return res.status(400).json({ message: "Target is required when quarter info is not provided." });
-    }
-
-    const targetNum = Number(target);
-    if (isNaN(targetNum)) {
-      return res.status(400).json({ message: "Target must be a valid number." });
-    }
-
-    // Preserve quarterly targets from existing plan if any
-    const updateData = {
-      userId,
-      role,
-      sectorId,
-      subsectorId,
-      kpiId,
-      kpi_name,
-      kraId: finalKraId,
-      goalId: finalGoalId,
-      year,
-      target: targetNum,
-      description: description || '',
-      createdAt: existingPlan ? existingPlan.createdAt : new Date(),
-      q1: existingPlan?.q1 || 0,
-      q2: existingPlan?.q2 || 0,
-      q3: existingPlan?.q3 || 0,
-      q4: existingPlan?.q4 || 0,
-    };
-
-    const options = { new: true, upsert: true, setDefaultsOnInsert: true };
-    const savedPlan = await Plan.findOneAndUpdate(planFilter, updateData, options);
-
-    return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
   } catch (error) {
     console.error("createOrUpdatePlan error:", error);
     return res.status(500).json({ message: "Server error." });
   }
 };
+
 
 // Other controllers unchanged, full versions below
 
