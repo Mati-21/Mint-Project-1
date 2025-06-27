@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import KPITable from "./KPITable";
-import Filters from "./Filters";
 import PlanModal from "./PlanModal";
 import PerformanceModal from "./PerformanceModal";
+import RatioModal from "./RatioModal";
+import useAuthStore from "../../store/auth.store";
 
 const BACKEND_URL = "http://localhost:1221";
 
@@ -11,49 +12,187 @@ function getCurrentEthiopianYear() {
   const gYear = today.getFullYear();
   const gMonth = today.getMonth() + 1;
   const gDate = today.getDate();
-
-  const isLeapYear =
-    (gYear % 4 === 0 && gYear % 100 !== 0) || gYear % 400 === 0;
+  const isLeapYear = (gYear % 4 === 0 && gYear % 100 !== 0) || gYear % 400 === 0;
   const newYearDay = isLeapYear ? 12 : 11;
+  return gMonth < 9 || (gMonth === 9 && gDate < newYearDay) ? gYear - 8 : gYear - 7;
+}
 
-  return gMonth < 9 || (gMonth === 9 && gDate < newYearDay)
-    ? gYear - 8
-    : gYear - 7;
+function extractId(idField) {
+  if (!idField) return "";
+  if (typeof idField === "string") return idField;
+  if (Array.isArray(idField)) {
+    for (const el of idField) {
+      const val = extractId(el);
+      if (val) return val;
+    }
+    return "";
+  }
+  if (typeof idField === "object") {
+    if ("_id" in idField) return extractId(idField._id);
+    if ("id" in idField) return extractId(idField.id);
+    if (typeof idField.toString === "function") {
+      const str = idField.toString();
+      if (str !== "[object Object]") return str;
+    }
+  }
+  return "";
+}
+
+function mergeRowsByKpi(rows) {
+  const merged = {};
+  rows.forEach((row) => {
+    const key = row.kpiId || row.kpiName;
+    if (!merged[key]) {
+      merged[key] = { ...row };
+    } else {
+      merged[key].targets = { ...(merged[key].targets || {}), ...(row.targets || {}) };
+      merged[key].performance = { ...(merged[key].performance || {}), ...(row.performance || {}) };
+      merged[key].ratio = { ...(merged[key].ratio || {}), ...(row.ratio || row.ratios || {}) };
+    }
+  });
+  return Object.values(merged);
 }
 
 function KPIGroupedTable({ data, detailedKpis }) {
-  const [filterYear, setFilterYear] = useState("");
-  const [filterGoal, setFilterGoal] = useState("");
-  const [filterKra, setFilterKra] = useState("");
-  const [filterKpiName, setFilterKpiName] = useState("");
+  const { user: authUser } = useAuthStore();
 
+  const [isUserReady, setIsUserReady] = useState(false);
   const [planModalInfo, setPlanModalInfo] = useState(null);
   const [performanceModalInfo, setPerformanceModalInfo] = useState(null);
-  const [planIds, setPlanIds] = useState({}); // NEW: { [kpiKey]: planId }
+  const [ratioModalInfo, setRatioModalInfo] = useState(null);
+  const [planIds, setPlanIds] = useState({});
+  const [tableValues, setTableValues] = useState({});
+  const [loadingTableValues, setLoadingTableValues] = useState(true);
+  const [notification, setNotification] = useState(null);
 
-  // Helper to create a unique key for each KPI/period
+  const currentEthYear = getCurrentEthiopianYear();
   const getKpiKey = (row, quarter, year) =>
     `${row.kpiId || row.kpiName}_${quarter || "year"}_${year}`;
 
-  if (!data || !Array.isArray(data)) {
-    return <div>No data available</div>;
-  }
+  useEffect(() => {
+    if (authUser && (authUser.id || authUser._id) && authUser.role) {
+      setIsUserReady(true);
+    }
+  }, [authUser]);
 
-  const currentEthYear = getCurrentEthiopianYear();
+  useEffect(() => {
+    async function fetchTableValues() {
+      setLoadingTableValues(true);
+      const user = authUser || {};
+      const userId = extractId(user.id || user._id);
+      const rawRole = user.role || "";
+      const role =
+        rawRole
+          .toLowerCase()
+          .split(" ")
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+      const sectorId = extractId(user.sectorId) || extractId(user.sector) || "";
+      const subsectorId = extractId(user.subsectorId) || extractId(user.subsector) || "";
+
+      try {
+        const resUsers = await fetch(`${BACKEND_URL}/api/users/get-users`, {
+          credentials: "include",
+        });
+        if (!resUsers.ok) throw new Error("Failed to fetch users");
+        const allUsers = await resUsers.json();
+
+        let userIdsToFetch = [];
+
+        if (role.toLowerCase() === "strategic") {
+          userIdsToFetch = allUsers.map(u => extractId(u._id || u.id)).filter(Boolean);
+        } else if (role.toLowerCase() === "chief ceo") {
+          if (!sectorId) return;
+          const ceos = allUsers.filter(
+            u => (u.role || "").toLowerCase() === "ceo" &&
+              (extractId(u.sectorId || u.sector) === sectorId)
+          );
+          const workers = allUsers.filter(
+            u => (u.role || "").toLowerCase() === "worker" &&
+              (extractId(u.sectorId || u.sector) === sectorId)
+          );
+          userIdsToFetch = [...ceos, ...workers].map(u => extractId(u._id || u.id)).filter(Boolean);
+        } else {
+          userIdsToFetch = [userId];
+        }
+
+        userIdsToFetch = [...new Set(userIdsToFetch)];
+
+        const yearsToFetch = [currentEthYear - 1, currentEthYear];
+        let combinedResults = [];
+
+        for (const year of yearsToFetch) {
+          const fetches = userIdsToFetch.map(async uid => {
+            const params = new URLSearchParams();
+            params.append("userId", uid);
+            params.append("role", role);
+            params.append("year", year.toString());
+
+            if (role.toLowerCase() === "ceo" || role.toLowerCase() === "worker") {
+              const userDetails = allUsers.find(u => extractId(u._id || u.id) === uid);
+              if (userDetails) {
+                const userSectorId = extractId(userDetails.sectorId || userDetails.sector);
+                const userSubsectorId = extractId(userDetails.subsectorId || userDetails.subsector);
+                if (userSectorId) params.append("sectorId", userSectorId);
+                if (userSubsectorId) params.append("subsectorId", userSubsectorId);
+              }
+            } else {
+              if (sectorId) params.append("sectorId", sectorId);
+              if (subsectorId) params.append("subsectorId", subsectorId);
+            }
+
+            const url = `${BACKEND_URL}/api/kpi-table/table-data?${params.toString()}`;
+            try {
+              const res = await fetch(url);
+              if (!res.ok) return [];
+              const data = await res.json();
+              if (Array.isArray(data)) return data;
+              if (data.grouped) return Object.values(data.grouped).flat();
+              return [];
+            } catch (e) {
+              console.warn(e.message);
+              return [];
+            }
+          });
+
+          const resultsPerYear = await Promise.all(fetches);
+          resultsPerYear.forEach(arr => {
+            combinedResults = combinedResults.concat(arr);
+          });
+        }
+
+        const groupedData = {};
+        combinedResults.forEach(item => {
+          const groupKey = `${item.goal}|||${item.kra}`;
+          if (!groupedData[groupKey]) groupedData[groupKey] = [];
+          groupedData[groupKey].push(item);
+        });
+
+        setTableValues(groupedData);
+      } catch (error) {
+        console.error("❌ Error fetching KPI table values:", error);
+        setNotification({ type: "error", message: "Failed to load KPI values." });
+      } finally {
+        setLoadingTableValues(false);
+      }
+    }
+
+    fetchTableValues();
+  }, [authUser, currentEthYear]);
+
+  if (!isUserReady) return <div className="p-4">Loading user information...</div>;
 
   const normalizedData = [];
-
   data.forEach((goal) => {
     const goalName = goal.goal_desc || "N/A";
     goal.kras?.forEach((kra) => {
       const kraName = kra.kra_name || "N/A";
       kra.kpis?.forEach((kpi) => {
-        const kpiDetail = detailedKpis.find((d) => d._id === kpi._id) || {};
-
+        const kpiDetail = detailedKpis.find((d) => d._id === kpi._id) || kpi || {};
         normalizedData.push({
-          kpiId: kpiDetail.kpiId || kpi.kpiId || kpi._id || null,
-          kpiName: kpiDetail.kpi_name || kpi.kpi_name || "N/A",
-          kraId: kpiDetail.kraId || kra.kra_id || kra._id || null,
+          kpiId: kpiDetail.kpiId || kpi.kpiId || kpi._id,
+          kpiName: kpiDetail.kpi_name || kpi.kpi_name,
+          kraId: kpiDetail.kraId || kra.kra_id || kra._id,
           sectorId: kpiDetail.sectorId || null,
           subsectorId: kpiDetail.subsectorId || null,
           year: kpiDetail.year || currentEthYear,
@@ -71,265 +210,140 @@ function KPIGroupedTable({ data, detailedKpis }) {
     });
   });
 
-  const filteredData = normalizedData.filter((row) => {
-    const goal = row.goal?.toLowerCase() || "";
-    const kra = row.kra?.toLowerCase() || "";
-    const kpiName = row.kpiName?.toLowerCase() || "";
-    const yearStr = row.year?.toString() || "";
-
-    return (
-      (!filterYear || yearStr.includes(filterYear.trim())) &&
-      (!filterGoal || goal.includes(filterGoal.trim().toLowerCase())) &&
-      (!filterKra || kra.includes(filterKra.trim().toLowerCase())) &&
-      (!filterKpiName || kpiName.includes(filterKpiName.trim().toLowerCase()))
-    );
-  });
-
   const groupedData = {};
-  filteredData.forEach((row) => {
-    const groupKey = `${row.goal}||${row.kra}`;
+  normalizedData.forEach((row) => {
+    const groupKey = `${row.goal}|||${row.kra}`;
     if (!groupedData[groupKey]) groupedData[groupKey] = [];
     groupedData[groupKey].push(row);
   });
 
-  const openModal = (row, field) => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const userId = user.id || user._id || null;
-    const role = user.role || null;
-    const sectorId = user.sectorId || user.sector || null;
-    const subsectorId = user.subsectorId || user.subsector || null;
-
-    if (!userId || !role) {
-      alert("User info missing: Please log in again.");
-      return;
-    }
-
-    setPlanModalInfo({
-      ...row,
-      field,
-      userId,
-      role,
-      sectorId,
-      subsectorId,
+  const enrichRowsWithFetchedValues = (rows, groupKey) => {
+    const fetchedRows = tableValues[groupKey] || [];
+    const mergedFetchedRows = mergeRowsByKpi(fetchedRows);
+    return rows.map((row) => {
+      const fetchedRow = mergedFetchedRows.find(
+        (f) => f.kpiId === row.kpiId || f.kpiName === row.kpiName
+      );
+      return {
+        ...row,
+        targets: fetchedRow?.targets || {},
+        performance: fetchedRow?.performance || {},
+        ratios: fetchedRow?.ratios || fetchedRow?.ratio || {},
+      };
     });
+  };
+
+  const enrichedGroupedData = {};
+  Object.entries(groupedData).forEach(([groupKey, rows]) => {
+    enrichedGroupedData[groupKey] = enrichRowsWithFetchedValues(rows, groupKey);
+  });
+
+  const openModal = (row, field) => {
+    const sectorId = extractId(authUser.sectorId) || extractId(authUser.sector) || "";
+    const subsectorId = extractId(authUser.subsectorId) || extractId(authUser.subsector) || "";
+    const userId = extractId(authUser.id || authUser._id);
+    setPlanModalInfo({ ...row, field, userId, role: authUser.role, sectorId, subsectorId });
   };
 
   const closeModal = () => setPlanModalInfo(null);
 
-  // Update handlePlanFormSubmit to store planId
-  const handlePlanFormSubmit = async (formData) => {
-    try {
-      const {
-        userId,
-        role,
-        sectorId,
-        subsectorId,
-        kpiName,
-        kraId,
-        kpiId,
-        year,
-        q1,
-        q2,
-        q3,
-        q4,
-        target,
-        performanceMeasure,
-        description,
-        goal,
-        period,
-        quarter,
-      } = formData;
-
-      if (!userId || !role) {
-        throw new Error("User info missing: Please log in again.");
-      }
-
-      const body = {
-        userId,
-        role,
-        sectorId,
-        subsectorId,
-        kpi_name: kpiName,
-        kraId,
-        kpiId,
-        year: Number(year) || currentEthYear,
-        q1: q1 === "N/A" ? null : q1,
-        q2: q2 === "N/A" ? null : q2,
-        q3: q3 === "N/A" ? null : q3,
-        q4: q4 === "N/A" ? null : q4,
-        target,
-        performanceMeasure,
-        description,
-        goal,
-        period,
-        quarter,
-      };
-
-      Object.keys(body).forEach((key) => {
-        if (body[key] === null || body[key] === undefined || body[key] === "") {
-          delete body[key];
-        }
-      });
-
-      const response = await fetch(`${BACKEND_URL}/api/plans`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Backend error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("Plan saved response:", result);
-
-      // Store planId for this KPI/period
-      const kpiKey = getKpiKey(formData, formData.quarter, formData.year);
-      setPlanIds((prev) => ({
-        ...prev,
-        [kpiKey]: result._id || result.planId || (result.plan && result.plan._id),
-      }));
-
-      alert("Plan saved!");
-      closeModal();
-    } catch (error) {
-      console.error("Failed to save plan:", error);
-      alert("Failed to save plan: " + error.message);
-    }
-  };
-
-  // When opening PerformanceModal, pass the planId if available
   const openPerformanceModal = (row, field) => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const userId = user.id || user._id || null;
-    const role = user.role || null;
-    const sectorId = user.sectorId || user.sector || null;
-    const subsectorId = user.subsectorId || user.subsector || null;
-
-    if (!userId || !role) {
-      alert("User info missing: Please log in again.");
-      return;
-    }
-
-    // Parse quarter and year from row/field
-    let quarter = null, year = row.year;
-    if (field && field.toLowerCase().startsWith("q")) {
-      quarter = field.toUpperCase();
-    }
-
-    const kpiKey = getKpiKey(row, quarter, year);
-    const planId = planIds[kpiKey] || ""; // Get planId if exists
+    const quarter = field?.toLowerCase().startsWith("q") ? field.toUpperCase() : null;
+    const kpiKey = getKpiKey(row, quarter, row.year);
+    const planId = planIds[kpiKey] || "";
+    const sectorId = extractId(authUser.sectorId) || extractId(authUser.sector) || "";
+    const subsectorId = extractId(authUser.subsectorId) || extractId(authUser.subsector) || "";
+    const userId = extractId(authUser.id || authUser._id);
 
     setPerformanceModalInfo({
       ...row,
-      kpiName: row.kpiName || row.kpi_name,
       field,
+      quarter,
+      planId,
       userId,
-      role,
+      role: authUser.role,
       sectorId,
       subsectorId,
-      planId, // Pass planId to modal
-      quarter,
-      year,
+      kpi_name: row.kpiName,
     });
   };
 
   const closePerformanceModal = () => setPerformanceModalInfo(null);
 
-  const handlePerformanceFormSubmit = async (formData) => {
-    try {
-      console.log("Submitting performance data:", formData);
+  const openRatioModal = (row, field) => {
+    const [quarterRaw, year] = field.split("-");
+    const quarter = quarterRaw.toUpperCase();
+    const kpiKey = getKpiKey(row, quarter, year);
+    const planId = planIds[kpiKey] || "";
 
-      const {
-        userId,
-        role,
-        sectorId,
-        subsectorId,
-        kpiName,
-        kraId,
-        goal,         // <-- get goal from formData
-        planId,       // <-- get planId from formData
-        year,
-        performanceMeasure,
-        quarter,
-        description,
-      } = formData;
+    const actualTarget = row?.targets?.[quarter.toLowerCase()] ?? row?.target ?? null;
+    const actualPerformance = row?.performance?.[quarter.toLowerCase()] ?? row?.performanceMeasure ?? null;
 
-      const body = {
-        userId,
-        role,
-        sectorId,
-        subsectorId,
-        kpi_name: kpiName,
-        kraId,
-        goal,        // <-- include goal
-        planId,      // <-- include planId
-        year: Number(year),
-        performanceMeasure,
-        quarter,
-        description,
-      };
+    const sectorId = extractId(authUser.sectorId) || extractId(authUser.sector) || "";
+    const subsectorId = extractId(authUser.subsectorId) || extractId(authUser.subsector) || "";
+    const userId = extractId(authUser.id || authUser._id);
 
-      Object.keys(body).forEach((key) => {
-        if (body[key] === null || body[key] === undefined || body[key] === "") {
-          delete body[key];
-        }
-      });
-
-      const response = await fetch(`${BACKEND_URL}/api/performance`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Backend error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("Performance saved response:", result);
-      alert("Performance saved!");
-      closePerformanceModal();
-    } catch (error) {
-      console.error("Failed to save performance:", error);
-      alert("Failed to save performance: " + error.message);
-    }
+    setRatioModalInfo({
+      ...row,
+      field,
+      quarter,
+      year,
+      planId,
+      target: actualTarget,
+      performance: actualPerformance,
+      userId,
+      role: authUser.role,
+      sectorId,
+      subsectorId,
+    });
   };
 
-  return (
-    <div className="p-4 overflow-x-auto">
-      <Filters
-        filterYear={filterYear}
-        setFilterYear={setFilterYear}
-        filterGoal={filterGoal}
-        setFilterGoal={setFilterGoal}
-        filterKra={filterKra}
-        setFilterKra={setFilterKra}
-        filterKpiName={filterKpiName}
-        setFilterKpiName={setFilterKpiName}
-      />
+  const closeRatioModal = () => setRatioModalInfo(null);
 
-      {Object.keys(groupedData).length > 0 ? (
-        Object.entries(groupedData).map(([groupKey, rows], idx) => (
+  return (
+    <div className="p-4 overflow-x-auto relative">
+      {notification && (
+        <div
+          className={`fixed top-4 right-4 z-50 max-w-xs rounded border px-4 py-2 shadow-md ${
+            notification.type === "success"
+              ? "bg-green-100 border-green-400 text-green-700"
+              : "bg-red-100 border-red-400 text-red-700"
+          }`}
+          role="alert"
+        >
+          {notification.message}
+          <button
+            onClick={() => setNotification(null)}
+            aria-label="Close notification"
+            className="ml-4 font-bold"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {loadingTableValues ? (
+        <p className="mt-4 text-center text-gray-600">Loading KPI values...</p>
+      ) : Object.entries(enrichedGroupedData).length > 0 ? (
+        Object.entries(enrichedGroupedData).map(([groupKey, rows], idx) => (
           <KPITable
             key={idx}
             groupKey={groupKey}
             rows={rows}
             openModal={openModal}
             openPerformanceModal={openPerformanceModal}
+            openRatioModal={openRatioModal}
             currentEthYear={currentEthYear}
           />
         ))
       ) : (
-        <p className="text-gray-600">No results found.</p>
+        <p className="mt-4 text-center text-gray-600">No results found.</p>
       )}
 
       {planModalInfo && (
         <PlanModal
           modalInfo={planModalInfo}
           closeModal={closeModal}
-          handleFormSubmit={handlePlanFormSubmit}
         />
       )}
 
@@ -337,8 +351,11 @@ function KPIGroupedTable({ data, detailedKpis }) {
         <PerformanceModal
           modalInfo={performanceModalInfo}
           closeModal={closePerformanceModal}
-          handleFormSubmit={handlePerformanceFormSubmit}
         />
+      )}
+
+      {ratioModalInfo && (
+        <RatioModal modalInfo={ratioModalInfo} closeModal={closeRatioModal} />
       )}
     </div>
   );

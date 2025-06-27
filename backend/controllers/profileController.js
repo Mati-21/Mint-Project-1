@@ -1,12 +1,10 @@
 import User from "../models/userModels.js";
-import fs from "fs";
-import path from "path";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary.js"; // your cloud upload helper
 
-// Get user profile by userId from auth middleware (req.userId)
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.userId)
-      .select("-password") // exclude password
+      .select("-password")
       .populate("sector", "sector_name")
       .populate("subsector", "subsector_name");
 
@@ -21,18 +19,16 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// Update user profile
 export const updateProfile = async (req, res) => {
   try {
-    const userId = req.userId; // from auth middleware
+    const userId = req.userId;
     const { fullName, phone, address, dob, gender } = req.body;
-    const imageFile = req.file; // if using multer for file upload
+    const imageFile = req.file;
 
     if (!fullName || !phone || !address || !dob || !gender) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
-    // Parse address if sent as JSON string
     let parsedAddress;
     try {
       parsedAddress = typeof address === "string" ? JSON.parse(address) : address;
@@ -54,17 +50,11 @@ export const updateProfile = async (req, res) => {
     };
 
     if (imageFile) {
-      const imagePath = `/uploads/${imageFile.filename}`;
+      // Upload from buffer to Cloudinary (or any cloud)
+      const uploadResponse = await uploadToCloudinary(imageFile.buffer);
+      updatedData.profileImage = uploadResponse.secure_url;
 
-      // Delete old profile image if exists
-      if (user.profileImage) {
-        const oldImagePath = path.join(process.cwd(), "uploads", path.basename(user.profileImage));
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
-      }
-
-      updatedData.profileImage = imagePath;
+      // Optional: If you want to delete old local images, handle here
     }
 
     const updatedUser = await User.findByIdAndUpdate(userId, updatedData, { new: true })
@@ -82,4 +72,3 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-

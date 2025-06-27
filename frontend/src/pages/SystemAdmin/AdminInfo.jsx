@@ -2,50 +2,66 @@ import { HiOutlineUsers } from "react-icons/hi2";
 import { MdPendingActions } from "react-icons/md";
 import { PiWarningCircleLight } from "react-icons/pi";
 import { TbActivityHeartbeat } from "react-icons/tb";
+import useThemeStore from "../../store/themeStore";
 
 function AdminInfo() {
+  const dark = useThemeStore((state) => state.dark);
+  const cardData = [
+    {
+      title: "Active Users",
+      icon: <HiOutlineUsers size={28} />,
+      value: 234,
+      subtitle: "+12 from last month",
+    },
+    {
+      title: "Pending Approval",
+      icon: <MdPendingActions size={28} />,
+      value: 12,
+      subtitle: "+3 from last month",
+    },
+    {
+      title: "Overdue Reports",
+      icon: <PiWarningCircleLight size={30} />,
+      value: 7,
+      subtitle: "+1 from last month",
+    },
+    {
+      title: "System Health",
+      icon: <TbActivityHeartbeat size={30} />,
+      value: "99.8%",
+      subtitle: "Stable",
+    },
+  ];
+
   return (
-    <div className="flex gap-4 justify-around items-center">
-      <div className="flex flex-col gap-2 p-2 flex-1 bg-white border font-sans border-gray-100 rounded-sm shadow-lg">
-        <div className="flex justify-between items-center gap-2 p-2">
-          <p className="font-bold">Active User</p>{" "}
-          <span>
-            <HiOutlineUsers size={25} />
-          </span>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {cardData.map(({ title, icon, value, subtitle }) => (
+        <div
+          key={title}
+          className={`p-4 rounded shadow flex flex-col justify-between ${
+            dark ? "bg-[#1f2937]" : "bg-[rgba(13,42,92,0.08)]"
+          }`}
+        >
+          <div
+            className={`flex justify-between items-center mb-2 ${
+              dark ? "text-[#F9FAFB]" : "text-[rgba(13,42,92,0.85)]"
+            }`}
+          >
+            <h3 className="font-semibold text-lg">{title}</h3>
+            <span className="text-[#F36F21]">{icon}</span>
+          </div>
+          <h2
+            className={`text-3xl font-bold mb-1 ${
+              dark ? "text-[#F9FAFB]" : "text-[rgba(13,42,92,0.85)]"
+            }`}
+          >
+            {value}
+          </h2>
+          <p className={`text-sm ${dark ? "text-[#D1D5DB]" : "text-[rgba(13,42,92,0.65)]"}`}>
+            {subtitle}
+          </p>
         </div>
-        <h3 className="text-2xl font-semibold  px-2">234</h3>
-        <h5>+12 form last month</h5>
-      </div>
-      <div className="flex flex-col gap-2 p-2 flex-1 bg-white border font-sans border-gray-100 rounded-sm shadow-lg">
-        <div className="flex justify-between items-center gap-2 p-2">
-          <p className="font-bold">Pending Approval</p>{" "}
-          <span>
-            <MdPendingActions size={25} />
-          </span>
-        </div>
-        <h3 className="text-2xl font-semibold  px-2">12</h3>
-        <h5>+12 form last month</h5>
-      </div>
-      <div className="flex flex-col gap-2 p-2 flex-1 bg-white border font-sans border-gray-100 rounded-sm shadow-lg">
-        <div className="flex justify-between items-center gap-2 p-2">
-          <p className="font-bold">Overdue Reports</p>{" "}
-          <span>
-            <PiWarningCircleLight size={30} className="font-bold" />
-          </span>
-        </div>
-        <h3 className="text-2xl font-semibold  px-2">7</h3>
-        <h5>+12 form last month</h5>
-      </div>
-      <div className="flex flex-col gap-2 p-2 flex-1 bg-white border font-sans border-gray-100 rounded-sm shadow-lg">
-        <div className="flex justify-between items-center gap-2 p-2">
-          <p className="font-bold">System Health</p>{" "}
-          <span>
-            <TbActivityHeartbeat size={30} />
-          </span>
-        </div>
-        <h3 className="text-2xl font-semibold  px-2">99.8%</h3>
-        <h5>+12 form last month</h5>
-      </div>
+      ))}
     </div>
   );
 }

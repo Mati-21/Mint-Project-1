@@ -1,20 +1,16 @@
 import { ChevronDown } from "lucide-react";
 import Datas from "./WorkUnitSideMenuTitles";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import useThemeStore from "../../store/themeStore";
 
-function WorkUnitSideBody() {
-  const [isSubMenuOpen, setIsSubMenuOpen] = useState({
-    menu1: false,
-    menu2: false,
-    menu3: false,
-    menu4: false,
-  });
-
+function WorkUnitSideBody({ open }) {
+  const dark = useThemeStore((state) => state.dark);
+  const [isSubMenuOpen, setIsSubMenuOpen] = useState({});
   const [isSubSubMenuOpen, setSubSubMenuOpen] = useState({});
-  const [userData, setUserData] = useState({
-    sector: "Innovation and research",
-  });
+  const scrollRef = useRef(null);
+
+  const userData = { sector: "Innovation and research" };
 
   const toggleDropdown = (key) => {
     setIsSubMenuOpen((prev) => ({
@@ -30,75 +26,103 @@ function WorkUnitSideBody() {
     }));
   };
 
+  useEffect(() => {
+    if (!open && scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [open]);
+
   return (
     <div
-      className={`overflow-auto ${
-        !open ? "px-0" : "px-4 "
-      }  text-sm bg-green-700 h-[450px] rounded scrollbar-hidden`}
+      ref={scrollRef}
+      className="text-sm h-full overflow-y-auto px-2 scrollbar-hidden"
     >
-      <ul>
+      <ul className="space-y-1">
         {Datas.map((data, index) => (
           <div key={index}>
+            {/* Section Title with HR */}
             {data.sectionTitle && (
               <div
-                className={`flex items-center  border-b pb-2 mt-4  ${
-                  !open ? "justify-center cursor-pointer" : "justify-between"
-                } border-black/50 `}
+                className={`border-t pt-4 flex items-center ${
+                  open ? "justify-between" : "justify-center"
+                } ${dark ? "text-white font-bold" : "text-[rgba(13,42,92,0.85)] font-bold"}`}
               >
-                <h1 className={`${!open && "hidden"}  font-bold text-md `}>
+                <h1 className={`${!open ? "hidden" : "uppercase text-xs tracking-wide"}`}>
                   {data.sectionTitle}
                 </h1>
-                <span className={`${!open && "text-4xl"}  `}>{data.icon}</span>
+                <span>{data.icon}</span>
               </div>
             )}
 
-            <Link to={data.link ? data.link : ""}>
+            {/* Menu Item */}
+            <Link to={data.link || "#"}>
               <li
-                className={` ${
-                  !open && "hidden"
-                } flex gap-4 px-2 py-1  items-center bg-green-300/20 cursor-pointer rounded duration-500 text-white hover:bg-slate-300/20 mt-2`}
+                className={`flex gap-2 px-2 py-1 items-center rounded cursor-pointer transition duration-300 mt-2 ${
+                  dark
+                    ? "text-white hover:bg-gray-700"
+                    : "text-[rgba(13,42,92,0.85)] hover:bg-orange-100"
+                } ${!open ? "justify-center" : ""}`}
+                onClick={(e) => {
+                  if (data.submenu) {
+                    e.preventDefault();
+                    toggleDropdown(data.key);
+                  }
+                }}
               >
-                <span className="flex-1 font-bold text-xs">{data.menu}</span>
-                {data.submenu && (
+                <span className={`${open ? "" : "text-[16px]"}`}>{data.icon}</span>
+                <span className={`font-medium text-xs ${!open ? "hidden" : ""} whitespace-nowrap`}>
+                  {data.menu}
+                </span>
+                {data.submenu && open && (
                   <ChevronDown
-                    className={`  cursor-pointer text-white  transition-transform  duration-200 `}
-                    onClick={() => toggleDropdown(data.key)}
+                    className={`transition-transform ${
+                      isSubMenuOpen[data.key] ? "rotate-180" : ""
+                    }`}
                     size={15}
                   />
                 )}
               </li>
             </Link>
 
-            {data.subMenuItems && isSubMenuOpen[data.key] && (
-              <div className="py-4 flex flex-col  mt-1 gap-3">
+            {/* Submenus */}
+            {data.subMenuItems && isSubMenuOpen[data.key] && open && (
+              <div className="ml-4 flex flex-col mt-2 gap-2">
                 {data.subMenuItems
                   .filter((sec) => sec.subMenuItem === userData.sector)
                   .map((item, subIndex) => (
-                    <div>
-                      <Link>
-                        <li
-                          key={subIndex}
-                          className=" duration-300 py-1 flex justify-between rounded px-2 ml-2 text-white/80 mr-1 cursor-pointer bg-green-200/10 hover:bg-green-300/20"
-                        >
-                          {item.subMenuItem}
-                          {
-                            <ChevronDown
-                              className={`  cursor-pointer text-white  transition-transform  duration-200 `}
-                              onClick={() => toggleSubSubMenu(subIndex)}
-                              size={15}
-                            />
-                          }
-                        </li>
-                      </Link>
+                    <div key={subIndex}>
+                      <li
+                        className={`flex justify-between items-center px-2 py-1 rounded cursor-pointer transition duration-300 ${
+                          dark
+                            ? "bg-white/10 text-white hover:bg-white/20"
+                            : "bg-orange-50 text-gray-800 hover:bg-orange-100"
+                        }`}
+                        onClick={() => toggleSubSubMenu(subIndex)}
+                      >
+                        {item.subMenuItem}
+                        {item.subsubmenu && (
+                          <ChevronDown
+                            className={`transition-transform ${
+                              isSubSubMenuOpen[subIndex] ? "rotate-180" : ""
+                            }`}
+                            size={15}
+                          />
+                        )}
+                      </li>
 
+                      {/* Sub-submenus */}
                       {item.subsubmenu && isSubSubMenuOpen[subIndex] && (
-                        <ul className=" flex flex-col text-xs gap-3 w-46 cursor-pointer  ml-4 mt-2">
-                          {item.subsubMenus.map((subsubmenu) => (
+                        <ul className="flex flex-col gap-2 ml-4 mt-2 text-xs">
+                          {item.subsubMenus.map((sub, i) => (
                             <li
-                              className="px-2 py-1 bg-green-600 rounded text-white"
-                              key={subsubmenu}
+                              key={i}
+                              className={`px-2 py-1 rounded cursor-pointer transition ${
+                                dark
+                                  ? "bg-gray-700 text-white hover:bg-gray-600"
+                                  : "bg-orange-100 text-gray-800 hover:bg-orange-200"
+                              }`}
                             >
-                              {subsubmenu}
+                              {sub}
                             </li>
                           ))}
                         </ul>
@@ -110,6 +134,8 @@ function WorkUnitSideBody() {
           </div>
         ))}
       </ul>
+
+      <style>{`div::-webkit-scrollbar { display: none; }`}</style>
     </div>
   );
 }

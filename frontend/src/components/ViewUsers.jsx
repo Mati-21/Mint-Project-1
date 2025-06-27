@@ -5,11 +5,14 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import useThemeStore from "../store/themeStore";
 
 const backendUrl = "http://localhost:1221";
 const ROWS_PER_PAGE = 10;
 
 export default function ViewUsers() {
+  const dark = useThemeStore((state) => state.dark);
+
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
@@ -19,7 +22,6 @@ export default function ViewUsers() {
   const [filteredSubsectors, setFilteredSubsectors] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch users, sectors, and subsectors
   const fetchAll = async () => {
     try {
       const [usersRes, sectorRes, subsectorRes] = await Promise.all([
@@ -41,7 +43,6 @@ export default function ViewUsers() {
     fetchAll();
   }, []);
 
-  // Filter subsectors for edit dropdown
   useEffect(() => {
     if (!editData.sector) {
       setFilteredSubsectors([]);
@@ -58,21 +59,18 @@ export default function ViewUsers() {
     setFilteredSubsectors(filtered);
   }, [editData.sector, subsectors, editingId]);
 
-  // Filtered users
   const filtered = users.filter(
     (u) =>
       u.fullName?.toLowerCase().includes(search.toLowerCase()) ||
       u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Pagination
   const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
   const paginated = filtered.slice(
     (currentPage - 1) * ROWS_PER_PAGE,
     currentPage * ROWS_PER_PAGE
   );
 
-  // Start editing
   const handleEdit = (user) => {
     setEditingId(user._id);
     setEditData({
@@ -84,7 +82,6 @@ export default function ViewUsers() {
     });
   };
 
-  // Save edit
   const handleSave = async (userId) => {
     try {
       await axios.put(
@@ -100,13 +97,11 @@ export default function ViewUsers() {
     }
   };
 
-  // Cancel edit
   const handleCancel = () => {
     setEditingId(null);
     setEditData({});
   };
 
-  // Handle edit input change
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     setEditData((prev) => ({
@@ -116,7 +111,6 @@ export default function ViewUsers() {
     }));
   };
 
-  // Export to Excel
   const exportToExcel = (all = false) => {
     const data = (all ? filtered : paginated).map((u) => ({
       Name: u.fullName,
@@ -132,7 +126,6 @@ export default function ViewUsers() {
     saveAs(new Blob([buf], { type: "application/octet-stream" }), "users.xlsx");
   };
 
-  // Export to PDF
   const exportToPDF = (all = false) => {
     const doc = new jsPDF();
     const data = (all ? filtered : paginated).map((u) => [
@@ -150,201 +143,263 @@ export default function ViewUsers() {
   };
 
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <div className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+    <div
+      className={`relative min-h-[80vh] p-6 max-w-6xl mx-auto rounded-xl
+        border ${
+          dark ? "border-gray-700 bg-gray-800 text-[#F36F21]" : "border-gray-300 bg-white text-[#0D2A5C]"
+        } shadow-lg`}
+    >
+      {/* Search & Export */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <input
-          className="border px-3 py-1 rounded w-full md:w-1/3"
+          type="search"
           placeholder="Search by name or email"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
             setCurrentPage(1);
           }}
+          className={`w-full md:w-1/3 px-4 py-2 rounded border focus:outline-none transition
+            ${
+              dark
+                ? "bg-gray-900 border-[#F36F21] placeholder-[#F36F21] text-[#F36F21] focus:border-orange-500"
+                : "bg-white border-[#0D2A5C] placeholder-[#0D2A5C] text-[#0D2A5C] focus:border-blue-700"
+            }`}
         />
-        <div className="flex gap-2">
-          {/* Excel Page */}
-          <div className="relative group">
-            <button
-              className="bg-white border border-green-600 px-3 py-1 rounded flex items-center"
-              onClick={() => exportToExcel(false)}
-              aria-label="Export page as Excel"
-            >
-              <FaFileExcel className="text-green-600 mr-1" size={20} />
-            </button>
-            <span className="absolute left-1/2 -translate-x-1/2 mt-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none z-10 whitespace-nowrap">
-              Export to Excel, as page
-            </span>
-          </div>
-          {/* Excel All */}
-          <div className="relative group">
-            <button
-              className="bg-white border border-green-700 px-3 py-1 rounded flex items-center"
-              onClick={() => exportToExcel(true)}
-              aria-label="Export all as Excel"
-            >
-              <FaFileExcel className="text-green-700 mr-1" size={20} />
-            </button>
-            <span className="absolute left-1/2 -translate-x-1/2 mt-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none z-10 whitespace-nowrap">
-              Export to Excel, as full
-            </span>
-          </div>
-          {/* PDF Page */}
-          <div className="relative group">
-            <button
-              className="bg-white border border-red-600 px-3 py-1 rounded flex items-center"
-              onClick={() => exportToPDF(false)}
-              aria-label="Export page as PDF"
-            >
-              <FaFilePdf className="text-red-600 mr-1" size={20} />
-            </button>
-            <span className="absolute left-1/2 -translate-x-1/2 mt-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none z-10 whitespace-nowrap">
-              Export to PDF, as page
-            </span>
-          </div>
-          {/* PDF All */}
-          <div className="relative group">
-            <button
-              className="bg-white border border-red-700 px-3 py-1 rounded flex items-center"
-              onClick={() => exportToPDF(true)}
-              aria-label="Export all as PDF"
-            >
-              <FaFilePdf className="text-red-700 mr-1" size={20} />
-            </button>
-            <span className="absolute left-1/2 -translate-x-1/2 mt-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none z-10 whitespace-nowrap">
-              Export to PDF, as full
-            </span>
-          </div>
+
+        <div className="flex gap-3">
+          {[
+            {
+              onClick: () => exportToExcel(false),
+              icon: <FaFileExcel className="text-green-600" size={20} />,
+              label: "Export current page to Excel",
+              border: dark ? "border-green-600" : "border-green-600",
+            },
+            {
+              onClick: () => exportToExcel(true),
+              icon: <FaFileExcel className="text-green-700" size={20} />,
+              label: "Export all users to Excel",
+              border: dark ? "border-green-700" : "border-green-700",
+            },
+            {
+              onClick: () => exportToPDF(false),
+              icon: <FaFilePdf className="text-red-600" size={20} />,
+              label: "Export current page to PDF",
+              border: dark ? "border-red-600" : "border-red-600",
+            },
+            {
+              onClick: () => exportToPDF(true),
+              icon: <FaFilePdf className="text-red-700" size={20} />,
+              label: "Export all users to PDF",
+              border: dark ? "border-red-700" : "border-red-700",
+            },
+          ].map(({ onClick, icon, label, border }, i) => (
+            <div className="relative group" key={i}>
+              <button
+                onClick={onClick}
+                className={`flex items-center px-3 py-2 rounded border transition
+                  ${border}
+                  ${dark ? "bg-gray-900 hover:bg-gray-700" : "bg-white hover:bg-gray-100"}`}
+                aria-label={label}
+                title={label}
+              >
+                {icon}
+              </button>
+              <span className="absolute left-1/2 -translate-x-1/2 mt-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none z-10 whitespace-nowrap">
+                {label}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
-      <table className="w-full text-xs border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2 border">Name</th>
-            <th className="p-2 border">Email</th>
-            <th className="p-2 border">Role</th>
-            <th className="p-2 border">Sector</th>
-            <th className="p-2 border">Subsector</th>
-            <th className="p-2 border">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginated.map((u) =>
-            editingId === u._id ? (
-              <tr key={u._id} className="bg-yellow-50">
-                <td className="p-2 border">
-                  <input
-                    name="fullName"
-                    value={editData.fullName}
-                    onChange={handleEditChange}
-                    className="border px-1 rounded w-full"
-                  />
-                </td>
-                <td className="p-2 border">
-                  <input
-                    name="email"
-                    value={editData.email}
-                    onChange={handleEditChange}
-                    className="border px-1 rounded w-full"
-                  />
-                </td>
-                <td className="p-2 border">
-                  <select
-                    name="role"
-                    value={editData.role}
-                    onChange={handleEditChange}
-                    className="border px-1 rounded w-full"
-                  >
-                    <option value="">Select Role</option>
-                    <option value="Chief CEO">Chief CEO</option>
-                    <option value="CEO">CEO</option>
-                    <option value="Worker">Worker</option>
-                    <option value="System Admin">System Admin</option>
-                    <option value="Minister">Minister</option>
-                    <option value="Strategic Unit">Strategic Unit</option>
-                  </select>
-                </td>
-                <td className="p-2 border">
-                  <select
-                    name="sector"
-                    value={editData.sector}
-                    onChange={handleEditChange}
-                    className="border px-1 rounded w-full"
-                  >
-                    <option value="">Select Sector</option>
-                    {sectors.map((sec) => (
-                      <option key={sec._id} value={sec._id}>
-                        {sec.sector_name}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="p-2 border">
-                  <select
-                    name="subsector"
-                    value={editData.subsector}
-                    onChange={handleEditChange}
-                    className="border px-1 rounded w-full"
-                  >
-                    <option value="">Select Subsector</option>
-                    {filteredSubsectors.map((sub) => (
-                      <option key={sub._id} value={sub._id}>
-                        {sub.subsector_name}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="p-2 border">
-                  <button
-                    className="text-green-600 mr-2"
-                    onClick={() => handleSave(u._id)}
-                  >
-                    Save
-                  </button>
-                  <button className="text-gray-500" onClick={handleCancel}>
-                    Cancel
-                  </button>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-lg border border-transparent dark:border-gray-700">
+        <table className="w-full text-sm border-collapse">
+          <thead
+            className={`${dark ? "bg-gray-900 text-[#F36F21]" : "bg-[#0D2A5C] text-white"}`}
+          >
+            <tr>
+              {["Name", "Email", "Role", "Sector", "Subsector", "Actions"].map((header) => (
+                <th key={header} className="p-3 border border-gray-300 dark:border-gray-700 text-left">
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.length === 0 && (
+              <tr>
+                <td
+                  colSpan={6}
+                  className={`text-center py-6 ${
+                    dark ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  No users found.
                 </td>
               </tr>
-            ) : (
-              <tr key={u._id}>
-                <td className="p-2 border">{u.fullName}</td>
-                <td className="p-2 border">{u.email}</td>
-                <td className="p-2 border">{u.role}</td>
-                <td className="p-2 border">{u.sector?.sector_name || ""}</td>
-                <td className="p-2 border">{u.subsector?.subsector_name || ""}</td>
-                <td className="p-2 border">
-                  <button
-                    className="text-blue-600"
-                    onClick={() => handleEdit(u)}
-                  >
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            )
-          )}
-        </tbody>
-      </table>
-      {filtered.length === 0 && (
-        <div className="text-center text-gray-400 mt-4">No users found.</div>
-      )}
-      {/* Pagination Controls */}
+            )}
+
+            {paginated.map((u) =>
+              editingId === u._id ? (
+                <tr
+                  key={u._id}
+                  className={`bg-yellow-50 dark:bg-yellow-900 text-sm transition-colors duration-300`}
+                >
+                  {/* Editable Inputs */}
+                  {[
+                    {
+                      name: "fullName",
+                      value: editData.fullName,
+                    },
+                    {
+                      name: "email",
+                      value: editData.email,
+                    },
+                  ].map(({ name, value }) => (
+                    <td key={name} className="p-2 border border-gray-300 dark:border-gray-700">
+                      <input
+                        name={name}
+                        value={value}
+                        onChange={handleEditChange}
+                        className={`w-full px-2 py-1 rounded border focus:outline-none transition
+                          ${
+                            dark
+                              ? "bg-gray-900 border-[#F36F21] text-[#F36F21] focus:border-orange-500"
+                              : "bg-white border-[#0D2A5C] text-[#0D2A5C] focus:border-blue-700"
+                          }`}
+                      />
+                    </td>
+                  ))}
+                  <td className="p-2 border border-gray-300 dark:border-gray-700">
+                    <select
+                      name="role"
+                      value={editData.role}
+                      onChange={handleEditChange}
+                      className={`w-full px-2 py-1 rounded border focus:outline-none transition
+                        ${
+                          dark
+                            ? "bg-gray-900 border-[#F36F21] text-[#F36F21] focus:border-orange-500"
+                            : "bg-white border-[#0D2A5C] text-[#0D2A5C] focus:border-blue-700"
+                        }`}
+                    >
+                      <option value="">Select Role</option>
+                      <option value="Chief CEO">Chief CEO</option>
+                      <option value="CEO">CEO</option>
+                      <option value="Worker">Worker</option>
+                      <option value="System Admin">System Admin</option>
+                      <option value="Minister">Minister</option>
+                      <option value="Strategic Unit">Strategic Unit</option>
+                    </select>
+                  </td>
+                  <td className="p-2 border border-gray-300 dark:border-gray-700">
+                    <select
+                      name="sector"
+                      value={editData.sector}
+                      onChange={handleEditChange}
+                      className={`w-full px-2 py-1 rounded border focus:outline-none transition
+                        ${
+                          dark
+                            ? "bg-gray-900 border-[#F36F21] text-[#F36F21] focus:border-orange-500"
+                            : "bg-white border-[#0D2A5C] text-[#0D2A5C] focus:border-blue-700"
+                        }`}
+                    >
+                      <option value="">Select Sector</option>
+                      {sectors.map((sec) => (
+                        <option key={sec._id} value={sec._id}>
+                          {sec.sector_name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="p-2 border border-gray-300 dark:border-gray-700">
+                    <select
+                      name="subsector"
+                      value={editData.subsector}
+                      onChange={handleEditChange}
+                      className={`w-full px-2 py-1 rounded border focus:outline-none transition
+                        ${
+                          dark
+                            ? "bg-gray-900 border-[#F36F21] text-[#F36F21] focus:border-orange-500"
+                            : "bg-white border-[#0D2A5C] text-[#0D2A5C] focus:border-blue-700"
+                        }`}
+                    >
+                      <option value="">Select Subsector</option>
+                      {filteredSubsectors.map((sub) => (
+                        <option key={sub._id} value={sub._id}>
+                          {sub.subsector_name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="p-2 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                    <button
+                      onClick={() => handleSave(u._id)}
+                      className="mr-2 text-green-600 hover:text-green-800 transition"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      className="text-gray-500 hover:text-gray-700 transition"
+                    >
+                      Cancel
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                <tr
+                  key={u._id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+                >
+                  <td className="p-3 border border-gray-300 dark:border-gray-700">{u.fullName}</td>
+                  <td className="p-3 border border-gray-300 dark:border-gray-700">{u.email}</td>
+                  <td className="p-3 border border-gray-300 dark:border-gray-700">{u.role}</td>
+                  <td className="p-3 border border-gray-300 dark:border-gray-700">{u.sector?.sector_name || ""}</td>
+                  <td className="p-3 border border-gray-300 dark:border-gray-700">{u.subsector?.subsector_name || ""}</td>
+                  <td className="p-3 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                    <button
+                      onClick={() => handleEdit(u)}
+                      className={`text-blue-600 hover:text-blue-800 transition font-semibold`}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              )
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 mt-4">
+        <div className="flex items-center justify-center gap-6 mt-6">
           <button
-            className="px-2 py-1 border rounded disabled:opacity-50"
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
+            className={`px-4 py-2 rounded border transition
+              ${
+                dark
+                  ? "border-[#F36F21] text-[#F36F21] disabled:opacity-40 hover:bg-[#F36F21] hover:text-gray-900"
+                  : "border-[#0D2A5C] text-[#0D2A5C] disabled:opacity-40 hover:bg-[#0D2A5C] hover:text-white"
+              }`}
           >
             Prev
           </button>
-          <span>
+          <span className="text-sm font-semibold">
             Page {currentPage} of {totalPages}
           </span>
           <button
-            className="px-2 py-1 border rounded disabled:opacity-50"
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
+            className={`px-4 py-2 rounded border transition
+              ${
+                dark
+                  ? "border-[#F36F21] text-[#F36F21] disabled:opacity-40 hover:bg-[#F36F21] hover:text-gray-900"
+                  : "border-[#0D2A5C] text-[#0D2A5C] disabled:opacity-40 hover:bg-[#0D2A5C] hover:text-white"
+              }`}
           >
             Next
           </button>

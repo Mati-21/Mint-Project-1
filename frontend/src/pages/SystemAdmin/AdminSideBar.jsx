@@ -1,24 +1,22 @@
 import AdminSideHeader from "./AdminSideHeader";
 import AdminSideBody from "./AdminSideBody";
+import useThemeStore from "../../store/themeStore";
 
-function AdminSideBar() {
+function AdminSideBar({ sidebarOpen, setSidebarOpen }) {
+  const dark = useThemeStore((state) => state.dark);
+
   return (
     <div
-      className="fixed w-72 bg-green-800 h-full flex flex-col p-6 gap-4 text-white overflow-y-auto"
-      style={{
-        scrollbarWidth: "none",        // Firefox
-        msOverflowStyle: "none",       // IE 10+
-      }}
+      className={`h-full flex flex-col p-4 overflow-y-auto scrollbar-hide transition-colors ${
+        dark
+          ? "bg-[#1f2937] text-white shadow-lg"
+          : "bg-[rgba(13,42,92,0.1)] text-[rgba(13,42,92,0.85)] shadow-sm"
+      }`}
     >
-      <style>
-        {`
-          ::-webkit-scrollbar {
-            display: none;
-          }
-        `}
-      </style>
-      <AdminSideHeader />
-      <AdminSideBody />
+      {/* Remove header entirely when sidebar is closed */}
+      {sidebarOpen && <AdminSideHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />}
+
+      <AdminSideBody sidebarOpen={sidebarOpen} />
     </div>
   );
 }

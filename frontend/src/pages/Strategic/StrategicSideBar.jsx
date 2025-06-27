@@ -1,25 +1,25 @@
-import { BsArrowLeftShort } from "react-icons/bs";
 import StrategicSideHeader from "./StrategicSideHeader";
 import StrategicSideBody from "./StrategicSideBody";
 import ResultFrameworkMenu from "./StrategicComponents/ResultFrameworkMenu";
+import useThemeStore from "../../store/themeStore";
 
-function StrategicSideBar({ open = true }) {
+function StrategicSideBar({ sidebarOpen }) {
+  const dark = useThemeStore((state) => state.dark);
+
   return (
     <div
-      className={`bg-green-700 h-full p-4 fixed w-72 duration-300 scrollbar-hidden flex flex-col`}
+      className={`h-full p-4 flex flex-col transition-all duration-300 ${
+        dark
+          ? "bg-[#1f2937] text-white"
+          : "bg-[rgba(13,42,92,0.08)] text-gray-800"
+      } shadow-[2px_0_8px_-2px_rgba(0,0,0,0.15)]`}
+      style={{ width: sidebarOpen ? "18rem" : "5rem" }}
     >
-      <BsArrowLeftShort
-        className={`text-3xl text-dark-purple lg:block rounded-full bg-white top-20 absolute right-0 border border-dark-purple translate-x-1/2 cursor-pointer ${
-          open ? "" : "rotate-180"
-        } z-20`}
-        // onClick={() => dispatch(toggleMainSidenav())}
-      />
-      <StrategicSideHeader />
+      {sidebarOpen && <StrategicSideHeader sidebarOpen={sidebarOpen} />}
 
-      {/* Scrollable area */}
-      <div className="flex-1 overflow-auto scrollbar-hidden space-y-4 mt-2">
-        <ResultFrameworkMenu open={open} />
-        <StrategicSideBody open={open} />
+      <div className="flex-1 overflow-y-auto mt-2 scrollbar-hidden space-y-4">
+        {sidebarOpen && <ResultFrameworkMenu open={sidebarOpen} />}
+        <StrategicSideBody open={sidebarOpen} />
       </div>
     </div>
   );

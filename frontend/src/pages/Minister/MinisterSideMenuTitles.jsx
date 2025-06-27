@@ -1,58 +1,67 @@
-import { LuFrame } from "react-icons/lu";
-import { MdOutlineDisplaySettings } from "react-icons/md";
-import { IoAnalytics } from "react-icons/io5";
+import { MdOutlineDisplaySettings, MdVerified } from "react-icons/md";
+import { IoAnalyticsSharp } from "react-icons/io5";
 import { FcPlanner } from "react-icons/fc";
-import { TbReportAnalytics } from "react-icons/tb";
+import { TbReportAnalytics, TbTarget } from "react-icons/tb";
+import { FaChartLine, FaFileExport, FaChartPie, FaFileAlt } from "react-icons/fa";
 
 const Datas = [
-
-  
-
   {
     sectionTitle: "Annual/Quarterly",
-    menu: ["Planning"],
-    icon: <FcPlanner size={23} className="text-white" />,
+    key: "annual",
+    menu: "Planning",
+    icon: <FcPlanner size={20} />, // blue-ish icon with default color
   },
   {
-    menu: ["Performance"],
+    key: "performance",
+    menu: "Performance",
+    icon: <FaChartLine size={16} color="#F36F21" />, // orange icon
   },
-
   {
     sectionTitle: "Validation",
+    key: "validation",
+    menu: "Target Validation",
     link: "Target-validation",
-    menu: ["Target Validation"],
-    icon: <FcPlanner size={23} className="text-white" />,
+    icon: <TbTarget size={20} color="#F36F21" />, // changed to target icon in orange
   },
   {
-    menu: ["Performance Validation"],
-    icon: <FcPlanner size={23} className="text-white" />,
+    key: "performanceValidation",
+    menu: "Performance Validation",
     link: "Performance-validation",
+    icon: <MdVerified size={20} color="#F36F21" />, // changed to verified icon in orange
   },
-
   {
-    sectionTitle: "Data Managment",
-    menu: ["Performance Alert"],
-    icon: <MdOutlineDisplaySettings size={23} className="text-white" />,
+    sectionTitle: "Data Management",
+    key: "dataManagement",
+    menu: "Performance Alert",
+    icon: <MdOutlineDisplaySettings size={20} color="#F36F21" />, // orange icon
   },
-
-  { menu: ["Export and Reporting"] },
-
+  {
+    key: "exportReporting",
+    menu: "Export and Reporting",
+    link: "Sector-reporting",
+    icon: <FaFileExport size={16} color="#F36F21" />,
+  },
   {
     sectionTitle: "Data Analysis",
-    menu: ["Sectorial Illustration"],
-    icon: <IoAnalytics size={23} className="text-white" />,
+    key: "dataAnalysis",
+    menu: "Sectorial Illustration",
+    icon: <IoAnalyticsSharp size={20} color="#F36F21" />,
   },
   {
-    menu: ["Sub-Sectororial Illustration"],
+    key: "subSectorialIllustration",
+    menu: "Sub-Sectorial Illustration",
+    icon: <FaChartPie size={16} color="#F36F21" />,
   },
-
   {
     sectionTitle: "Master Report",
-    menu: ["Performance Report"],
-    icon: <TbReportAnalytics size={23} className="text-white" />,
+    key: "masterReport",
+    menu: "Performance Report",
+    icon: <TbReportAnalytics size={20} color="#F36F21" />,
   },
   {
-    menu: ["Report Affiliated"],
+    key: "reportAffiliated",
+    menu: "Report Affiliated",
+    icon: <FaFileAlt size={16} color="#F36F21" />,
   },
 ];
 

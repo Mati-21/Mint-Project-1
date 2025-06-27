@@ -1,26 +1,27 @@
-import { BsArrowLeftShort } from "react-icons/bs";
-
 import CEOSideBody from "./CEOSideBody";
 import ResultFrameworkMenu from "./CEOComponents/ResultFrameworkMenu";
 import CEOSideHeader from "./CEOSideHeader";
+import useThemeStore from "../../store/themeStore";
 
-function CEOSideBar({ open = true }) {
+function CEOSideBar({ sidebarOpen }) {
+  const dark = useThemeStore((state) => state.dark);
+
   return (
     <div
-      className={`bg-green-700 h-full p-4 fixed w-72 duration-300 scrollbar-hidden flex flex-col`}
+      className={`h-full p-4 flex flex-col transition-all duration-300 ${
+        dark
+          ? "bg-[#1f2937] text-white"
+          : "bg-[rgba(13,42,92,0.08)] text-gray-800"
+      } shadow-[2px_0_8px_-2px_rgba(0,0,0,0.15)]`}
+      style={{ width: sidebarOpen ? "18rem" : "5rem" }} // 72 and 20 tailwind equivalents
     >
-      <BsArrowLeftShort
-        className={`text-3xl text-dark-purple lg:block rounded-full bg-white top-20 absolute right-0 border border-dark-purple translate-x-1/2 cursor-pointer ${
-          open ? "" : "rotate-180"
-        } z-20`}
-        // onClick={() => dispatch(toggleMainSidenav())}
-      />
-      <CEOSideHeader />
+      {/* ✅ Show header only when sidebar is open */}
+      {sidebarOpen && <CEOSideHeader sidebarOpen={sidebarOpen} />}
 
-      {/* Scrollable area */}
-      <div className="flex-1 overflow-auto scrollbar-hidden space-y-4 mt-2">
-        <ResultFrameworkMenu open={open} />
-        <CEOSideBody open={open} />
+      <div className="flex-1 overflow-y-auto mt-2 scrollbar-hidden space-y-4">
+        {/* ✅ Show ResultFrameworkMenu only when sidebar is open */}
+        {sidebarOpen && <ResultFrameworkMenu open={sidebarOpen} />}
+        <CEOSideBody open={sidebarOpen} />
       </div>
     </div>
   );

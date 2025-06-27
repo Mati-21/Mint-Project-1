@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import useThemeStore from "../../store/themeStore";
 
 const BASE_URL = "http://localhost:1221";
 
 function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
+  const dark = useThemeStore((state) => state.dark);
+
   const [performanceMeasure, setPerformanceMeasure] = useState("");
   const [description, setDescription] = useState("");
   const [target, setTarget] = useState("");
@@ -27,97 +30,86 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
       }
     }
 
-    console.log("PerformanceModal useEffect with modalInfo:", modalInfo);
-    console.log("Parsed quarter:", quarter, "year:", year);
-
     async function fetchData() {
-      if (
-        !modalInfo.kpiName ||
-        !modalInfo.kraId ||
-        !modalInfo.role ||
-        !modalInfo.userId ||
-        !year
-      ) {
-        console.log("fetchData early return due to missing params");
-        setWarning(
-          "Missing required data to fetch data: " +
-            [
-              !modalInfo.kpiName && "kpiName",
-              !modalInfo.kraId && "kraId",
-              !modalInfo.role && "role",
-              !modalInfo.userId && "userId",
-              !year && "year",
-            ]
-              .filter(Boolean)
-              .join(", ")
-        );
-        setPerformanceMeasure("");
-        setDescription("");
-        setTarget("");
-        setError("");
-        setLoading(false);
-        return;
-      }
+  if (
+    !modalInfo.kpiName ||
+    !modalInfo.kraId ||
+    !modalInfo.role ||
+    !modalInfo.userId ||
+    !year
+  ) {
+    setWarning(
+      "Missing required data to fetch: " +
+        [
+          !modalInfo.kpiName && "kpiName",
+          !modalInfo.kraId && "kraId",
+          !modalInfo.role && "role",
+          !modalInfo.userId && "userId",
+          !year && "year",
+        ]
+          .filter(Boolean)
+          .join(", ")
+    );
+    setPerformanceMeasure("");
+    setDescription("");
+    setTarget("");
+    setError("");
+    setLoading(false);
+    return;
+  }
 
-      setWarning("");
-      setLoading(true);
+  setWarning("");
+  setLoading(true);
 
-      try {
-        const planParams = {
-          kpiName: modalInfo.kpiName,
-          kraId: modalInfo.kraId,
-          role: modalInfo.role,
-          sectorId: modalInfo.sectorId,
-          subsectorId: modalInfo.subsectorId,
-          userId: modalInfo.userId,
-          year,
-        };
-        if (quarter) {
-          planParams.quarter = quarter;
-        }
+  try {
+    const planParams = {
+      kpiName: modalInfo.kpiName,
+      kraId: modalInfo.kraId,
+      role: modalInfo.role,
+      sectorId: modalInfo.sectorId,
+      subsectorId: modalInfo.subsectorId,
+      userId: modalInfo.userId,
+      year,
+    };
+    if (quarter) planParams.quarter = quarter;
 
-        console.log("Fetching target with params:", planParams);
-        const planRes = await axios.get(`${BASE_URL}/api/plans/target`, {
-          params: planParams,
-        });
+    const planRes = await axios.get(`${BASE_URL}/api/plans/target`, {
+      params: planParams,
+    });
+    const fetchedTarget = planRes.data?.target?.toString() || "";
+    setTarget(fetchedTarget);
 
-        const fetchedTarget = planRes.data?.target?.toString() || "";
-        console.log("Fetched target:", fetchedTarget);
-        setTarget(fetchedTarget);
+    const perfRes = await axios.get(`${BASE_URL}/api/performance/measure`, {
+      params: planParams,
+    });
+    const perfData = perfRes.data || {};
 
-        const perfParams = { ...planParams };
-        console.log("Fetching performance with params:", perfParams);
-        const perfRes = await axios.get(
-          `${BASE_URL}/api/performance/measure`,
-          { params: perfParams }
-        );
+    // Log fetched performance data including quarterly values
+    console.log(
+      `[PerformanceModal] Fetched performance data for KPI "${modalInfo.kpiName}", period "${modalInfo.period}":`,
+      perfData
+    );
 
-        const perfData = perfRes.data || {};
-        console.log("Fetched performance data:", perfData);
+    setPerformanceMeasure(perfData.performanceMeasure?.toString() || "");
+    setDescription(perfData.description || "");
+    setValidationStatus(
+      perfData.validationStatus ?? perfData.validationStatusYear ?? "Pending"
+    );
+    setError("");
+  } catch {
+    setPerformanceMeasure("");
+    setDescription("");
+    setTarget("");
+    setError("Could not fetch performance or target for this period.");
+  } finally {
+    setLoading(false);
+  }
+}
 
-        setPerformanceMeasure(perfData.performanceMeasure?.toString() || "");
-        setDescription(perfData.description || "");
-        setValidationStatus(
-          perfData.validationStatus ??
-            perfData.validationStatusYear ??
-            "Pending"
-        );
-        setError("");
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setPerformanceMeasure("");
-        setDescription("");
-        setTarget("");
-        setError("Could not fetch performance or target for this period.");
-      } finally {
-        setLoading(false);
-      }
-    }
 
     fetchData();
   }, [modalInfo]);
 
-  // Extract quarter and year again for use in rendering and submission
   let quarter = null;
   let year = null;
   if (modalInfo.period) {
@@ -145,29 +137,16 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
 
   const onSubmit = (e) => {
     e.preventDefault();
-
     if (loading || warning) return;
-
     if (performanceMeasure === "") {
       setError("Performance measure is required.");
       return;
     }
-
     const perfValue = parseFloat(performanceMeasure);
     if (isNaN(perfValue)) {
       setError("Please enter a valid number for performance measure.");
       return;
     }
-
-    // if (
-    //   target !== "" &&
-    //   !isNaN(parseFloat(target)) &&
-    //   perfValue > parseFloat(target)
-    // ) {
-    //   setError("Performance measure cannot exceed the target.");
-    //   return;
-    // }
-
     const data = {
       ...modalInfo,
       year,
@@ -175,30 +154,47 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
       performanceMeasure: perfValue,
       description,
     };
-
     handleFormSubmit(data);
     closeModal();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded shadow-md w-96">
-        <h2 className="text-lg font-bold mb-4">Enter KPI Performance</h2>
+    <div
+      className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      aria-modal="true"
+      role="dialog"
+      aria-labelledby="performance-modal-title"
+    >
+      <div
+        className={`w-full max-w-lg rounded-lg shadow-lg p-5 flex flex-col ${
+          dark ? "bg-[#1f2937] text-white" : "bg-white text-[#0D2A5C]"
+        }`}
+      >
+        <h2
+          id="performance-modal-title"
+          className="text-xl font-semibold mb-4 text-center"
+        >
+          Enter KPI Performance
+        </h2>
+
         {loading && (
-          <p className="text-blue-600 font-semibold mb-2">
+          <p className="text-blue-400 font-semibold mb-2 text-center">
             Loading performance data...
           </p>
         )}
 
         {warning && (
-          <p className="mb-2 text-yellow-700 font-semibold bg-yellow-100 p-2 rounded">
+          <p
+            className="mb-3 font-semibold p-2 rounded text-yellow-700 bg-yellow-100 text-center"
+            role="alert"
+          >
             {warning}
           </p>
         )}
 
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-end mb-3">
           <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+            className={`px-3 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${
               validationStatus === "Approved"
                 ? "bg-green-100 text-green-700 border-green-400"
                 : "bg-yellow-100 text-yellow-700 border-yellow-400"
@@ -208,9 +204,9 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
           </span>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <form onSubmit={onSubmit} className="space-y-4 text-sm" noValidate>
           <div>
-            <label htmlFor="kpiName" className="block font-semibold">
+            <label htmlFor="kpiName" className="block mb-1 font-semibold">
               KPI Name
             </label>
             <input
@@ -218,12 +214,16 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
               type="text"
               readOnly
               value={modalInfo.kpiName || ""}
-              className="w-full border px-3 py-1 rounded bg-gray-100"
+              className={`w-full rounded-md px-3 py-1 border ${
+                dark
+                  ? "bg-[#374151] border-gray-600 text-white cursor-not-allowed"
+                  : "bg-gray-100 border-gray-300 text-[#0D2A5C] cursor-not-allowed"
+              }`}
             />
           </div>
 
           <div>
-            <label htmlFor="period" className="block font-semibold">
+            <label htmlFor="period" className="block mb-1 font-semibold">
               {quarter ? "Quarter" : "Year"}
             </label>
             <input
@@ -231,12 +231,16 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
               type="text"
               readOnly
               value={quarter ? `${quarter} ${year}` : year}
-              className="w-full border px-3 py-1 rounded bg-gray-100"
+              className={`w-full rounded-md px-3 py-1 border ${
+                dark
+                  ? "bg-[#374151] border-gray-600 text-white cursor-not-allowed"
+                  : "bg-gray-100 border-gray-300 text-[#0D2A5C] cursor-not-allowed"
+              }`}
             />
           </div>
 
           <div>
-            <label htmlFor="target" className="block font-semibold">
+            <label htmlFor="target" className="block mb-1 font-semibold">
               Target
             </label>
             <input
@@ -244,12 +248,19 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
               type="number"
               readOnly
               value={target}
-              className="w-full border px-3 py-1 rounded bg-gray-100"
+              className={`w-full rounded-md px-3 py-1 border ${
+                dark
+                  ? "bg-[#374151] border-gray-600 text-white cursor-not-allowed"
+                  : "bg-gray-100 border-gray-300 text-[#0D2A5C] cursor-not-allowed"
+              }`}
             />
           </div>
 
           <div>
-            <label htmlFor="performanceMeasure" className="block font-semibold">
+            <label
+              htmlFor="performanceMeasure"
+              className="block mb-1 font-semibold"
+            >
               Performance Measure
             </label>
             <input
@@ -259,45 +270,59 @@ function PerformanceModal({ modalInfo, closeModal, handleFormSubmit }) {
               step="any"
               value={performanceMeasure}
               onChange={handlePerformanceChange}
-              className="w-full border px-3 py-1 rounded"
+              className={`w-full rounded-md px-3 py-1 border focus:outline-none focus:ring-2 ${
+                dark
+                  ? "bg-[#374151] border-gray-600 text-white focus:ring-[#F36F21]"
+                  : "bg-white border-gray-300 text-[#0D2A5C] focus:ring-[#0D2A5C]"
+              }`}
+              placeholder="Enter actual performance"
               required
               disabled={loading || !!warning || validationStatus === "Approved"}
-              placeholder="Enter actual performance"
             />
             {error && (
-              <p className="text-red-600 text-sm mt-1 font-semibold">{error}</p>
+              <p className="text-red-600 text-xs mt-1 font-semibold">{error}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="description" className="block font-semibold">
+            <label htmlFor="description" className="block mb-1 font-semibold">
               Description
             </label>
             <textarea
               id="description"
               value={description}
               onChange={handleDescriptionChange}
-              rows={3}
-              className="w-full border px-3 py-1 rounded"
+              rows={2}
               placeholder="Enter performance description"
+              className={`w-full rounded-md px-3 py-1 border resize-none focus:outline-none focus:ring-2 ${
+                dark
+                  ? "bg-[#374151] border-gray-600 text-white focus:ring-[#F36F21]"
+                  : "bg-white border-gray-300 text-[#0D2A5C] focus:ring-[#0D2A5C]"
+              }`}
             />
           </div>
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-3 mt-2 flex-wrap">
             <button
               type="button"
               onClick={closeModal}
-              className="px-3 py-1 rounded border text-gray-600 hover:bg-gray-100"
               disabled={loading}
+              className={`px-4 py-2 rounded border transition-colors duration-200 ${
+                dark
+                  ? "text-gray-300 border-gray-600 hover:bg-gray-700"
+                  : "text-gray-600 border-gray-300 hover:bg-gray-200"
+              }`}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className={`px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 ${
-                validationStatus === "Approved" ? "opacity-50 cursor-not-allowed" : ""
+              disabled={
+                loading || !!error || !!warning || validationStatus === "Approved"
+              }
+              className={`px-4 py-2 rounded bg-green-600 text-white transition-colors duration-200 hover:bg-green-700 ${
+                loading ? "opacity-70 cursor-wait" : ""
               }`}
-              disabled={loading || !!error || !!warning || validationStatus === "Approved"}
             >
               {loading ? "Loading..." : "Save"}
             </button>

@@ -135,3 +135,50 @@ export const getAssignedKPIs = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch assigned KPIs", details: error.message });
   }
 };
+
+export const editKPI = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { kpi_name, kraId, goalId } = req.body;
+
+    if (!kpi_name || !kraId || !goalId) {
+      return res.status(400).json({ error: "kpi_name, kraId, and goalId are required" });
+    }
+
+    const [kraExists, goalExists] = await Promise.all([
+      KRA2.findById(kraId),
+      Goal2.findById(goalId),
+    ]);
+
+    if (!kraExists || !goalExists) {
+      return res.status(404).json({ error: "Invalid kraId or goalId" });
+    }
+
+    const updatedKPI = await KPI2.findByIdAndUpdate(
+      id,
+      { kpi_name, kraId, goalId },
+      { new: true }
+    );
+
+    if (!updatedKPI) {
+      return res.status(404).json({ error: "KPI not found" });
+    }
+
+    return res.status(200).json({ message: "KPI updated successfully", data: updatedKPI });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update KPI", details: err.message });
+  }
+};
+
+export const deleteKPI = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedKPI = await KPI2.findByIdAndDelete(id);
+    if (!deletedKPI) {
+      return res.status(404).json({ error: "KPI not found" });
+    }
+    res.status(200).json({ message: "KPI deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete KPI", details: err.message });
+  }
+};

@@ -3,19 +3,22 @@ import axios from "axios";
 import { ChevronDown } from "lucide-react";
 import { LuFrame } from "react-icons/lu";
 import { Link } from "react-router-dom";
+import useAuthStore from "../../../store/auth.store";
+import useThemeStore from "../../../store/themeStore";
 
 const backendUrl = "http://localhost:1221";
 
 const ResultFrameworkMenu = ({ open = true }) => {
+  const { user } = useAuthStore();
+  const dark = useThemeStore((state) => state.dark);
   const [menuData, setMenuData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openSectors, setOpenSectors] = useState({});
 
-  const user = JSON.parse(localStorage.getItem("user"));
   const role = (user?.role || "").toLowerCase();
-  const userSectorId = user?.sector;
-  const userSubsectorId = user?.subsector;
+  const userSectorId = user?.sector?._id || user?.sector;
+  const userSubsectorId = user?.subsector?._id || user?.subsector;
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -26,29 +29,19 @@ const ResultFrameworkMenu = ({ open = true }) => {
         let filteredData = [];
 
         if (role === "chief ceo") {
-          // Filter only the user's sector
-          filteredData = fullData.filter(
-            (sector) => sector._id === userSectorId
-          );
+          filteredData = fullData.filter((sector) => sector._id === userSectorId);
         } else if (role === "ceo" || role === "worker") {
-          // Find sector that contains the user's subsector
           filteredData = fullData
             .map((sector) => {
               const matchingSubsectors = sector.subsectors?.filter(
                 (sub) => sub._id === userSubsectorId
               );
-
-              if (matchingSubsectors.length > 0) {
-                return {
-                  ...sector,
-                  subsectors: matchingSubsectors,
-                };
-              }
-              return null;
+              return matchingSubsectors?.length
+                ? { ...sector, subsectors: matchingSubsectors }
+                : null;
             })
-            .filter(Boolean); // remove nulls
+            .filter(Boolean);
         } else {
-          // For admin, minister, strategic unit, etc.
           filteredData = fullData;
         }
 
@@ -71,61 +64,97 @@ const ResultFrameworkMenu = ({ open = true }) => {
     }));
   };
 
-  if (loading) return <div className="text-white p-4">Loading menu...</div>;
-  if (error) return <div className="text-red-400 p-4">{error}</div>;
+  if (loading) return <div className="text-white p-4 text-xs">Loading menu...</div>;
+  if (error) return <div className="text-red-400 p-4 text-xs">{error}</div>;
+
+  // Base path for role-based routing
+  const basePath = role ? `/${role.replace(/\s+/g, "-")}` : "";
 
   return (
-    <div className={`${!open ? "px-0" : "px-4"} text-sm bg-green-700 rounded`}>
+    <div
+      className={`${
+        open ? "px-4" : "px-2"
+      } text-sm rounded transition-all duration-300 overflow-y-auto scrollbar-hidden ${
+        dark
+          ? "bg-[#1f2937] text-white"
+          : "bg-[rgba(13,42,92,0.08)] text-[rgba(13,42,92,0.85)]"
+      }`}
+      style={{
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        maxHeight: "calc(100vh - 100px)",
+      }}
+    >
+      {/* Header */}
       <div
-        className={`flex items-center border-b border-black/50 py-2 mb-4 ${
-          !open ? "justify-center" : "justify-between"
-        }`}
+        className={`flex items-center border-b pb-2 mt-4 ${
+          open ? "justify-between" : "justify-center"
+        } ${dark ? "border-white/30" : "border-[rgba(13,42,92,0.3)]"}`}
       >
-        <div className={`${!open && "hidden"} flex items-center gap-2`}>
-          <LuFrame size={23} className="text-white" />
-          <h2 className="text-lg font-bold text-white">Result Framework</h2>
-        </div>
+        {open && (
+          <div className="flex items-center gap-2">
+            <LuFrame size={20} className="text-[#F36F21]" />
+            <h2 className="text-sm font-semibold">Result Framework</h2>
+          </div>
+        )}
       </div>
 
-      <ul>
+      {/* Menu List */}
+      <ul className="mt-3 space-y-1">
         {menuData.length === 0 && (
-          <li className="text-gray-300 px-2">No sectors available.</li>
+          <li className="text-gray-400 px-2 text-xs">No sectors available.</li>
         )}
 
         {menuData.map((sector) => (
-          <li key={sector._id} className="mt-2 rounded overflow-hidden">
-            <div className="flex items-center bg-green-300/20 hover:bg-green-300/40 duration-300 rounded cursor-pointer">
+          <li key={sector._id} className="rounded overflow-hidden">
+            <div
+              className={`flex items-center justify-between cursor-pointer rounded duration-300 ${
+                dark
+                  ? "bg-white/10 hover:bg-white/20"
+                  : "bg-[rgba(255,165,0,0.1)] hover:bg-[rgba(255,165,0,0.2)]"
+              } select-none`}
+            >
               <Link
-                to={`/allSector/${sector._id}?userId=${user._id}`}
-                className="flex-1 px-2 py-1 text-white font-semibold"
+                to={`${basePath}/allSector/${sector._id}?userId=${user._id}`}
+                className={`flex-1 px-3 py-2 text-xs no-underline ${
+                  dark ? "text-white" : "text-[rgba(13,42,92,0.85)]"
+                }`}
               >
                 {sector.name}
               </Link>
 
               {sector.subsectors && sector.subsectors.length > 0 && (
-                <button
+                <ChevronDown
+                  size={16}
+                  className={`mr-2 transition-transform duration-200 ${
+                    dark ? "text-white" : "text-[rgba(13,42,92,0.85)]"
+                  } ${openSectors[sector._id] ? "rotate-180" : ""}`}
                   onClick={() => toggleSector(sector._id)}
-                  className="p-1 mr-2 rounded hover:bg-green-300/40"
-                  aria-label={`Toggle ${sector.name} subsectors`}
-                  type="button"
-                >
-                  <ChevronDown
-                    size={15}
-                    className={`transition-transform duration-200 text-white ${
-                      openSectors[sector._id] ? "rotate-180" : "rotate-0"
-                    }`}
-                  />
-                </button>
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") toggleSector(sector._id);
+                  }}
+                />
               )}
             </div>
 
+            {/* Subsector list */}
             {sector.subsectors && openSectors[sector._id] && (
-              <ul className="ml-4 mt-1 flex flex-col gap-1">
+              <ul
+                className={`ml-5 mt-1 flex flex-col gap-1 ${
+                  dark ? "text-white" : "text-[rgba(13,42,92,0.85)]"
+                }`}
+              >
                 {sector.subsectors.map((subsector) => (
                   <li key={subsector._id}>
                     <Link
-                      to={`/chief-ceo/allSubsector/${subsector._id}?userId=${user._id}`}
-                      className="block px-2 py-1 rounded text-white bg-green-200/30 hover:bg-green-300/40 duration-300"
+                      to={`${basePath}/allSubsector/${subsector._id}?userId=${user._id}`}
+                      className={`block px-3 py-1 rounded text-xs transition duration-300 ${
+                        dark
+                          ? "bg-white/10 hover:bg-white/20"
+                          : "bg-[rgba(255,165,0,0.1)] hover:bg-[rgba(255,165,0,0.2)]"
+                      }`}
                     >
                       {subsector.name}
                     </Link>
@@ -136,6 +165,13 @@ const ResultFrameworkMenu = ({ open = true }) => {
           </li>
         ))}
       </ul>
+
+      {/* Hide Webkit Scrollbar */}
+      <style>{`
+        div::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 };

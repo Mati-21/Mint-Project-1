@@ -9,13 +9,14 @@ import {
   updateProfile,
   updateUser,
   updateUserPassword,
+  changePassword,
 } from "../controllers/userController.js";
 
 import { validatePasswordStrength } from "../middlewares/validatePasswordStrength.js";
 
 import { checkAuth } from "../middlewares/checkAuth.js";
 import authUser from "../middlewares/authUser.js";
-import  upload  from "../middlewares/multer.js";
+import  {uploadMemory}  from "../middlewares/multer.js";
 
 const userRouter = express.Router();
 
@@ -27,12 +28,13 @@ userRouter.get("/get-profile", authUser, getProfile);
 userRouter.get("/active-users", getActiveUsersStats);
 userRouter.put(
   "/update-profile",
-  upload.single("image"),
+  uploadMemory.single("image"),
   authUser,
   updateProfile
 );
 userRouter.put("/update-user/:id", authUser, updateUser);
 userRouter.put("/update-password/:id", authUser, updateUserPassword);
+userRouter.post("/change-password", authUser, changePassword);
 
 userRouter.get("/checkauth", checkAuth);
 

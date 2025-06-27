@@ -391,17 +391,20 @@ export const deletePerformance = async (req, res) => {
 };
 
 // Example: backend/controllers/performanceController.js
+
 export const getPerformanceMeasure = async (req, res) => {
-  const { kpiName, kraId, role, sectorId, subsectorId, userId, year, quarter } = req.query;
-  // Build filter
-  const filter = {
+  const {
     kpiName,
     kraId,
     role,
     sectorId,
+    subsectorId,
     userId,
     year,
-  };
+    quarter,
+  } = req.query;
+
+  const filter = { kpiName, kraId, role, sectorId, userId, year };
   if (subsectorId) filter.subsectorId = subsectorId;
 
   const performance = await Performance.findOne(filter);
@@ -409,26 +412,73 @@ export const getPerformanceMeasure = async (req, res) => {
 
   let performanceMeasure = "";
   let description = "";
+  let validationStatus = performance.validationStatusYear;
+  let goal = performance.goalId;
+  let kra = performance.kraId;
 
-  if (performance) {
-    if (quarter && quarter.toLowerCase().startsWith("q")) {
-      const perfField = `${quarter.toLowerCase()}Performance`;
-      performanceMeasure = performance[perfField]?.value ?? "";
-      description = performance[perfField]?.description ?? "";
-    } else {
-      performanceMeasure = performance.performanceYear ?? "";
-      description = performance.performanceDescription ?? "";
-    }
+  if (quarter && quarter.toLowerCase().startsWith("q")) {
+    const qKey = quarter.toLowerCase();
+    performanceMeasure = performance[`${qKey}Performance`]?.value ?? "";
+    description = performance[`${qKey}Performance`]?.description ?? "";
+    validationStatus = performance[`validationStatus${qKey.toUpperCase()}`];
+  } else {
+    performanceMeasure = performance.performanceYear ?? "";
+    description = performance.performanceDescription ?? "";
+    validationStatus = performance.validationStatusYear;
   }
 
   return res.status(200).json({
-    target,
     performanceMeasure,
     description,
     validationStatus,
-    goal: goalName,
-    kra: kraName,
-    goalId: goalIdResult,
-    kraId: kraIdResult,
+    goalId: goal,
+    kraId: kra,
   });
 };
+
+export const upsertPerformance = async (req, res) => {
+  try {
+    const {
+      planId,
+      performanceMeasure,
+      quarter,
+      year,
+      description,
+      userId,
+      role,
+      sectorId,
+      subsectorId,
+      kraId,
+      kpi_name,
+      goal,
+    } = req.body;
+
+    let perf = await Performance.findOne({ planId });
+    if (!perf) {
+      perf = new Performance({ planId, userId, role, sectorId, subsectorId, kraId, kpiName: kpi_name, year, goalId: goal });
+    }
+
+    perf.performanceYear = quarter ? perf.performanceYear : performanceMeasure;
+    if (quarter) {
+      perf[`${quarter.toLowerCase()}Performance`].value = performanceMeasure;
+      perf[`${quarter.toLowerCase()}Performance`].description = description;
+    } else {
+      perf.performanceDescription = description;
+    }
+
+    await perf.save();
+
+    const plan = await Plan.findById(planId);
+    if (plan) {
+      if (quarter) plan[quarter.toLowerCase()] = performanceMeasure;
+      else plan.target = plan.target;
+      await plan.save();
+    }
+
+    res.status(200).json({ message: "Performance saved", perf });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+

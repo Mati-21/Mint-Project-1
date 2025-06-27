@@ -1,4 +1,5 @@
 import { useState } from "react";
+import useThemeStore from "../../store/themeStore";
 import FindUser from "./FindUser";
 import ChatWindow from "./ChatWindow";
 import NewMessages from "./NewMessages";
@@ -6,6 +7,7 @@ import InfoPanel from "./InfoPanel";
 import GroupChat from "./GroupChat";
 
 export default function ChatPage() {
+  const dark = useThemeStore((s) => s.dark);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
 
@@ -18,30 +20,24 @@ export default function ChatPage() {
     setSelectedUser(null);
   };
 
+  const sidebarBg = dark ? "bg-gray-800 border-gray-700" : "bg-[rgba(13,42,92,0.08)] border-[rgba(13,42,92,0.1)]";
+
   return (
-    <div className="flex h-[85vh] bg-gradient-to-br from-blue-50 to-white rounded-2xl shadow-2xl overflow-hidden border border-blue-100">
-      {/* Left: Find User & New Messages & Groups */}
-      <div className="w-1/4 border-r flex flex-col bg-white/80">
+    <div className={`flex flex-col md:flex-row h-full w-full ${dark ? "text-white" : "text-[#0D2A5C]"}`}>
+      {/* Sidebar */}
+      <div className={`w-full md:w-1/4 border-r ${sidebarBg} flex flex-col overflow-y-auto`}>
         <FindUser onSelectUser={handleSelectUser} />
         <NewMessages onSelectUser={handleSelectUser} />
-        {/* Pass the handler so GroupChat can select a group */}
-        <GroupChat onSelectGroup={handleSelectGroup} />
+        <GroupChat onSelectGroup={handleSelectGroup} selectedGroup={selectedGroup} />
       </div>
-      {/* Center: Chat Window */}
-      <div className="flex-1 flex flex-col bg-white/90">
-        {selectedUser && <ChatWindow user={selectedUser} />}
-        {selectedGroup && !selectedUser && (
-          // Only render ChatWindow for group here, not inside GroupChat
-          <ChatWindow group={selectedGroup} />
-        )}
-        {!selectedUser && !selectedGroup && (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            Select a user or group to chat
-          </div>
-        )}
+
+      {/* Chat Window */}
+      <div className={`${dark ? "bg-gray-900" : "bg-white"} flex-1 overflow-hidden flex flex-col`}>
+        <ChatWindow user={selectedUser} group={selectedGroup} />
       </div>
-      {/* Right: Info Panel */}
-      <div className="w-1/4 border-l bg-white/80">
+
+      {/* Info panel */}
+      <div className={`hidden md:block md:w-1/4 border-l ${sidebarBg} overflow-y-auto`}>
         <InfoPanel user={selectedUser} group={selectedGroup} />
       </div>
     </div>

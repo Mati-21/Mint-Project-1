@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import useThemeStore from "../../../store/themeStore";
 
 const backendUrl = "http://localhost:1221";
 
 const KpiYearAssignmentPage = () => {
+  const dark = useThemeStore((state) => state.dark);
+
   const [sectors, setSectors] = useState([]);
   const [subsectors, setSubsectors] = useState([]);
   const [assignedKPIs, setAssignedKPIs] = useState([]);
@@ -14,7 +17,6 @@ const KpiYearAssignmentPage = () => {
   const [loading, setLoading] = useState(false);
   const [savingIds, setSavingIds] = useState(new Set());
 
-  // Fetch sectors and subsectors for dropdowns
   const fetchDropdownData = async () => {
     try {
       const [sectorRes, subsectorRes] = await Promise.all([
@@ -29,7 +31,6 @@ const KpiYearAssignmentPage = () => {
     }
   };
 
-  // Fetch assigned KPIs, optionally filtered by sector
   const fetchAssignedKPIs = async (sectorId) => {
     setLoading(true);
     try {
@@ -41,11 +42,8 @@ const KpiYearAssignmentPage = () => {
         ? res.data
         : res.data?.data || [];
 
-      console.log("Fetched KPI Year Assignments:", data);
-
       setAssignedKPIs(data);
 
-      // Initialize edit states for each assignment
       const initialEditStates = {};
       data.forEach((assignment) => {
         initialEditStates[assignment._id] = {
@@ -73,7 +71,6 @@ const KpiYearAssignmentPage = () => {
     fetchAssignedKPIs(selectedSector);
   }, [selectedSector]);
 
-  // Toggle editing mode for a specific KPI assignment
   const handleEditToggle = (assignmentId) => {
     setEditStates((prev) => ({
       ...prev,
@@ -84,7 +81,6 @@ const KpiYearAssignmentPage = () => {
     }));
   };
 
-  // Handle changes in start/end year inputs, only allow digits
   const handleYearChange = (assignmentId, field, value) => {
     if (value === "" || /^\d*$/.test(value)) {
       setEditStates((prev) => ({
@@ -97,7 +93,6 @@ const KpiYearAssignmentPage = () => {
     }
   };
 
-  // Save updated years to backend
   const handleSaveYears = async (assignmentId, kpiId, sectorId, subsectorId, deskId) => {
     const { startYear, endYear } = editStates[assignmentId];
     const startYearNum = Number(startYear);
@@ -129,7 +124,6 @@ const KpiYearAssignmentPage = () => {
 
       const updated = res.data;
 
-      // Update local state with updated assignment data
       setAssignedKPIs((prev) =>
         prev.map((a) => (a._id === assignmentId ? updated : a))
       );
@@ -157,7 +151,6 @@ const KpiYearAssignmentPage = () => {
     }
   };
 
-  // Helper to get sector name from subsectorId
   const getSectorNameFromSubsector = (subsectorId) => {
     const subsector =
       typeof subsectorId === "object"
@@ -172,7 +165,6 @@ const KpiYearAssignmentPage = () => {
     return sectors.find((s) => s._id === sectorId)?.sector_name || "-";
   };
 
-  // Helper to get sector name from sectorId
   const getSectorNameFromSectorId = (sectorId) => {
     const sector =
       typeof sectorId === "object"
@@ -181,7 +173,6 @@ const KpiYearAssignmentPage = () => {
     return sector?.sector_name || "-";
   };
 
-  // Filter assigned KPIs based on search term
   const filteredAssignedKPIs = assignedKPIs.filter(({ kpiId }) => {
     const term = searchTerm.toLowerCase();
     return (
@@ -192,20 +183,40 @@ const KpiYearAssignmentPage = () => {
   });
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-white rounded shadow-md">
-      <h2 className="text-2xl font-semibold mb-6">Assigned KPI Year Management</h2>
+    <div
+      className={`max-w-6xl mx-auto p-6 rounded-xl shadow border
+        ${dark ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-blue-100 text-[#040613]"}
+      `}
+    >
+      <h2
+        className={`text-2xl font-bold mb-6
+          ${dark ? "text-white" : "text-[#040613]"}
+        `}
+      >
+        Assigned KPI Year Management
+      </h2>
 
-      {errorMsg && <p className="text-red-600 mb-4">{errorMsg}</p>}
+      {errorMsg && (
+        <p className={`${dark ? "text-red-400" : "text-red-600"} mb-4`}>
+          {errorMsg}
+        </p>
+      )}
 
       <div className="mb-4 flex gap-4 items-center">
         <select
-          className="border border-gray-300 rounded px-4 py-2"
+          className={`border rounded-md px-4 py-2 focus:outline-none focus:ring-2
+            ${dark ? "border-gray-600 bg-gray-800 text-white focus:ring-[#F36F21]" : "border-gray-300 bg-white text-black focus:ring-[#040613]"}
+          `}
           value={selectedSector}
           onChange={(e) => setSelectedSector(e.target.value)}
         >
           <option value="">All Sectors</option>
           {sectors.map((sector) => (
-            <option key={sector._id} value={sector._id}>
+            <option
+              key={sector._id}
+              value={sector._id}
+              className={dark ? "bg-gray-900 text-white" : ""}
+            >
               {sector.sector_name}
             </option>
           ))}
@@ -214,125 +225,162 @@ const KpiYearAssignmentPage = () => {
         <input
           type="text"
           placeholder="Search assigned KPIs..."
-          className="border border-gray-300 rounded px-4 py-2 flex-grow"
+          className={`border rounded-md px-4 py-2 flex-grow focus:outline-none focus:ring-2
+            ${dark ? "border-gray-600 bg-gray-800 text-white focus:ring-[#F36F21]" : "border-gray-300 bg-white text-black focus:ring-[#040613]"}
+          `}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
       {loading ? (
-        <p>Loading assigned KPIs...</p>
+        <p className={`${dark ? "text-gray-300" : "text-gray-600"}`}>
+          Loading assigned KPIs...
+        </p>
       ) : (
-        <table className="min-w-full border border-gray-300 rounded">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-4 py-2">Sector</th>
-              <th className="border px-4 py-2">Subsector</th>
-              <th className="border px-4 py-2">KRA</th>
-              <th className="border px-4 py-2">KPI</th>
-              <th className="border px-4 py-2">Start Year</th>
-              <th className="border px-4 py-2">End Year</th>
-              <th className="border px-4 py-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAssignedKPIs.length === 0 && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full rounded text-sm" style={{ borderCollapse: "collapse" }}>
+            <thead
+              className={`${
+                dark ? "bg-[#040613] text-white" : "bg-[#F36F21] text-white"
+              }`}
+            >
               <tr>
-                <td colSpan={7} className="text-center py-4">
-                  No assigned KPIs found.
-                </td>
+                <th className="border px-4 py-2">Sector</th>
+                <th className="border px-4 py-2">Subsector</th>
+                <th className="border px-4 py-2">KRA</th>
+                <th className="border px-4 py-2">KPI</th>
+                <th className="border px-4 py-2">Start Year</th>
+                <th className="border px-4 py-2">End Year</th>
+                <th className="border px-4 py-2">Action</th>
               </tr>
-            )}
-
-            {filteredAssignedKPIs.map(({ _id: assignmentId, sectorId, subsectorId, deskId, kpiId }) => {
-              const editState = editStates[assignmentId] || {};
-              const isEditing = editState.editing;
-              const isSaving = savingIds.has(assignmentId);
-
-              return (
-                <tr key={assignmentId}>
-                  <td className="border px-4 py-2">
-                    {subsectorId
-                      ? getSectorNameFromSubsector(subsectorId)
-                      : getSectorNameFromSectorId(sectorId)}
-                  </td>
-                  <td className="border px-4 py-2">
-                    {subsectorId?.subsector_name || "-"}
-                  </td>
-                  <td className="border px-4 py-2">{kpiId?.kra?.kra_name || "-"}</td>
-                  <td className="border px-4 py-2">{kpiId?.kpi_name || "-"}</td>
-
-                  <td className="border px-4 py-2">
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editState.startYear}
-                        onChange={(e) =>
-                          handleYearChange(assignmentId, "startYear", e.target.value)
-                        }
-                        className="w-20 border border-gray-300 rounded px-2 py-1"
-                        maxLength={4}
-                      />
-                    ) : (
-                      kpiId?.startYear ?? "-"
-                    )}
-                  </td>
-                  <td className="border px-4 py-2">
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editState.endYear}
-                        onChange={(e) =>
-                          handleYearChange(assignmentId, "endYear", e.target.value)
-                        }
-                        className="w-20 border border-gray-300 rounded px-2 py-1"
-                        maxLength={4}
-                      />
-                    ) : (
-                      kpiId?.endYear ?? "-"
-                    )}
-                  </td>
-
-                  <td className="border px-4 py-2">
-                    {isEditing ? (
-                      <>
-                        <button
-                          onClick={() =>
-                            handleSaveYears(
-                              assignmentId,
-                              kpiId?._id,
-                              sectorId,
-                              subsectorId,
-                              deskId
-                            )
-                          }
-                          disabled={isSaving}
-                          className="bg-green-500 text-white px-3 py-1 rounded mr-2 disabled:opacity-50"
-                        >
-                          {isSaving ? "Saving..." : "Save"}
-                        </button>
-                        <button
-                          onClick={() => handleEditToggle(assignmentId)}
-                          disabled={isSaving}
-                          className="bg-gray-400 text-white px-3 py-1 rounded"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => handleEditToggle(assignmentId)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded"
-                      >
-                        Edit
-                      </button>
-                    )}
+            </thead>
+            <tbody>
+              {filteredAssignedKPIs.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className={`text-center py-4 ${
+                      dark ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    No assigned KPIs found.
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ) : (
+                filteredAssignedKPIs.map(
+                  ({ _id: assignmentId, sectorId, subsectorId, deskId, kpiId }) => {
+                    const editState = editStates[assignmentId] || {};
+                    const isEditing = editState.editing;
+                    const isSaving = savingIds.has(assignmentId);
+
+                    return (
+                      <tr key={assignmentId} className={dark ? "text-white" : "text-[#040613]"}>
+                        <td className="border px-4 py-2">
+                          {subsectorId
+                            ? getSectorNameFromSubsector(subsectorId)
+                            : getSectorNameFromSectorId(sectorId)}
+                        </td>
+                        <td className="border px-4 py-2">
+                          {subsectorId?.subsector_name || "-"}
+                        </td>
+                        <td className="border px-4 py-2">{kpiId?.kra?.kra_name || "-"}</td>
+                        <td className="border px-4 py-2">{kpiId?.kpi_name || "-"}</td>
+
+                        <td className="border px-4 py-2">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editState.startYear}
+                              onChange={(e) =>
+                                handleYearChange(assignmentId, "startYear", e.target.value)
+                              }
+                              className={`w-20 rounded-md px-2 py-1 focus:outline-none focus:ring-2 border ${
+                                dark
+                                  ? "border-gray-600 bg-gray-800 text-white focus:ring-[#F36F21]"
+                                  : "border-gray-300 bg-white text-black focus:ring-[#040613]"
+                              }`}
+                              maxLength={4}
+                            />
+                          ) : (
+                            kpiId?.startYear ?? "-"
+                          )}
+                        </td>
+                        <td className="border px-4 py-2">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editState.endYear}
+                              onChange={(e) =>
+                                handleYearChange(assignmentId, "endYear", e.target.value)
+                              }
+                              className={`w-20 rounded-md px-2 py-1 focus:outline-none focus:ring-2 border ${
+                                dark
+                                  ? "border-gray-600 bg-gray-800 text-white focus:ring-[#F36F21]"
+                                  : "border-gray-300 bg-white text-black focus:ring-[#040613]"
+                              }`}
+                              maxLength={4}
+                            />
+                          ) : (
+                            kpiId?.endYear ?? "-"
+                          )}
+                        </td>
+
+                        <td className="border px-4 py-2 text-center space-x-2 whitespace-nowrap">
+                          {isEditing ? (
+                            <>
+                              <button
+                                onClick={() =>
+                                  handleSaveYears(
+                                    assignmentId,
+                                    kpiId?._id,
+                                    sectorId,
+                                    subsectorId,
+                                    deskId
+                                  )
+                                }
+                                disabled={isSaving}
+                                className={`px-3 py-1 rounded text-white ${
+                                  dark
+                                    ? "bg-[#F36F21] hover:bg-[#c75a17] disabled:opacity-50"
+                                    : "bg-[#040613] hover:bg-[#00337C] disabled:opacity-50"
+                                }`}
+                              >
+                                {isSaving ? "Saving..." : "Save"}
+                              </button>
+                              <button
+                                onClick={() => handleEditToggle(assignmentId)}
+                                disabled={isSaving}
+                                className={`px-3 py-1 rounded text-white ${
+                                  dark
+                                    ? "bg-gray-700 hover:bg-gray-600 disabled:opacity-50"
+                                    : "bg-gray-400 hover:bg-gray-500 disabled:opacity-50"
+                                }`}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => handleEditToggle(assignmentId)}
+                              className={`px-3 py-1 rounded text-white ${
+                                dark
+                                  ? "bg-[#F36F21] hover:bg-[#c75a17]"
+                                  : "bg-[#040613] hover:bg-[#00337C]"
+                              }`}
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  }
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

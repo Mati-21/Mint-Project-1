@@ -7,7 +7,9 @@ import Worker from "./pages/Worker/Worker";
 
 // local
 import useAuthStore from "./store/auth.store";
+import useThemeStore from "./store/themeStore";
 import { useEffect } from "react";
+
 import Login from "./Authentication/Login/Login";
 import ProtectRoute from "./utils/ProtectRoute";
 import Admin from "./pages/SystemAdmin/Admin";
@@ -33,146 +35,164 @@ import Dashboard from "./components/DashboardComponent/Dashboard";
 import ChatPage from "./components/Chat/ChatPage";
 import GoalKraKpiManagement from "./pages/SystemAdmin/AdminComponents/GoalKpiKra/GoalKraKpiManagement";
 import UserReportTable from "./components/UserReportTble";
+import Setting from "./components/Setting";
+import KPITableReport from "./components/Table/KPITableReport";
+import AllSubsectorReport from "./components/Sector/AllSubsectorReport";
+import AllSectorReport from "./components/Sector/AllSectorReoprt";
 
 function App() {
-  const { checkAuth, isAuthenticated, user, isCheckingAuth } = useAuthStore();
+  const { checkAuth } = useAuthStore();
+  const dark = useThemeStore((state) => state.dark);
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route
-          path="/admin"
-          element={
-            <ProtectRoute>
-              <Admin />
-            </ProtectRoute>
-          }
-        >
-          <Route index element={<Navigate to="admin-dashboard" replace />} />
-          <Route path="admin-dashboard" element={<AdminDashboard />}>
-            <Route index element={<Navigate to="chart" replace />} />
-            <Route path="chart" element={<Chart />}>
-              <Route index element={<Navigate to="linechart" replace />} />
-              <Route path="linechart" element={<LiChart />} />
-              <Route path="barchart" element={<BChart />} />
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        dark ? "bg-gray-900 text-white" : "bg-[rgba(13,42,92,0.08)] text-gray-900"
+      }`}
+    >
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Login />} />
+
+          {/* ADMIN ROUTES */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectRoute>
+                <Admin />
+              </ProtectRoute>
+            }
+          >
+            <Route index element={<Navigate to="admin-dashboard" replace />} />
+            <Route path="admin-dashboard" element={<AdminDashboard />}>
+              <Route index element={<Navigate to="chart" replace />} />
+              <Route path="chart" element={<Chart />}>
+                <Route index element={<Navigate to="linechart" replace />} />
+                <Route path="linechart" element={<LiChart />} />
+                <Route path="barchart" element={<BChart />} />
+              </Route>
+              <Route path="setting" element={<EditSystemSetting />} />
             </Route>
-
-            <Route path="setting" element={<EditSystemSetting />} />
+            <Route path="user-managment" element={<UserManagment />} />
+            <Route path="user-profile" element={<UserProfile />} />
+            <Route path="Kpi-Assign" element={<KpiAssignment />} />
+            <Route path="alert" element={<Alert />} />
+            <Route path="configuration" element={<Configuration />} />
+            <Route path="Goal-Kra-Kpi" element={<AddGoalKraKpi />} />
+            <Route path="Goal-" element={<AddGoalKraKpi />} />
+            <Route path="Kpi-Year-Assign" element={<KpiYearAssignmentPage />} />
+            <Route path="goal-kra-kpi-management" element={<GoalKraKpiManagement />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="setting" element={<Setting />} />
           </Route>
-          <Route path="user-managment" element={<UserManagment />} />
-          <Route path="user-profile" element={<UserProfile />} />
-          <Route path="Kpi-Assign" element={<KpiAssignment />} />
-          <Route path="alert" element={<Alert />} />
-          <Route path="configuration" element={<Configuration />} />
-          <Route path="Goal-Kra-Kpi" element={<AddGoalKraKpi />} />
-          <Route path="Goal-" element={<AddGoalKraKpi />} />
-          <Route path="Kpi-Year-Assign" element={<KpiYearAssignmentPage />} />
-          <Route path="goal-kra-kpi-management" element={<GoalKraKpiManagement />} />
-          <Route path="chat" element={<ChatPage />} />
-        </Route>
 
-        <Route
-          path="/chief-ceo"
-          element={
-            <ProtectRoute>
-              <ChiefCEO />
-            </ProtectRoute>
-          }
-        >
-          {/* <Route index element={<Navigate to="sectorial-plan" replace />} /> */}
-          <Route index element={<Dashboard />} />
-          <Route path="allSector/:sectorId" element={<AllSector />} />
-          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
-          <Route path="user-profile" element={<UserProfile />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="performance-validation" element={<PerformanceValidation />} />
-          <Route path="Target-validation" element={<TargetValidation />} />
-        </Route>
+          {/* CEO ROUTES */}
+          <Route
+            path="/ceo"
+            element={
+              <ProtectRoute>
+                <CEO />
+              </ProtectRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="allSector/:sectorId" element={<AllSector />} />
+            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+            <Route path="Subsector-reporting/:subsectorId" element={<AllSubsectorReport />} />
+            <Route path="user-profile" element={<UserProfile />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="performance-validation" element={<PerformanceValidation />} />
+            <Route path="Target-validation" element={<TargetValidation />} />
+            <Route path="user-report" element={<KPITableReport />} />
+            <Route path="setting" element={<Setting />} />
 
-        <Route
-          path="/ceo"
-          element={
-            <ProtectRoute>
-              <CEO />
-            </ProtectRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="allSector/:sectorId" element={<AllSector />} />
-          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
-          <Route path="user-profile" element={<UserProfile />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="performance-validation" element={<PerformanceValidation />} />
-          <Route path="Target-validation" element={<TargetValidation />} />
-          
-        </Route>
+          </Route>
 
-        <Route
-          path="/strategic"
-          element={
-            <ProtectRoute>
-              <Strategic />
-            </ProtectRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="allSector/:sectorId" element={<AllSector />} />
-          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="user-report" element={<UserReportTable/>} />
-<Route path="performance-validation" element={<PerformanceValidation />} />
-          <Route path="Target-validation" element={<TargetValidation />} />
-          <Route path="user-profile" element={<UserProfile />} />
-        </Route>
+          {/* CHIEF CEO ROUTES */}
+          <Route
+            path="/chief-ceo"
+            element={
+              <ProtectRoute>
+                <ChiefCEO />
+              </ProtectRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="allSector/:sectorId" element={<AllSector />} />
+            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+            <Route path="user-profile" element={<UserProfile />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="performance-validation" element={<PerformanceValidation />} />
+            <Route path="Target-validation" element={<TargetValidation />} />
+            <Route path="user-report" element={<UserReportTable />} />
+            <Route path="sector-reporting/:sectorId" element={<AllSectorReport />} />
+          </Route>
 
-        <Route
-          path="/minister"
-          element={
-            <ProtectRoute>
-              <Minister />
-            </ProtectRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="allSector/:sectorId" element={<AllSector />} />
-          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
-          <Route path="user-profile" element={<UserProfile />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="performance-validation" element={<PerformanceValidation />} />
-          <Route path="Target-validation" element={<TargetValidation />} />
-          
-        </Route>
+          {/* STRATEGIC */}
+          <Route
+            path="/strategic"
+            element={
+              <ProtectRoute>
+                <Strategic />
+              </ProtectRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="allSector/:sectorId" element={<AllSector />} />
+            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+            <Route path="user-profile" element={<UserProfile />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="performance-validation" element={<PerformanceValidation />} />
+            <Route path="Target-validation" element={<TargetValidation />} />
+            <Route path="sector-reporting" element={<AllSectorReport />} />
+          </Route>
 
-        <Route
-          path="/worker"
-          element={
-            <ProtectRoute>
-              <Worker />
-            </ProtectRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="allSector/:sectorId" element={<AllSector />} />
-          <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
-          <Route path="user-profile" element={<UserProfile />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="user-report" element={<UserReportTable/>} />
-        </Route>
+          {/* MINISTER */}
+          <Route
+            path="/minister"
+            element={
+              <ProtectRoute>
+                <Minister />
+              </ProtectRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="allSector/:sectorId" element={<AllSector />} />
+            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+            <Route path="user-profile" element={<UserProfile />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="performance-validation" element={<PerformanceValidation />} />
+            <Route path="Target-validation" element={<TargetValidation />} />
+            <Route path="sector-reporting" element={<AllSectorReport />} />
+          </Route>
 
-        {/* Page Not Found  */}
+          {/* WORKER */}
+          <Route
+            path="/worker"
+            element={
+              <ProtectRoute>
+                <Worker />
+              </ProtectRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="allSector/:sectorId" element={<AllSector />} />
+            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+            <Route path="user-profile" element={<UserProfile />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="user-report" element={<UserReportTable />} />
+          </Route>
 
-        <Route path="*" element={<PageNotFound />} />
-
-        {/*  */}
-      </Routes>
-    </BrowserRouter>
+          {/* 404 */}
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </div>
   );
 }
 
 export default App;
-

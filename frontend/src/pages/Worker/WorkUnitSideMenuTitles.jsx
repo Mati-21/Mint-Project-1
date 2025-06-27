@@ -1,44 +1,53 @@
 import { MdOutlineDisplaySettings } from "react-icons/md";
-import { IoAnalytics } from "react-icons/io5";
+import { IoAnalyticsSharp } from "react-icons/io5";
 import { FcPlanner } from "react-icons/fc";
 import { TbReportAnalytics } from "react-icons/tb";
+import { FaChartLine, FaFileExport, FaChartPie, FaFileAlt } from "react-icons/fa";
 
 const Datas = [
   {
     sectionTitle: "Annual/Quarterly",
-    menu: ["Planning"],
-    icon: <FcPlanner size={23} className="text-white" />,
+    key: "annual",
+    menu: "Planning",
+    icon: <FcPlanner size={20} />,
   },
   {
-    menu: ["Performance"],
+    menu: "Performance",
+    key: "performance",
+    icon: <FaChartLine size={16} color="#F36F21" />,
   },
-
-  
-
   {
-    sectionTitle: "Data Managment",
-    menu: ["Performance Alert"],
-    icon: <MdOutlineDisplaySettings size={23} className="text-white" />,
+    sectionTitle: "Data Management",
+    key: "dataManagement",
+    menu: "Performance Alert",
+    icon: <MdOutlineDisplaySettings size={20} color="#F36F21" />,
   },
-
-  { menu: ["Export and Reporting"] },
-
+  {
+    menu: "Export and Reporting",
+    key: "reporting",
+    icon: <FaFileExport size={16} color="#F36F21" />,
+  },
   {
     sectionTitle: "Data Analysis",
-    menu: ["Sectorial Illustration"],
-    icon: <IoAnalytics size={23} className="text-white" />,
+    key: "dataAnalysis",
+    menu: "Sectorial Illustration",
+    icon: <IoAnalyticsSharp size={20} color="#F36F21" />,
   },
   {
-    menu: ["Sub-Sectororial Illustration"],
+    menu: "Sub-Sectorial Illustration",
+    key: "subsectorial",
+    icon: <FaChartPie size={16} color="#F36F21" />,
   },
-
   {
     sectionTitle: "Master Report",
-    menu: ["Performance Report"],
-    icon: <TbReportAnalytics size={23} className="text-white" />,
+    key: "masterReport",
+    menu: "Performance Report",
+    icon: <TbReportAnalytics size={20} color="#F36F21" />,
   },
   {
-    menu: ["Report Affiliated"],
+    menu: "Report Affiliated",
+    key: "reportAffiliated",
+    icon: <FaFileAlt size={16} color="#F36F21" />,
   },
 ];
 
