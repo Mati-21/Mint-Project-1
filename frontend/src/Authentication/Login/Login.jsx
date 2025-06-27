@@ -1,191 +1,205 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import exampleImage from "../../assets/download.jpg";
 import useAuthStore from "../../store/auth.store";
+import useThemeStore from "../../store/themeStore";
+import exampleImage from "../../assets/download.jpg";
+import { MdDarkMode, MdLightMode } from "react-icons/md";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-
-  const { userLogin, user } = useAuthStore();
+  const { userLogin } = useAuthStore();
+  const { dark, toggleDark } = useThemeStore();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
-    const normalizedEmail = email.trim().toLowerCase();
-
-    console.log(normalizedEmail, password);
-
     try {
-      const userData = await userLogin(normalizedEmail, password);
-      console.log(userData);
+      const userData = await userLogin(email.trim().toLowerCase(), password);
 
       if (userData) {
         toast.success("User login successful!");
-
         const role = (userData?.role || "").toLowerCase();
-        const userId = userData?.id || null;
-        const sector = userData?.sector?.sector_name;
-        const subsector = userData?.subsector?.subsector_name;
-
-        console.log(sector, subsector);
 
         switch (role) {
           case "system admin":
             navigate("/admin");
             break;
-
           case "chief ceo":
-            if (sector) {
-              // navigate(`/executive/allSector/${sector}?userId=${userId}`);
-              navigate(`/chief-ceo`);
-            } else {
-              toast.error("Sector not assigned.");
-              navigate("/unauthorized");
-            }
+            navigate("/chief-ceo");
             break;
-
           case "ceo":
-            if (subsector) {
-              // navigate(`/executive/allSubsector/${subsector}?userId=${userId}`);
-              navigate(`/ceo`);
-            } else {
-              toast.error("Sector not assigned.");
-              navigate("/unauthorized");
-            }
+            navigate("/ceo");
             break;
-
           case "worker":
-            if (subsector) {
-              navigate(`/allSubsector/${subsector}?userId=${userId}`);
-              navigate(`/worker`);
-            } else {
-              toast.error("Subsector not assigned.");
-              navigate("/unauthorized");
-            }
+            navigate("/worker");
             break;
-
           case "minister":
             navigate("/minister");
             break;
-
           case "strategic unit":
             navigate("/strategic");
             break;
-
           default:
-            toast.error("Unknown role. Access denied.");
             navigate("/unauthorized");
         }
-
-        return;
       } else {
-        setError(userData.message || "Login failed. Please try again.");
+        toast.error("Login failed.");
+        setError("Invalid credentials.");
       }
     } catch (err) {
-      console.error("User login failed:", err);
-      setError("An error occurred. Please try again later.");
-      toast.error("Login error. Check credentials.");
+      toast.error("Login error.");
+      setError("Something went wrong. Try again.");
     }
   };
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center p-4 bg-cover bg-center h-screen"
-      style={{ backgroundImage: `url('/bg.jpg')` }}
+      className={`${
+        dark ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
+      } flex h-screen relative`}
     >
-      <div className="w-full max-w-md rounded-xl bg-gradient-to-b from-purple-100/80 to-white p-8 shadow-sm backdrop-blur-md">
-        <div className="flex flex-col items-center space-y-6">
-          <div className="flex h-15 w-15 items-center justify-center rounded-full bg-purple-50 overflow-hidden">
-            <img src={exampleImage} alt="logo" />
-          </div>
+      {/* DARK/LIGHT MODE TOGGLE SWITCH (fixed top-right) */}
+      <button
+        onClick={toggleDark}
+        aria-label="Toggle dark mode"
+        title="Toggle dark mode"
+        className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-full border p-2 shadow-lg transition
+          ${
+            dark
+              ? "bg-gray-800 border-gray-600 text-yellow-400 hover:bg-gray-700"
+              : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+          }
+        `}
+      >
+        {dark ? <MdLightMode size={20} /> : <MdDarkMode size={20} />}
+        <span className="sr-only">
+          {dark ? "Switch to light mode" : "Switch to dark mode"}
+        </span>
+      </button>
 
-          <div className="space-y-1 text-center">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Welcome back
-            </h1>
-            <p className="text-sm text-gray-500">
-              Please enter your details to sign in
+      {/* LEFT INFO SECTION */}
+      <div
+        className={`hidden lg:flex w-1/2 p-10 flex-col justify-between transition-colors duration-300 ${
+          dark
+            ? "bg-gray-800 text-gray-200"
+            : "bg-gradient-to-br from-blue-900 to-purple-900 text-white"
+        }`}
+      >
+        <div>
+          <h1 className="text-3xl font-bold mb-4">
+            Ministry of Innovation and Technology
+          </h1>
+          <p className={`${dark ? "text-gray-300" : "text-gray-200"} text-sm leading-6`}>
+            The Ministry of Innovation and Technology (MInT) leads Ethiopia’s
+            science, innovation, and technology advancement strategy. It works
+            to transform the country into a technology-driven economy through
+            digital infrastructure, scientific research, and innovative
+            solutions.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 mt-8">
+          <img
+            src="https://www.mint.gov.et/sites/default/files/2023-08/banner.jpg"
+            alt="gallery1"
+            className="rounded-lg h-24 object-cover"
+          />
+          <img
+            src="https://www.mint.gov.et/sites/default/files/styles/banner_image/public/2024-01/ICT.jpg"
+            alt="gallery2"
+            className="rounded-lg h-24 object-cover"
+          />
+        </div>
+
+        <footer className={`${dark ? "text-gray-400" : "text-gray-300"} mt-8 text-xs`}>
+          &copy; {new Date().getFullYear()} Ministry of Innovation and Technology – Ethiopia
+        </footer>
+      </div>
+
+      {/* RIGHT LOGIN SECTION */}
+      <div
+        className={`flex w-full lg:w-1/2 justify-center items-center ${
+          dark ? "bg-gray-900" : "bg-white"
+        }`}
+      >
+        <div
+          className={`relative w-full max-w-md p-8 rounded-xl shadow-lg border transition duration-300 ${
+            dark
+              ? "bg-gray-800 border-gray-700 text-white"
+              : "bg-white border-gray-200 text-gray-900"
+          }`}
+        >
+          <div className="flex flex-col items-center space-y-4 mt-4">
+            <img
+              src={exampleImage}
+              alt="logo"
+              className="w-16 h-16 rounded-full border border-purple-300"
+            />
+            <h2 className="text-xl font-semibold">Sign in</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-300">
+              Welcome back, login to continue
             </p>
           </div>
 
-          <div className="flex w-full items-center gap-2">
-            <div className="h-px flex-1 bg-gray-800"></div>
-            <span className="text-xs text-gray-800">or</span>
-            <div className="h-px flex-1 bg-gray-800"></div>
-          </div>
+          {error && (
+            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+          )}
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-
-          <form className="w-full space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-1">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-gray-700"
-              >
-                Email address
-              </label>
+          <form onSubmit={handleSubmit} className="space-y-5 mt-6">
+            <div>
+              <label className="block text-sm mb-1">Email</label>
               <input
-                id="email"
                 type="email"
-                placeholder="Enter your email"
-                className="w-full border px-3 py-2 rounded"
                 value={email}
+                required
                 onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="username"
+                className={`w-full px-4 py-2 rounded border focus:ring-2 transition ${
+                  dark
+                    ? "bg-gray-700 text-white border-gray-600 focus:ring-purple-400"
+                    : "bg-white text-gray-800 border-gray-300 focus:ring-purple-400"
+                }`}
+                placeholder="you@example.com"
               />
             </div>
-
-            <div className="space-y-1">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
+            <div>
+              <label className="block text-sm mb-1">Password</label>
               <input
-                id="password"
                 type="password"
-                placeholder="Enter your password"
-                className="w-full border px-3 py-2 rounded"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete="current-password"
+                onChange={(e) => setPassword(e.target.value)}
+                className={`w-full px-4 py-2 rounded border focus:ring-2 transition ${
+                  dark
+                    ? "bg-gray-700 text-white border-gray-600 focus:ring-purple-400"
+                    : "bg-white text-gray-800 border-gray-300 focus:ring-purple-400"
+                }`}
+                placeholder="********"
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between text-sm">
+              <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  id="remember"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                <label htmlFor="remember" className="text-sm text-gray-600">
-                  Remember for 30 days
-                </label>
-              </div>
-              <a
-                href="#"
-                className="text-sm font-medium text-purple-600 hover:text-purple-500"
-              >
+                Remember me
+              </label>
+              <a href="#" className="text-purple-500 hover:underline">
                 Forgot password?
               </a>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 cursor-pointer rounded"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded transition"
             >
               Sign in
             </button>

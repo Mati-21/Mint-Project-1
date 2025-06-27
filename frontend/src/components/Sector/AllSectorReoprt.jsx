@@ -1,25 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
 import axios from "axios";
+import { MdOutlineSearch } from "react-icons/md";
 import { transformAssignedKpisToNested } from "../../utils/transformAssignedKpisToNested";
-import KPIGroupedTable from "../Table/KPIGroupedTable";
-import useThemeStore from "../../store/themeStore";
+import KPIGroupedTableReport from "../Table/KPIGroupedTableReport";
 import useAuthStore from "../../store/auth.store";
+import useThemeStore from "../../store/themeStore";
 
-const BACKEND_PORT = 1221;
-const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
+const BACKEND_URL = "http://localhost:1221";
 
-function AllSector() {
-  const { sectorId: sectorIdFromParams } = useParams();
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const userId = queryParams.get("userId");
-
-  const { dark } = useThemeStore();
+function AllSectorReport() {
   const { user } = useAuthStore();
+  const { dark } = useThemeStore();
 
-  // Filters state
-  const [filterSector, setFilterSector] = useState(sectorIdFromParams || "");
+  const role = user?.role?.toLowerCase() || "";
+
+  // Filters
+  const [filterSector, setFilterSector] = useState("");
   const [filterSubsector, setFilterSubsector] = useState("");
   const [filterYear, setFilterYear] = useState("");
   const [filterQuarter, setFilterQuarter] = useState("");
@@ -29,14 +25,14 @@ function AllSector() {
   const [subsectors, setSubsectors] = useState([]);
   const [filteredSubsectors, setFilteredSubsectors] = useState([]);
 
-  // KPI data
+  // KPI data states
   const [assignedKpisRaw, setAssignedKpisRaw] = useState(null);
   const [nestedKpis, setNestedKpis] = useState([]);
   const [detailedKpis, setDetailedKpis] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch sectors & subsectors once on mount
+  // Fetch sectors and subsectors
   useEffect(() => {
     async function fetchDropdownData() {
       try {
@@ -53,7 +49,7 @@ function AllSector() {
     fetchDropdownData();
   }, []);
 
-  // Filter subsectors based on selected sector
+  // Filter subsectors based on sector selection
   useEffect(() => {
     if (!filterSector) {
       setFilteredSubsectors([]);
@@ -70,9 +66,9 @@ function AllSector() {
     if (!filtered.find((sub) => sub._id === filterSubsector)) {
       setFilterSubsector("");
     }
-  }, [filterSector, subsectors]);
+  }, [filterSector, subsectors, filterSubsector]);
 
-  // Styling classes for inputs
+  // Styling classes from your Filters component
   const inputClasses = `
     w-full md:w-52 px-3 py-2 rounded-md border text-sm transition focus:outline-none focus:ring-2
     ${dark
@@ -80,6 +76,7 @@ function AllSector() {
       : "bg-white text-[rgba(13,42,92,0.85)] border border-gray-300 placeholder-gray-500 focus:ring-[#0D2A5C]"
     }
   `;
+
   const labelClasses = `text-xs font-medium mb-1 ${
     dark ? "text-gray-300" : "text-[rgba(13,42,92,0.8)]"
   }`;
@@ -89,93 +86,92 @@ function AllSector() {
   for (let y = 2015; y <= currentYear + 1; y++) {
     yearOptions.push(y.toString());
   }
+
   const quarters = ["All", "Q1", "Q2", "Q3", "Q4"];
 
-  // Determine role (lowercase for comparison)
-  const normalizedRole = (user?.role || "").toLowerCase();
+  // Determine visibility based on role
+  const showSector = !(role === "chief ceo" || role === "worker" || role === "ceo");
+  const showSubsector = !(role === "worker" || role === "ceo");
 
-  // Fetch KPI data automatically when filters change
-  useEffect(() => {
-    async function fetchData() {
-      // If role is worker or CEO, no sector or subsector filters allowed — fetch without filters
-      if ((normalizedRole === "worker" || normalizedRole === "ceo") && sectorIdFromParams) {
-        // Possibly fetch only sectorId from params or fetch all assigned KPIs? Adjust as needed
-        // For now, just fetch assigned KPIs by sectorId param if available
-        setFilterSector(""); // clear filters
-        setFilterSubsector("");
-      }
+  // Fetch KPI data based on filters when user clicks search icon button
+  const handleLoadKpis = async () => {
+    // For roles where sector is hidden, force filterSector to "" so no filtering by sector happens
+    // For roles where subsector is hidden, also clear filterSubsector
+    let sectorToUse = showSector ? filterSector : "";
+    let subsectorToUse = showSubsector ? filterSubsector : "";
 
-      if (!filterSector && !filterSubsector) {
-        setNestedKpis([]);
-        setDetailedKpis([]);
-        setError(null);
-        return;
-      }
+    if (!sectorToUse && !subsectorToUse) {
+      setError("Please select a sector or subsector to load KPIs.");
+      setNestedKpis([]);
+      setDetailedKpis([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
 
-      setLoading(true);
-      setError(null);
+    try {
+      let assignedData = [];
 
-      try {
-        let assignedData = [];
+      if (subsectorToUse) {
+        const assignedRes = await axios.get(
+          `${BACKEND_URL}/api/assign/assigned-kpi-with-goal-details/${subsectorToUse}`,
+          { headers: { Accept: "application/json" } }
+        );
+        assignedData = assignedRes.data;
 
-        if (filterSubsector) {
-          // fetch by subsector
-          const assignedRes = await axios.get(
-            `${BACKEND_URL}/api/assign/assigned-kpi-with-goal-details/${filterSubsector}`,
-            { headers: { Accept: "application/json" } }
-          );
-          assignedData = assignedRes.data;
+        setAssignedKpisRaw(assignedData);
+        const nested = transformAssignedKpisToNested(assignedData);
+        setNestedKpis(nested);
 
-          setAssignedKpisRaw(assignedData);
+        const detailedRes = await axios.get(
+          `${BACKEND_URL}/api/assign/details/by-subsector/${subsectorToUse}`,
+          { headers: { Accept: "application/json" } }
+        );
+        setDetailedKpis(detailedRes.data || []);
+      } else if (sectorToUse) {
+        const assignedRes = await axios.get(
+          `${BACKEND_URL}/api/assign/sector/${sectorToUse}`,
+          { headers: { Accept: "application/json" } }
+        );
+        assignedData = assignedRes.data;
 
-          const nested = transformAssignedKpisToNested(assignedData);
-          setNestedKpis(nested);
+        setAssignedKpisRaw(assignedData);
 
+        const nested = transformAssignedKpisToNested(assignedData);
+        setNestedKpis(nested);
+
+        const kpiIds = assignedData
+          .map((item) => item.kpi_id || (item.kpi && item.kpi.kpi_id))
+          .filter(Boolean);
+
+        if (kpiIds.length === 0) {
+          setDetailedKpis([]);
+        } else {
+          const idsQuery = kpiIds.join(",");
           const detailedRes = await axios.get(
-            `${BACKEND_URL}/api/assign/details/by-subsector/${filterSubsector}`,
+            `${BACKEND_URL}/api/assign/details?ids=${idsQuery}`,
             { headers: { Accept: "application/json" } }
           );
           setDetailedKpis(detailedRes.data || []);
-        } else if (filterSector) {
-          // fetch by sector
-          const assignedRes = await axios.get(
-            `${BACKEND_URL}/api/assign/sector/${filterSector}`,
-            { headers: { Accept: "application/json" } }
-          );
-          assignedData = assignedRes.data;
-
-          setAssignedKpisRaw(assignedData);
-
-          const nested = transformAssignedKpisToNested(assignedData);
-          setNestedKpis(nested);
-
-          const kpiIds = assignedData
-            .map((item) => item.kpi_id || (item.kpi && item.kpi.kpi_id))
-            .filter(Boolean);
-
-          if (kpiIds.length === 0) {
-            setDetailedKpis([]);
-          } else {
-            const idsQuery = kpiIds.join(",");
-            const detailedRes = await axios.get(
-              `${BACKEND_URL}/api/assign/details?ids=${idsQuery}`,
-              { headers: { Accept: "application/json" } }
-            );
-            setDetailedKpis(detailedRes.data || []);
-          }
         }
-      } catch (err) {
-        console.error("Error fetching KPI data:", err);
-        setError(err.response?.data?.error || err.message || "Failed to load KPIs");
-        setNestedKpis([]);
-        setDetailedKpis([]);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error("Error fetching KPI data:", err);
+      setError(err.response?.data?.error || err.message || "Failed to load KPIs");
+      setNestedKpis([]);
+      setDetailedKpis([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    fetchData();
-  }, [filterSector, filterSubsector, normalizedRole, sectorIdFromParams]);
+  if (role !== "strategic unit" && role !== "minister" && role !== "chief ceo" && role !== "ceo" && role !== "worker") {
+    return (
+      <div className="p-4">
+        <p className="text-red-600">You do not have permission to view this data.</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`p-4 ${dark ? "bg-[#1f2937]" : "bg-white"}`}>
@@ -183,13 +179,14 @@ function AllSector() {
         Export and Reporting Dashboard
       </h1>
 
+      {/* Filters row */}
       <div
-        className={`mb-6 p-4 rounded-lg shadow-md grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 ${
+        className={`mb-2 p-4 rounded-lg shadow-md grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 ${
           dark ? "bg-[#1f2937]" : "bg-white"
         }`}
       >
-        {/* Show sector dropdown only if NOT Chief CEO, Worker, or CEO */}
-        {!(normalizedRole === "chie f ceo" || normalizedRole === "worker" || normalizedRole === "ceo") && (
+        {/* Sector filter */}
+        {showSector && (
           <div className="flex flex-col">
             <label className={labelClasses}>Filter by Sector</label>
             <select
@@ -207,8 +204,8 @@ function AllSector() {
           </div>
         )}
 
-        {/* Show subsector dropdown only if NOT Worker or CEO */}
-        {!(normalizedRole === "worker" || normalizedRole === "ceo") && (
+        {/* Subsector filter */}
+        {showSubsector && (
           <div className="flex flex-col">
             <label className={labelClasses}>Filter by Subsector</label>
             <select
@@ -227,6 +224,7 @@ function AllSector() {
           </div>
         )}
 
+        {/* Year filter */}
         <div className="flex flex-col">
           <label className={labelClasses}>Filter by Year</label>
           <select
@@ -243,6 +241,7 @@ function AllSector() {
           </select>
         </div>
 
+        {/* Quarter filter */}
         <div className="flex flex-col">
           <label className={labelClasses}>Filter by Quarter</label>
           <select
@@ -259,17 +258,36 @@ function AllSector() {
         </div>
       </div>
 
-      {loading && <p className={dark ? "text-white" : "text-gray-900"}>Loading assigned KPIs...</p>}
+      {/* Button row */}
+      <div className="flex justify-end mb-6">
+        <button
+          onClick={handleLoadKpis}
+          aria-label="Search"
+          title="Filter KPIs"
+          className={`
+            flex items-center justify-center w-10 h-10 rounded-md transition
+            focus:outline-none focus:ring-2
+            ${dark
+              ? "bg-[#F36F21] text-white hover:bg-[#e05e1d] focus:ring-[#F36F21]"
+              : "bg-[#F36F21] text-white hover:bg-[#e05e1d] focus:ring-[#F36F21]"
+            }
+          `}
+        >
+          <MdOutlineSearch size={24} />
+        </button>
+      </div>
+
+      {loading && <p className={`${dark ? "text-white" : "text-gray-900"}`}>Loading assigned KPIs...</p>}
 
       {error && <p className="text-red-600">{error}</p>}
 
       {!loading && !error && nestedKpis.length === 0 && <p>No KPIs assigned or failed to load.</p>}
 
       {!loading && !error && nestedKpis.length > 0 && (
-        <KPIGroupedTable data={nestedKpis} detailedKpis={detailedKpis} />
+        <KPIGroupedTableReport data={nestedKpis} detailedKpis={detailedKpis} />
       )}
     </div>
   );
 }
 
-export default AllSector;
+export default AllSectorReport;

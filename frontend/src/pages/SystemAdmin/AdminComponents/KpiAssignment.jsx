@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import useThemeStore from "../../../store/themeStore"; // adjust path as needed
 
 const backendUrl = "http://localhost:1221";
 
 const KpiAssignment = () => {
+  const dark = useThemeStore((state) => state.dark);
+
   const [formData, setFormData] = useState({
     sector: "",
     subsector: "",
@@ -21,7 +24,6 @@ const KpiAssignment = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Fetch dropdown data
   const fetchDropdownData = async () => {
     try {
       const [sectorRes, subsectorRes, kraRes, kpiRes] = await Promise.all([
@@ -39,16 +41,12 @@ const KpiAssignment = () => {
     }
   };
 
-  // Fetch assigned KPIs
   const fetchAssignedKPIs = async (sectorId) => {
     try {
-      if (sectorId) {
-        const res = await axios.get(`${backendUrl}/api/assign/sector/${sectorId}`);
-        setAssignedKPIs(Array.isArray(res.data) ? res.data : []);
-      } else {
-        const res = await axios.get(`${backendUrl}/api/assign/assigned-kpi`);
-        setAssignedKPIs(Array.isArray(res.data) ? res.data : []);
-      }
+      const res = sectorId
+        ? await axios.get(`${backendUrl}/api/assign/sector/${sectorId}`)
+        : await axios.get(`${backendUrl}/api/assign/assigned-kpi`);
+      setAssignedKPIs(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error("Failed to fetch assigned KPIs:", error);
       setAssignedKPIs([]);
@@ -60,7 +58,6 @@ const KpiAssignment = () => {
     fetchAssignedKPIs();
   }, []);
 
-  // Update subsectors when sector changes
   useEffect(() => {
     if (!formData.sector) {
       setFilteredSubsectors([]);
@@ -69,11 +66,7 @@ const KpiAssignment = () => {
       return;
     }
     const filtered = subsectors.filter((sub) => {
-      if (!sub.sectorId) return false;
-      const subSectorId =
-        typeof sub.sectorId === "object"
-          ? sub.sectorId._id || sub.sectorId
-          : sub.sectorId;
+      const subSectorId = typeof sub.sectorId === "object" ? sub.sectorId._id : sub.sectorId;
       return subSectorId === formData.sector;
     });
     setFilteredSubsectors(filtered);
@@ -81,7 +74,6 @@ const KpiAssignment = () => {
     fetchAssignedKPIs(formData.sector);
   }, [formData.sector, subsectors]);
 
-  // Filter KPIs by selected KRA
   useEffect(() => {
     if (!formData.kra) {
       setFilteredKpis([]);
@@ -94,15 +86,8 @@ const KpiAssignment = () => {
 
   const handleChange = (e) => {
     const { id, value } = e.target;
-
-    if (id === "sector") {
-      setFormData((prev) => ({ ...prev, sector: value, subsector: "" }));
-    } else if (id === "subsector") {
-      setFormData((prev) => ({ ...prev, subsector: value }));
-    } else {
-      setFormData((prev) => ({ ...prev, [id]: value }));
-    }
-
+    setFormData((prev) => ({ ...prev, [id]: value }));
+    if (id === "sector") setFormData((prev) => ({ ...prev, subsector: "" }));
     setErrorMsg("");
   };
 
@@ -133,10 +118,8 @@ const KpiAssignment = () => {
       console.error("Failed to assign KPI:", error);
       if (error.response?.status === 409) {
         setErrorMsg("This KPI is already assigned to the selected Sector/Subsector.");
-      } else if (error.response?.data?.error) {
-        setErrorMsg(error.response.data.error);
       } else {
-        setErrorMsg("Failed to assign KPI due to server error.");
+        setErrorMsg(error.response?.data?.error || "Failed to assign KPI due to server error.");
       }
     }
   };
@@ -155,7 +138,6 @@ const KpiAssignment = () => {
   };
 
   const filteredAssignedKPIs = assignedKPIs.filter((item) => {
-    if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
       item.kpiId?.kpi_name?.toLowerCase().includes(term) ||
@@ -166,35 +148,23 @@ const KpiAssignment = () => {
   });
 
   const renderSelect = (id, label, options) => {
-    let valueKey = "name";
-    let labelKey = "name";
+    let valueKey = "_id";
+    let labelKey = label.toLowerCase().replace(" ", "_") + "_name";
 
-    switch (id) {
-      case "sector":
-        valueKey = "_id";
-        labelKey = "sector_name";
-        break;
-      case "subsector":
-        valueKey = "_id";
-        labelKey = "subsector_name";
-        break;
-      case "kra":
-        valueKey = "_id";
-        labelKey = "kra_name";
-        break;
-      case "kpi":
-        valueKey = "kpi_id";
-        labelKey = "kpi_name";
-        break;
-      default:
-        break;
-    }
+    if (id === "kpi") valueKey = "kpi_id";
 
     const isDisabled = id === "subsector" && !formData.sector;
 
+    // Dark mode style classes
+    const selectBg = dark ? "bg-gray-700 text-gray-100 border-gray-600" : "bg-white text-[#040613] border-gray-300";
+    const disabledBg = dark ? "bg-gray-600 cursor-not-allowed" : "bg-gray-100 cursor-not-allowed";
+
     return (
       <div className="flex flex-col mb-4">
-        <label htmlFor={id} className="mb-1 font-medium capitalize">
+        <label
+          htmlFor={id}
+          className={`mb-1 font-semibold ${dark ? "text-gray-100" : "text-[#040613]"}`}
+        >
           {label}
           {id === "subsector" && " (Optional)"}
         </label>
@@ -204,17 +174,21 @@ const KpiAssignment = () => {
           onChange={handleChange}
           required={id === "kra" || id === "kpi"}
           disabled={isDisabled}
-          className={`border border-gray-300 rounded-md px-4 py-2 ${
-            isDisabled ? "bg-gray-100 cursor-not-allowed" : ""
+          className={`rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#F36F21] border ${
+            isDisabled ? disabledBg : selectBg
           }`}
         >
-          <option value="">
+          <option value="" className={dark ? "text-gray-400" : "text-gray-600"}>
             {id === "subsector" && !formData.sector
               ? "Select Sector first"
               : `Select ${label}`}
           </option>
           {options.map((opt) => (
-            <option key={opt[valueKey]} value={opt[valueKey]}>
+            <option
+              key={opt[valueKey]}
+              value={opt[valueKey]}
+              className={dark ? "text-gray-100" : "text-[#040613]"}
+            >
               {opt[labelKey]}
             </option>
           ))}
@@ -224,95 +198,146 @@ const KpiAssignment = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded shadow-md">
-      <h2 className="text-2xl font-semibold mb-6">Assign KPI to Sector/Subsector</h2>
+    <div
+      className={`max-w-5xl mx-auto p-6 rounded-xl shadow-md border transition-colors duration-300 ${
+        dark ? "bg-gray-900 border-gray-700 text-gray-100" : "bg-white border-blue-100 text-[#040613]"
+      }`}
+    >
+      <h2 className={`text-2xl font-bold mb-6 ${dark ? "text-white" : "text-[#040613]"}`}>
+        Assign KPI to Sector/Subsector
+      </h2>
 
-      <form onSubmit={handleSubmit} className="mb-6">
+      <form
+        onSubmit={handleSubmit}
+        className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+        noValidate
+      >
         {renderSelect("sector", "Sector", sectors)}
-
         {renderSelect("subsector", "Subsector", filteredSubsectors)}
-
         {renderSelect("kra", "KRA", kras)}
         {renderSelect("kpi", "KPI", filteredKpis)}
 
-        {errorMsg && <p className="text-red-600 mb-4">{errorMsg}</p>}
+        {errorMsg && (
+          <p
+            className={`col-span-full text-sm font-semibold ${
+              dark ? "text-red-400" : "text-red-600"
+            }`}
+            role="alert"
+          >
+            {errorMsg}
+          </p>
+        )}
 
-        <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded"
-        >
-          Assign KPI
-        </button>
+        <div className="col-span-full">
+          <button
+            type="submit"
+            className={`w-full py-3 rounded-lg font-semibold text-white transition-colors ${
+              dark ? "bg-[#F36F21] hover:bg-[#d97122]" : "bg-[#040613] hover:bg-[#00337C]"
+            }`}
+          >
+            Assign KPI
+          </button>
+        </div>
       </form>
 
       <div className="mb-4">
         <input
-          type="text"
+          type="search"
           placeholder="Search assigned KPIs..."
-          className="border border-gray-300 rounded-md px-4 py-2 w-full"
+          className={`w-full rounded-md px-4 py-2 border focus:outline-none focus:ring-2 focus:ring-[#F36F21] transition-colors ${
+            dark
+              ? "bg-gray-700 text-gray-100 border-gray-600 placeholder-gray-400"
+              : "bg-white text-[#040613] border-gray-300 placeholder-gray-600"
+          }`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          aria-label="Search assigned KPIs"
         />
       </div>
 
-      <table className="min-w-full border border-gray-300 rounded">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border px-4 py-2">Sector</th>
-            <th className="border px-4 py-2">Subsector</th>
-            <th className="border px-4 py-2">KRA</th>
-            <th className="border px-4 py-2">KPI</th>
-            <th className="border px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredAssignedKPIs.length === 0 && (
+      <div
+        className={`overflow-x-auto rounded-md border ${
+          dark ? "border-gray-700" : "border-gray-300"
+        }`}
+      >
+        <table
+          className={`min-w-full text-sm rounded transition-colors ${
+            dark ? "text-gray-100" : "text-[#040613]"
+          }`}
+        >
+          <thead className={`${dark ? "bg-[#F36F21]" : "bg-[#F36F21]"}`}>
             <tr>
-              <td colSpan="5" className="text-center py-4">
-                No assigned KPIs found.
-              </td>
-            </tr>
-          )}
-
-          {filteredAssignedKPIs.map((item) => (
-            <tr key={item._id || item.id}>
-              <td className="border px-4 py-2">
-                {item.subsectorId
-                  ? (() => {
-                      const subsectorObj = subsectors.find(
-                        (sub) => sub._id === item.subsectorId._id
-                      );
-                      const sectorObj = subsectorObj
-                        ? sectors.find(
-                            (sec) =>
-                              sec._id ===
-                              (typeof subsectorObj.sectorId === "object"
-                                ? subsectorObj.sectorId._id
-                                : subsectorObj.sectorId)
-                          )
-                        : null;
-                      return sectorObj?.sector_name || "-";
-                    })()
-                  : item.sectorId?.sector_name || "-"}
-              </td>
-              <td className="border px-4 py-2">
-                {item.subsectorId?.subsector_name || "-"}
-              </td>
-              <td className="border px-4 py-2">{item.kraId?.kra_name || "-"}</td>
-              <td className="border px-4 py-2">{item.kpiId?.kpi_name || "-"}</td>
-              <td className="border px-4 py-2 text-center">
-                <button
-                  onClick={() => handleDelete(item._id || item.id)}
-                  className="text-red-600 hover:underline"
-                  title="Unassign KPI"
+              {["Sector", "Subsector", "KRA", "KPI", "Actions"].map((header) => (
+                <th
+                  key={header}
+                  className="border px-4 py-2 text-left font-semibold"
+                  scope="col"
                 >
-                  Unassign
-                </button>
-              </td>
+                  {header}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredAssignedKPIs.length === 0 ? (
+              <tr>
+                <td
+                  colSpan="5"
+                  className={`text-center py-4 ${
+                    dark ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  No assigned KPIs found.
+                </td>
+              </tr>
+            ) : (
+              filteredAssignedKPIs.map((item) => (
+                <tr
+                  key={item._id || item.id}
+                  className={`hover:cursor-default transition-colors ${
+                    dark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+                  }`}
+                >
+                  <td className="border px-4 py-2">
+                    {item.subsectorId
+                      ? (() => {
+                          const subObj = subsectors.find(
+                            (sub) => sub._id === item.subsectorId._id
+                          );
+                          const secObj = subObj
+                            ? sectors.find(
+                                (sec) =>
+                                  sec._id ===
+                                  (typeof subObj.sectorId === "object"
+                                    ? subObj.sectorId._id
+                                    : subObj.sectorId)
+                              )
+                            : null;
+                          return secObj?.sector_name || "-";
+                        })()
+                      : item.sectorId?.sector_name || "-"}
+                  </td>
+                  <td className="border px-4 py-2">{item.subsectorId?.subsector_name || "-"}</td>
+                  <td className="border px-4 py-2">{item.kraId?.kra_name || "-"}</td>
+                  <td className="border px-4 py-2">{item.kpiId?.kpi_name || "-"}</td>
+                  <td className="border px-4 py-2 text-center">
+                    <button
+                      onClick={() => handleDelete(item._id || item.id)}
+                      className={`text-sm font-semibold underline transition-colors ${
+                        dark ? "text-red-400 hover:text-red-500" : "text-red-600 hover:text-red-700"
+                      }`}
+                      aria-label={`Unassign KPI ${item.kpiId?.kpi_name || ""}`}
+                      type="button"
+                    >
+                      Unassign
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

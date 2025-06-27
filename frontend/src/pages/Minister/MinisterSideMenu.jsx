@@ -1,23 +1,22 @@
-import { BsArrowLeftShort, BsSearch } from "react-icons/bs";
-
 import MinisterSideHeader from "./MinisterSideHeader";
 import MinisterSideBody from "./MinisterSideBody";
 
-function MinisterSideMenu() {
+function MinisterSideMenu({ open = true }) {
   return (
     <div
-      className={`bg-green-700 h-full   p-4 relative ${
+      className={`bg-green-700 h-full p-4 relative duration-300 scrollbar-hidden flex flex-col ${
         open ? "w-72" : "w-20"
-      }  duration-300 scrollbar-hidden `}
+      }`}
     >
-      <BsArrowLeftShort
-        className={`text-3xl text-dark-purple  lg:block rounded-full bg-white top-20  absolute right-0  border border-dark-purple translate-x-1/2 cursor-pointer ${
-          open ? null : "rotate-180"
-        } z-20 `}
-      />
-      <MinisterSideHeader />
-      <div className=" h-[450px] overflow-auto scrollbar-hidden">
-        <MinisterSideBody />
+      {/* Removed BsArrowLeftShort button as requested */}
+
+      {/* Pass open to header */}
+      <MinisterSideHeader open={open} />
+
+      {/* Scrollable area */}
+      <div className="flex-1 overflow-auto scrollbar-hidden mt-2">
+        {/* Pass open to body */}
+        <MinisterSideBody open={open} />
       </div>
     </div>
   );

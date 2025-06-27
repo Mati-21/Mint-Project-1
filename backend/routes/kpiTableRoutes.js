@@ -8,3 +8,4 @@ const KpiTableRouter = express.Router();
 KpiTableRouter.get('/table-data', getKPITableData);
 
 export default KpiTableRouter;
+ 

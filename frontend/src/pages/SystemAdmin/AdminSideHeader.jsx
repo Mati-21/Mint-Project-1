@@ -1,39 +1,31 @@
 import { IoSearch } from "react-icons/io5";
-import { BsArrowLeftShort, BsSearch } from "react-icons/bs";
+import useThemeStore from "../../store/themeStore";
 
-function AdminSideHeader() {
+function AdminSideHeader({ sidebarOpen }) {
+  const dark = useThemeStore((state) => state.dark);
+
   return (
-    <div
-      className={` flex flex-col items-center justify-center ${
-        !open && "py-2"
-      } `}
-    >
-      <h2 className={`text-lg text-center font-bold mb-6 ${!open && "hidden"}`}>
-        Minister of Innovation & Technology
-      </h2>
-
-      <div className="flex gap-4 mb-6 items-center">
-        <div className="w-12 h-12 rounded-full bg-amber-200 text-center overflow-hidden ">
-          <img src="/download.jpg" alt="" />
+    <div className="flex flex-col items-center justify-center mb-6">
+      <div className="flex items-center gap-3 w-full mb-6">
+        <div className="w-12 h-12 rounded-full overflow-hidden bg-[#F36F21] flex-shrink-0">
+          <img src="/download.jpg" alt="MINT Logo" className="object-cover" />
         </div>
-        <p className={`${!open && "hidden"} duration-300`}>
-          የኢኖቬሽንና ቴክኖሎጂ ሚኒስቴር{" "}
+        <p className={`font-semibold ${dark ? "text-white" : "text-[rgba(13,42,92,0.85)]"}`}>
+          Ministry of Innovation & Technology
         </p>
       </div>
-      <BsArrowLeftShort
-        size={40}
-        className="absolute right-0 bg-green-600 cursor-pointer rounded-full translate-x-1/2"
-      />
 
-      <div className="mb-6 flex gap-4 items-center">
+      <div className="flex items-center gap-2 w-full">
         <input
           type="text"
           placeholder="Search"
-          className={`border border-white rounded-sm px-2 py-1 outline-none ${
-            !open && "hidden"
+          className={`flex-grow rounded px-3 py-1 outline-none border transition-all ${
+            dark
+              ? "bg-gray-800 text-white border-gray-600 focus:border-[#F36F21]"
+              : "bg-white text-[rgba(13,42,92,0.85)] border-[#F36F21] focus:border-[#F36F21]"
           }`}
         />
-        <IoSearch size={25} className="cursor-pointer" />
+        <IoSearch size={24} className={`${dark ? "text-white" : "text-[rgba(13,42,92,0.85)]"}`} />
       </div>
     </div>
   );

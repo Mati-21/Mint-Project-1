@@ -1,10 +1,16 @@
-import express from 'express'
-import { addSector, getAllSectors } from '../controllers/sectorControllers.js'
+import express from "express";
+import {
+  addSector,
+  getAllSectors,
+  updateSector,
+  deleteSector,
+} from "../controllers/sectorControllers.js";
 
-const sectorRouter = express.Router()
+const sectorRouter = express.Router();
 
-// Route to add sector
-sectorRouter.post('/add-sector', addSector);
-sectorRouter.get('/get-sector', getAllSectors);
+sectorRouter.post("/add-sector", addSector);
+sectorRouter.get("/get-sector", getAllSectors);
+sectorRouter.put("/update-sector/:id", updateSector);
+sectorRouter.delete("/delete-sector/:id", deleteSector);
 
-export default sectorRouter
+export default sectorRouter;

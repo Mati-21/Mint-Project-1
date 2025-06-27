@@ -2,100 +2,90 @@ import { ChevronDown } from "lucide-react";
 import Datas from "./StrategicSideMenuTitles";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import useThemeStore from "../../store/themeStore";
 
-function StrategicSideBody({ open = true }) {
-  const [isSubMenuOpen, setIsSubMenuOpen] = useState({
-    menu1: false,
-    menu2: false,
-    menu3: false,
-    menu4: false,
-  });
+function StrategicSideBody({ open }) {
+  const dark = useThemeStore((state) => state.dark);
+  const [openKeys, setOpenKeys] = useState({});
 
-  const [isSubSubMenuOpen, setSubSubMenuOpen] = useState({});
-
-  const toggleDropdown = (key) => {
-    setIsSubMenuOpen((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  const toggleSubSubMenu = (subIndex) => {
-    setSubSubMenuOpen((prev) => ({
-      ...prev,
-      [subIndex]: !prev[subIndex],
-    }));
-  };
+  const toggle = (key) => setOpenKeys(prev => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <div className={`${!open ? "px-0" : "px-4"} text-sm bg-green-700 rounded`}>
-      <ul>
-        {Datas.map((data, index) => (
-          <div key={index}>
+    <div className="text-sm h-full overflow-y-auto px-2 scrollbar-hidden">
+      <ul className="space-y-1">
+        {Datas.map((data, i) => (
+          <div key={i}>
             {data.sectionTitle && (
-              <div
-                className={`flex items-center border-b pb-2 mt-4 ${
-                  !open ? "justify-center cursor-pointer" : "justify-between"
-                } border-black/50`}
-              >
-                <h1 className={`${!open && "hidden"} font-bold text-md`}>
-                  {data.sectionTitle}
-                </h1>
-                <span className={`${!open && "text-4xl"}`}>{data.icon}</span>
-              </div>
+              <>
+                <div
+                  className={`flex items-center border-t pt-4 ${
+                    open ? "justify-between" : "justify-center"
+                  } ${dark ? "text-white font-bold" : "text-[rgba(13,42,92,0.85)] font-bold"}`}
+                >
+                  <h1 className={`${!open ? "hidden" : "uppercase text-xs tracking-wide"}`}>
+                    {data.sectionTitle}
+                  </h1>
+                  <span>{data.icon}</span>
+                </div>
+              </>
             )}
 
-            <Link to={data.link || ""}>
+            <Link to={data.link || "#"}>
               <li
-                className={`${
-                  !open && "hidden"
-                } flex gap-4 px-2 py-1 items-center bg-green-300/20 cursor-pointer rounded duration-500 text-white hover:bg-slate-300/20 mt-2`}
+                className={`flex gap-2 px-2 py-1 items-center rounded transition duration-300 mt-2 ${
+                  dark
+                    ? "text-white hover:bg-gray-700"
+                    : "text-[rgba(13,42,92,0.85)] hover:bg-orange-100"
+                } ${!open ? "justify-center" : ""}`}
+                onClick={(e) => {
+                  if (data.submenu) {
+                    e.preventDefault();
+                    toggle(data.key);
+                  }
+                }}
               >
-                <span className="flex-1 font-bold text-xs">{data.menu}</span>
-                {data.submenu && (
+                {data.icon && (
+                  <span className={`${open ? "" : "text-[16px]"}`}>{data.icon}</span>
+                )}
+                <span className={`${!open ? "hidden" : "font-medium text-xs whitespace-nowrap"}`}>
+                  {data.menu}
+                </span>
+                {data.submenu && open && openKeys[data.key] !== undefined && (
                   <ChevronDown
-                    className="cursor-pointer text-white transition-transform duration-200"
-                    onClick={() => toggleDropdown(data.key)}
+                    className={`transition-transform ${
+                      openKeys[data.key] ? "rotate-180" : ""
+                    }`}
                     size={15}
                   />
                 )}
               </li>
             </Link>
 
-            {data.subMenuItems && isSubMenuOpen[data.key] && (
-              <div className="py-4 flex flex-col mt-1 gap-3">
-                {data.subMenuItems.map((item, subIndex) => (
-                  <div key={subIndex}>
-                    <Link to={item.link}>
-                      <li className="duration-300 py-1 flex justify-between rounded px-2 ml-2 text-white/80 mr-1 cursor-pointer bg-green-200/10 hover:bg-green-300/20">
-                        {item.subMenuItem}
-                        <ChevronDown
-                          className="cursor-pointer text-white transition-transform duration-200"
-                          onClick={() => toggleSubSubMenu(subIndex)}
-                          size={15}
-                        />
-                      </li>
+            {data.submenu && openKeys[data.key] && open && (
+              <ul className="ml-4 mt-1 flex flex-col gap-1 text-xs">
+                {data.subMenuItems.map((item, idx) => (
+                  <li key={idx} className="px-2 py-1 rounded">
+                    <Link
+                      to={item.link || "#"}
+                      className={`block rounded transition-colors duration-200 ${
+                        dark ? "text-white hover:bg-gray-700" : "text-gray-800 hover:bg-orange-100"
+                      }`}
+                    >
+                      {item.subMenuItem}
                     </Link>
-
-                    {item.subsubmenu && isSubSubMenuOpen[subIndex] && (
-                      <ul className="flex flex-col text-xs gap-3 w-46 cursor-pointer ml-4 mt-2">
-                        {item.subsubMenus.map((subsubmenu) => (
-                          <li
-                            className="px-2 py-1 bg-green-600 rounded text-white"
-                            key={subsubmenu}
-                          >
-                            {subsubmenu}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         ))}
       </ul>
+
+      <style>{`
+        div::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }

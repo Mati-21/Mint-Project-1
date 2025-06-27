@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import useThemeStore from "../store/themeStore";
 
 const backendUrl = "http://localhost:1221";
 
 const AddUser = () => {
-  // Form data state with fullName added
+  const { dark } = useThemeStore();
+
   const [formData, setFormData] = useState({
     fullName: "",
     role: "",
@@ -15,19 +17,14 @@ const AddUser = () => {
     confirmPassword: "",
   });
 
-  // Checkboxes state to enable sector/subsector selection
   const [useSector, setUseSector] = useState(false);
   const [useSubsector, setUseSubsector] = useState(false);
 
-  // Dropdown options
   const [sectors, setSectors] = useState([]);
   const [subsectors, setSubsectors] = useState([]);
   const [filteredSubsectors, setFilteredSubsectors] = useState([]);
-
-  // Error message
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Fetch sectors and subsectors
   const fetchDropdownData = async () => {
     try {
       const [sectorRes, subsectorRes] = await Promise.all([
@@ -45,17 +42,14 @@ const AddUser = () => {
     fetchDropdownData();
   }, []);
 
-  // Filter subsectors when sector changes or useSector toggled off
   useEffect(() => {
     if (!useSector || !formData.sector) {
       setFilteredSubsectors([]);
       setFormData((prev) => ({ ...prev, subsector: "" }));
-      setUseSubsector(false); // Disable subsector if sector not used
+      setUseSubsector(false);
       return;
     }
-    // Filter subsectors by selected sector
     const filtered = subsectors.filter((sub) => {
-      if (!sub.sectorId) return false;
       const sectorIdFromSub =
         typeof sub.sectorId === "object"
           ? sub.sectorId._id || sub.sectorId
@@ -63,17 +57,14 @@ const AddUser = () => {
       return sectorIdFromSub === formData.sector;
     });
     setFilteredSubsectors(filtered);
-    // Reset subsector selection if out of filtered list
     if (!filtered.find((sub) => sub._id === formData.subsector)) {
       setFormData((prev) => ({ ...prev, subsector: "" }));
       setUseSubsector(false);
     }
   }, [formData.sector, subsectors, useSector]);
 
-  // Handle input/select changes
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
-
     if (type === "checkbox") {
       if (id === "useSector") {
         setUseSector(checked);
@@ -90,65 +81,26 @@ const AddUser = () => {
     } else {
       setFormData((prev) => ({ ...prev, [id]: value }));
     }
-
     setErrorMsg("");
   };
 
-  // Basic email format validation
-  const isValidEmail = (email) => {
-    return /\S+@\S+\.\S+/.test(email);
-  };
+  const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email);
+  const isStrongPassword = (password) => password.length >= 6;
 
-  // Password strength validation (min 6 chars here, can be adjusted)
-  const isStrongPassword = (password) => {
-    return password.length >= 6;
-  };
-
-  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
 
-    // Basic validations
-    if (!formData.fullName.trim()) {
-      setErrorMsg("Please enter full name.");
-      return;
-    }
-    if (!formData.role) {
-      setErrorMsg("Please select a role.");
-      return;
-    }
-    if (!formData.email) {
-      setErrorMsg("Please enter an email.");
-      return;
-    }
-    if (!isValidEmail(formData.email)) {
-      setErrorMsg("Please enter a valid email address.");
-      return;
-    }
-    if (!formData.password) {
-      setErrorMsg("Please enter a password.");
-      return;
-    }
-    if (!isStrongPassword(formData.password)) {
-      setErrorMsg("Password should be at least 6 characters.");
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setErrorMsg("Passwords do not match.");
-      return;
-    }
-    // Sector/Subsector validation based on checkboxes
-    if (useSector && !formData.sector) {
-      setErrorMsg("Please select a sector or uncheck the sector option.");
-      return;
-    }
-    if (useSubsector && !formData.subsector) {
-      setErrorMsg("Please select a subsector or uncheck the subsector option.");
-      return;
-    }
+    if (!formData.fullName.trim()) return setErrorMsg("Please enter full name.");
+    if (!formData.role) return setErrorMsg("Please select a role.");
+    if (!formData.email) return setErrorMsg("Please enter an email.");
+    if (!isValidEmail(formData.email)) return setErrorMsg("Enter a valid email.");
+    if (!formData.password) return setErrorMsg("Please enter a password.");
+    if (!isStrongPassword(formData.password)) return setErrorMsg("Password must be at least 6 characters.");
+    if (formData.password !== formData.confirmPassword) return setErrorMsg("Passwords do not match.");
+    if (useSector && !formData.sector) return setErrorMsg("Select a sector or uncheck sector option.");
+    if (useSubsector && !formData.subsector) return setErrorMsg("Select a subsector or uncheck subsector option.");
 
-    // Prepare payload
     const payload = {
       fullName: formData.fullName,
       role: formData.role,
@@ -161,7 +113,6 @@ const AddUser = () => {
     try {
       await axios.post(`${backendUrl}/api/users/create`, payload);
       alert("User created successfully!");
-      // Reset form
       setFormData({
         fullName: "",
         role: "",
@@ -174,37 +125,46 @@ const AddUser = () => {
       setUseSector(false);
       setUseSubsector(false);
     } catch (error) {
-      console.error("Failed to create user:", error);
-      if (error.response?.data?.error) {
-        setErrorMsg(error.response.data.error);
-      } else {
-        setErrorMsg("Failed to create user due to server error.");
-      }
+      console.error("User creation failed:", error);
+      setErrorMsg(error.response?.data?.error || "Server error occurred.");
     }
   };
 
   return (
-    <div className="w-lg mx-auto p-4 bg-white rounded text-xs shadow-md">
+    <div
+      className={`mb-8 p-6 rounded shadow-sm border ${
+        dark ? "bg-[#1f2937] border-gray-700 text-[#F9FAFB]" : "bg-white border-orange-100 text-[#1F2937]"
+      }`}
+    >
       <h2 className="text-2xl font-semibold mb-6">Add User</h2>
 
       <form onSubmit={handleSubmit}>
-        {/* Full Name */}
-        <div className="mb-4">
-          <label htmlFor="fullName" className="block mb-1 font-medium">
-            Full Name
-          </label>
-          <input
-            id="fullName"
-            type="text"
-            value={formData.fullName}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 rounded-md px-4 py-1 w-full"
-            placeholder="Full Name"
-          />
-        </div>
+        {[
+          { id: "fullName", label: "Full Name", type: "text", placeholder: "Full Name" },
+          { id: "email", label: "Email", type: "email", placeholder: "user@example.com" },
+          { id: "password", label: "Password", type: "password" },
+          { id: "confirmPassword", label: "Confirm Password", type: "password" },
+        ].map(({ id, label, type, placeholder }) => (
+          <div key={id} className="mb-4">
+            <label htmlFor={id} className="block mb-1 font-medium">
+              {label}
+            </label>
+            <input
+              id={id}
+              type={type}
+              value={formData[id]}
+              onChange={handleChange}
+              placeholder={placeholder}
+              required
+              className={`w-full rounded-md px-4 py-2 border focus:outline-none focus:ring-2 focus:ring-[#F36F21] ${
+                dark
+                  ? "bg-gray-800 text-gray-100 border-gray-700"
+                  : "bg-white text-gray-900 border-gray-300"
+              }`}
+            />
+          </div>
+        ))}
 
-        {/* Role */}
         <div className="mb-4">
           <label htmlFor="role" className="block mb-1 font-medium">
             Role
@@ -214,7 +174,11 @@ const AddUser = () => {
             value={formData.role}
             onChange={handleChange}
             required
-            className="border border-gray-300 rounded-md px-4 py-1 w-full"
+            className={`w-full rounded-md px-4 py-2 border focus:outline-none focus:ring-2 focus:ring-[#F36F21] ${
+              dark
+                ? "bg-gray-800 text-gray-100 border-gray-700"
+                : "bg-white text-gray-900 border-gray-300"
+            }`}
           >
             <option value="">Select Role</option>
             <option value="Chief CEO">Chief CEO</option>
@@ -226,72 +190,24 @@ const AddUser = () => {
           </select>
         </div>
 
-        {/* Email */}
-        <div className="mb-4">
-          <label htmlFor="email" className="block mb-1 font-medium">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 rounded-md px-4 py-1 w-full"
-            placeholder="user@example.com"
-          />
-        </div>
-
-        {/* Password */}
-        <div className="mb-4">
-          <label htmlFor="password" className="block mb-1 font-medium">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 rounded-md px-4 py-1 w-full"
-          />
-        </div>
-
-        {/* Confirm Password */}
-        <div className="mb-4">
-          <label htmlFor="confirmPassword" className="block mb-1 font-medium">
-            Confirm Password
-          </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 rounded-md px-4 py-1 w-full"
-          />
-        </div>
-
-        {/* Use Sector Checkbox */}
         <div className="mb-4 flex items-center space-x-2">
           <input
             type="checkbox"
             id="useSector"
             checked={useSector}
             onChange={handleChange}
-            className="form-checkbox"
+            className="form-checkbox text-[#F36F21]"
           />
           <label htmlFor="useSector" className="font-medium">
             Assign Sector
           </label>
         </div>
 
-        {/* Sector select */}
         <div className="mb-4">
           <label
             htmlFor="sector"
             className={`block mb-1 font-medium ${
-              !useSector ? "text-gray-400" : ""
+              !useSector ? "text-gray-400 dark:text-gray-600" : ""
             }`}
           >
             Sector
@@ -301,8 +217,12 @@ const AddUser = () => {
             value={formData.sector}
             onChange={handleChange}
             disabled={!useSector}
-            className={`border border-gray-300 rounded-md px-4 py-1 w-full ${
-              !useSector ? "bg-gray-100 cursor-not-allowed" : ""
+            className={`w-full rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#F36F21] ${
+              useSector
+                ? dark
+                  ? "bg-gray-800 text-gray-100 border border-gray-700"
+                  : "bg-white text-gray-900 border border-gray-300"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 dark:bg-gray-700 dark:text-gray-600"
             }`}
           >
             <option value="">Select Sector</option>
@@ -314,7 +234,6 @@ const AddUser = () => {
           </select>
         </div>
 
-        {/* Use Subsector Checkbox */}
         <div className="mb-4 flex items-center space-x-2">
           <input
             type="checkbox"
@@ -322,22 +241,23 @@ const AddUser = () => {
             checked={useSubsector}
             onChange={handleChange}
             disabled={!useSector}
-            className="form-checkbox"
+            className="form-checkbox text-[#F36F21]"
           />
           <label
             htmlFor="useSubsector"
-            className={`font-medium ${!useSector ? "text-gray-400" : ""}`}
+            className={`font-medium ${
+              !useSector ? "text-gray-400 dark:text-gray-600" : ""
+            }`}
           >
             Assign Subsector
           </label>
         </div>
 
-        {/* Subsector select */}
         <div className="mb-4">
           <label
             htmlFor="subsector"
             className={`block mb-1 font-medium ${
-              !useSubsector || !useSector ? "text-gray-400" : ""
+              !useSubsector || !useSector ? "text-gray-400 dark:text-gray-600" : ""
             }`}
           >
             Subsector
@@ -347,10 +267,12 @@ const AddUser = () => {
             value={formData.subsector}
             onChange={handleChange}
             disabled={!useSubsector || !useSector}
-            className={`border border-gray-300 rounded-md px-4 py-1 w-full ${
-              !useSubsector || !useSector
-                ? "bg-gray-100 cursor-not-allowed"
-                : ""
+            className={`w-full rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#F36F21] ${
+              useSubsector && useSector
+                ? dark
+                  ? "bg-gray-800 text-gray-100 border border-gray-700"
+                  : "bg-white text-gray-900 border border-gray-300"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 dark:bg-gray-700 dark:text-gray-600"
             }`}
           >
             <option value="">Select Subsector</option>
@@ -362,14 +284,15 @@ const AddUser = () => {
           </select>
         </div>
 
-        {/* Error message */}
         {errorMsg && (
-          <div className="mb-4 text-red-600 font-medium">{errorMsg}</div>
+          <div className="mb-4 text-red-600 dark:text-red-400 font-medium">
+            {errorMsg}
+          </div>
         )}
 
         <button
           type="submit"
-          className="bg-blue-600 text-white px-6 py-1 rounded hover:bg-blue-700 transition"
+          className="rounded bg-[#F36F21] px-6 py-2 font-semibold text-white hover:bg-[#e05e1d] transition focus:outline-none focus:ring-2 focus:ring-[#F36F21]"
         >
           Create User
         </button>

@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import useAuthStore from "../../store/auth.store";  // your auth store
+import useAuthStore from "../../store/auth.store";
+import useThemeStore from "../../store/themeStore";
 
 const backendUrl = "http://localhost:1221";
 
 export default function GroupChat({ onSelectGroup, selectedGroup }) {
-  const currentUser = useAuthStore(state => state.user);  // get current user from store
-
+  const dark = useThemeStore((s) => s.dark);
+  const currentUser = useAuthStore((s) => s.user);
   const [groups, setGroups] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [groupName, setGroupName] = useState("");
@@ -15,85 +16,65 @@ export default function GroupChat({ onSelectGroup, selectedGroup }) {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (!currentUser) return;  // wait for user to be loaded
-
+    if (!currentUser) return;
     setSelectedUserIds(new Set([currentUser._id]));
-
-    axios.get(`${backendUrl}/api/users/get-users`, { withCredentials: true })
-      .then(res => setAllUsers(res.data))
-      .catch(() => alert("Failed to load users"));
-
+    axios.get(`${backendUrl}/api/users/get-users`, { withCredentials: true }).then(res => setAllUsers(res.data));
     fetchGroups();
   }, [currentUser]);
 
-  const fetchGroups = () => {
-    axios.get(`${backendUrl}/api/chat/groups`, { withCredentials: true })
-      .then(res => setGroups(res.data))
-      .catch(() => alert("Failed to load groups"));
-  };
+  const fetchGroups = () => axios
+    .get(`${backendUrl}/api/chat/groups`, { withCredentials: true })
+    .then(res => setGroups(res.data));
 
   const toggleUser = id => {
     setSelectedUserIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        if (id !== currentUser._id) next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id) && id !== currentUser._id) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
   const handleCreateGroup = () => {
-    axios.post(`${backendUrl}/api/chat/groups`, {
-      name: groupName,
-      members: Array.from(selectedUserIds),
-    }, { withCredentials: true })
-      .then(() => {
-        fetchGroups();
-        setShowCreateForm(false);
-        setGroupName("");
-        setSearch("");
-        setSelectedUserIds(new Set([currentUser._id]));
-      })
-      .catch(() => alert("Failed to create group"));
+    axios.post(
+      `${backendUrl}/api/chat/groups`,
+      { name: groupName, members: Array.from(selectedUserIds) },
+      { withCredentials: true }
+    ).then(() => {
+      fetchGroups();
+      setShowCreateForm(false);
+      setGroupName("");
+      setSearch("");
+      setSelectedUserIds(new Set([currentUser._id]));
+    });
   };
 
-  const handleLeave = groupId => {
-    axios.post(`${backendUrl}/api/chat/groups/${groupId}/leave`, {}, { withCredentials: true })
-      .then(() => fetchGroups())
-      .catch(() => alert("Failed to leave group"));
-  };
+  const handleLeave = groupId => axios
+    .post(`${backendUrl}/api/chat/groups/${groupId}/leave`, {}, { withCredentials: true })
+    .then(fetchGroups);
 
   const handleDelete = groupId => {
-    axios.delete(`${backendUrl}/api/chat/groups/${groupId}`, { withCredentials: true })
-      .then(() => {
-        fetchGroups();
-        onSelectGroup(null);
-      })
-      .catch(() => alert("Failed to delete group"));
+    axios.delete(`${backendUrl}/api/chat/groups/${groupId}`, { withCredentials: true }).then(() => {
+      fetchGroups();
+      onSelectGroup(null);
+    });
   };
 
-  if (!currentUser) return <div>Loading user...</div>;
-
-  const filteredUsers = allUsers.filter(u =>
-    u.fullName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = allUsers.filter(u => u.fullName.toLowerCase().includes(search.toLowerCase()));
+  const wrapperBg = dark ? "bg-gray-800 border-gray-700 text-white" : "bg-[rgba(13,42,92,0.08)] border-[rgba(13,42,92,0.1)] text-[#0D2A5C]";
+  const hoverBg = dark ? "hover:bg-gray-700" : "hover:bg-blue-50";
 
   return (
-    <div className="p-2 border-r bg-white">
+    <div className={`p-2 ${wrapperBg} text-sm`}>
       <div className="flex justify-between items-center">
-        <h2 className="font-semibold">Groups</h2>
-        <button
-          className="text-green-600 text-xs"
-          onClick={() => setShowCreateForm(!showCreateForm)}
-        >
+        <h2 className="font-semibold text-[#040613]">Groups</h2>
+        <button className="text-xs text-[#F36F21] hover:underline" onClick={() => setShowCreateForm(!showCreateForm)}>
           {showCreateForm ? "Cancel" : "Create"}
         </button>
       </div>
 
       {showCreateForm && (
-        <div className="p-2 bg-gray-50 rounded mb-4">
+        <div className="bg-gray-50 p-2 mt-2 rounded shadow-sm">
           <input
             placeholder="Group name"
             className="w-full mb-2 px-2 py-1 border rounded text-sm"
@@ -106,9 +87,9 @@ export default function GroupChat({ onSelectGroup, selectedGroup }) {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          <div className="max-h-32 overflow-y-auto mb-2 border p-1 text-sm">
+          <div className="max-h-32 overflow-y-auto mb-2 border p-1 rounded text-sm">
             {filteredUsers.map(user => (
-              <label key={user._id} className="flex items-center space-x-2 mb-1 cursor-pointer">
+              <label key={user._id} className="flex items-center space-x-2 mb-1">
                 <input
                   type="checkbox"
                   checked={selectedUserIds.has(user._id)}
@@ -123,52 +104,36 @@ export default function GroupChat({ onSelectGroup, selectedGroup }) {
             )}
           </div>
           <button
-            className="bg-green-600 text-white py-1 px-3 rounded text-sm disabled:opacity-50"
+            className="bg-[#040613] hover:bg-[#00337A] text-white py-1 px-3 rounded text-sm w-full"
             onClick={handleCreateGroup}
             disabled={!groupName || selectedUserIds.size < 2}
           >
-            Create
+            Create Group
           </button>
         </div>
       )}
 
-      <ul className="space-y-1">
+      <ul className="mt-3 space-y-1">
         {groups.map(group => {
           const isOwner = currentUser && group.owner === currentUser._id;
-          const inGroup = currentUser && group.members.includes(currentUser._id);
           return (
             <li key={group._id}>
               <div
-                className="flex justify-between p-2 hover:bg-green-100 rounded cursor-pointer"
+                className={`flex justify-between items-center p-2 rounded cursor-pointer ${hoverBg}`}
                 onClick={() => onSelectGroup(group)}
               >
                 <span>{group.name}</span>
-                {(isOwner || inGroup) && (
-                  <div className="space-x-1">
-                    {isOwner && (
-                      <button
-                        className="text-red-600 text-xs"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleDelete(group._id);
-                        }}
-                      >
-                        Delete
-                      </button>
-                    )}
-                    {!isOwner && (
-                      <button
-                        className="text-gray-600 text-xs"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleLeave(group._id);
-                        }}
-                      >
-                        Leave
-                      </button>
-                    )}
-                  </div>
-                )}
+                <div className="space-x-1 text-xs">
+                  {isOwner ? (
+                    <button className="text-red-600" onClick={e => { e.stopPropagation(); handleDelete(group._id) }}>
+                      Delete
+                    </button>
+                  ) : (
+                    <button className="text-gray-600" onClick={e => { e.stopPropagation(); handleLeave(group._id) }}>
+                      Leave
+                    </button>
+                  )}
+                </div>
               </div>
             </li>
           );

@@ -9,6 +9,7 @@ import {
   updateProfile,
   updateUser,
   updateUserPassword,
+  changePassword,
 } from "../controllers/userController.js";
 
 import { validatePasswordStrength } from "../middlewares/validatePasswordStrength.js";
@@ -33,6 +34,7 @@ userRouter.put(
 );
 userRouter.put("/update-user/:id", authUser, updateUser);
 userRouter.put("/update-password/:id", authUser, updateUserPassword);
+userRouter.post("/change-password", authUser, changePassword);
 
 userRouter.get("/checkauth", checkAuth);
 

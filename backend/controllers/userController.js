@@ -256,3 +256,34 @@ export const updateUserPassword = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// Change password for logged-in user
+export const changePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword || newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const isMatch = verifyPassword(oldPassword, user.password, user.salt);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Old password is incorrect" });
+    }
+
+    const { hash, salt } = hashPassword(newPassword);
+    user.password = hash;
+    user.salt = salt;
+    await user.save();
+
+    res.json({ success: true, message: "Password changed successfully" });
+  } catch (err) {
+    console.error("[changePassword] Error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};

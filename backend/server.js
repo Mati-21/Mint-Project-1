@@ -86,6 +86,8 @@ app.use("/api/chat", chatRouter);
 app.use("/api/users/update-profile", profileRouter);
 app.use('/api/performance', performanceRoutes);
 app.use("/api/kpi-table", KpiTableRouter);
+app.use("/api/kra2", kra2Router);
+app.use("/api/kpi2", kpi2Router);
 
 
 // Socket.io setup

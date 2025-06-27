@@ -1,17 +1,16 @@
 import AdminInfo from "./AdminInfo";
-import { Link, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import Actions from "../../components/Actions";
 import Modal from "../../components/Modal";
-import AddUserForm from "../../components/AddUserForm";
-
 import AddSector from "./AdminComponents/AddSector";
 import AddSubSector from "./AdminComponents/AddSubSector";
-import AddDesk from "./AdminComponents/AddDesk";
-
 import { useState } from "react";
+import ViewUsers from "../../components/ViewUsers";
+import useThemeStore from "../../store/themeStore";
 
 function AdminDashboard() {
   const [showForm, setShowForm] = useState({});
+  const dark = useThemeStore((state) => state.dark);
 
   function toggleForm(id) {
     setShowForm((prev) => ({
@@ -21,14 +20,14 @@ function AdminDashboard() {
   }
 
   return (
-    <div>
+    <div className={`${dark ? "text-white" : "text-[rgba(13,42,92,0.85)]"} space-y-6`}>
       <AdminInfo />
+
       {showForm[1] && (
         <Modal toggleForm={toggleForm} id={1}>
-          <AddUserForm />
+          <ViewUsers />
         </Modal>
       )}
-
       {showForm[2] && (
         <Modal toggleForm={toggleForm} id={2}>
           <AddSector />
@@ -39,18 +38,14 @@ function AdminDashboard() {
           <AddSubSector />
         </Modal>
       )}
-      {showForm[4] && (
-        <Modal toggleForm={toggleForm} id={4}>
-          <AddDesk />
-        </Modal>
-      )}
 
-      <div className="grid grid-cols-4">
-        <div className="col-start-1 col-end-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="md:col-span-3">
           <Outlet />
         </div>
-
-        <Actions toggleForm={toggleForm} />
+        <div>
+          <Actions toggleForm={toggleForm} />
+        </div>
       </div>
     </div>
   );

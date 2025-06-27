@@ -1,133 +1,208 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
+import useThemeStore from "../../store/themeStore";
+import useAuthStore from "../../store/auth.store";
 
 function KPITable({ groupKey, rows, openModal, openPerformanceModal, openRatioModal, currentEthYear }) {
-  const [goal, kra] = groupKey.split("||");
-  const [showDebug, setShowDebug] = useState(false);
+  const { dark } = useThemeStore();
+  const { user: authUser } = useAuthStore();
+
+  const [goal = "", kra = ""] = groupKey.split("|||").map((s) => s.trim());
 
   const recentYear = currentEthYear;
   const previousYear = currentEthYear - 1;
 
-  // Format ratio value as percentage string
-  const formatRatio = (perf, target) => {
-    if (typeof perf === "number" && typeof target === "number" && target !== 0) {
-      const ratio = (perf / target) * 100;
-      return `${Math.round(ratio)}%`;
+  // Helper to safely get values from objects case-insensitively
+  // Enhanced to handle keys with or without year suffix interchangeably
+  const getValue = (obj, key) => {
+    if (!obj) return undefined;
+    if (obj[key] !== undefined) return obj[key];
+
+    // Try case-insensitive exact match
+    const foundKey = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
+    if (foundKey) return obj[foundKey];
+
+    // Try fallback logic for quarterly and yearly keys:
+    // If key includes year suffix like "q1-2024", try "q1"
+    // If key is like "q1", try "q1-<recentYear>" or "q1-<previousYear>"
+    const quarterMatch = key.toLowerCase().match(/^(q[1-4])(?:-(\d{4}))?$/);
+    if (quarterMatch) {
+      const quarter = quarterMatch[1];
+      const yearPart = quarterMatch[2];
+
+      if (yearPart) {
+        // If year suffix exists, try without year suffix
+        if (obj[quarter] !== undefined) return obj[quarter];
+      } else {
+        // No year suffix, try with current or previous year suffixes
+        if (obj[`${quarter}-${recentYear}`] !== undefined) return obj[`${quarter}-${recentYear}`];
+        if (obj[`${quarter}-${previousYear}`] !== undefined) return obj[`${quarter}-${previousYear}`];
+      }
     }
-    return "Ratio";
+
+    // Similarly for yearly keys "year" or "year-2024"
+    if (key.toLowerCase().startsWith("year")) {
+      if (key.toLowerCase() === "year") {
+        if (obj[`year-${recentYear}`] !== undefined) return obj[`year-${recentYear}`];
+        if (obj[`year-${previousYear}`] !== undefined) return obj[`year-${previousYear}`];
+      } else {
+        // key like year-2024
+        if (obj["year"] !== undefined) return obj["year"];
+      }
+    }
+
+    return undefined;
   };
 
-  function renderPlanCell(row, periodKey) {
-    const targetValue = row.targets?.[periodKey];
+  const formatRatio = (perf, target) => {
+    if (typeof perf === "number" && typeof target === "number" && target !== 0) {
+      return `${Math.round((perf / target) * 100)}%`;
+    }
+    return "–";
+  };
+
+  const baseBtn =
+    "text-xs px-2 py-1 rounded font-medium transition duration-200 w-full text-center whitespace-nowrap";
+
+  useEffect(() => {
+    console.group(`KPITable Data for goal: "${goal}", KRA: "${kra}"`);
+    rows.forEach((row, index) => {
+      console.group(`Row ${index} - KPI Name: ${row.kpiName}`);
+      console.log("Targets:", row.targets);
+      console.log("Performance:", row.performance);
+      console.groupEnd();
+    });
+    console.groupEnd();
+  }, [rows, goal, kra]);
+
+  const renderPlanCell = (row, periodKey) => {
+    const val = getValue(row.targets, periodKey);
+    console.log(`PlanCell for KPI "${row.kpiName}", period "${periodKey}":`, val);
     return (
       <button
         onClick={() => openModal({ ...row, period: periodKey })}
-        className="bg-green-500 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
+        className={`${
+          dark
+            ? "bg-[#F36F21] hover:bg-orange-600 text-gray-900"
+            : "bg-[#F36F21] hover:bg-orange-700 text-white"
+        } ${baseBtn}`}
+        title="Plan Target"
       >
-        {targetValue != null && targetValue !== "" ? `Target: ${targetValue}` : "Plan"}
+        🎯 {val != null && val !== "" ? val : "-"}
       </button>
     );
-  }
+  };
 
-  function renderPerformanceCell(row, periodKey) {
-    const performanceValue = row.performance?.[periodKey];
+  const renderPerformanceCell = (row, periodKey) => {
+    const val = getValue(row.performance, periodKey);
+    console.log(`PerformanceCell for KPI "${row.kpiName}", period "${periodKey}":`, val);
     return (
       <button
         onClick={() => openPerformanceModal({ ...row, period: periodKey })}
-        className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
+        className={`${
+          dark
+            ? "bg-blue-600 hover:bg-blue-700 text-white"
+            : "bg-blue-700 hover:bg-blue-800 text-white"
+        } ${baseBtn}`}
+        title="Performance"
       >
-        {performanceValue != null && performanceValue !== "" ? `Perf: ${performanceValue}` : "Perf."}
+        📊 {val != null && val !== "" ? val : "-"}
       </button>
     );
-  }
+  };
 
-  function renderRatioCell(row, periodKey) {
-    const targetValue = row.targets?.[periodKey];
-    const performanceValue = row.performance?.[periodKey];
-
+  const renderRatioCell = (row, periodKey) => {
+    const target = getValue(row.targets, periodKey);
+    const perf = getValue(row.performance, periodKey);
+    console.log(`RatioCell for KPI "${row.kpiName}", period "${periodKey}": perf=${perf}, target=${target}`);
     return (
       <button
         onClick={() => openRatioModal(row, periodKey)}
-        className="bg-purple-600 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
+        className={`${
+          dark
+            ? "bg-gray-700 hover:bg-gray-600 text-white"
+            : "bg-gray-300 hover:bg-gray-400 text-gray-900"
+        } ${baseBtn}`}
+        title="Ratio"
       >
-        {!isNaN(Number(performanceValue)) && !isNaN(Number(targetValue)) && Number(targetValue) !== 0
-          ? formatRatio(Number(performanceValue), Number(targetValue))
-          : "Ratio"}
+        %
+        {!isNaN(Number(perf)) && !isNaN(Number(target)) && Number(target) !== 0
+          ? ` ${formatRatio(Number(perf), Number(target))}`
+          : " –"}
       </button>
     );
-  }
+  };
+
+  const borderColor = dark ? "border-gray-700" : "border-gray-300";
+  const headerBg = dark ? "bg-gray-800 text-white" : "bg-gray-100 text-[#0D2A5C]";
+  const rowHoverBg = dark ? "hover:bg-gray-800" : "hover:bg-gray-50";
+  const cardBg = dark ? "bg-[#1f2937] text-white" : "bg-white text-[rgba(13,42,92,0.85)]";
+
+  const goalHeaderBg = dark ? "bg-[#b44d12]" : "bg-[#F36F21]";
+  const goalHeaderText = "text-white";
+  const kraHeaderBg = dark ? "bg-gray-700" : "bg-gray-200";
+  const kraHeaderText = dark ? "text-white" : "text-[#0D2A5C]";
+
+  const quarters = ["q1", "q2", "q3", "q4"];
 
   return (
-    <div className="mb-8">
-      <div className="mb-2">
-        <strong>Goal:</strong> {goal} &nbsp; | &nbsp; <strong>KRA:</strong> {kra}
+    <div className={`p-6 mb-10 rounded overflow-hidden shadow-md transition ${cardBg}`}>
+      {/* === Goal Header === */}
+      <div className={`p-3 font-bold text-sm ${goalHeaderBg} ${goalHeaderText} flex items-center gap-2`}>
+        <span role="img" aria-label="Goal">🎯</span> Goal: {goal}
       </div>
 
-      <button
-        onClick={() => setShowDebug((prev) => !prev)}
-        className="mb-4 px-2 py-1 bg-gray-300 rounded text-xs hover:bg-gray-400"
-      >
-        {showDebug ? "Hide debug JSON" : "Show debug JSON"}
-      </button>
+      {/* === KRA Header === */}
+      <div className={`p-3 font-semibold text-sm ${kraHeaderBg} ${kraHeaderText} flex items-center gap-2 mb-4`}>
+        <span role="img" aria-label="KRA">🏷️</span> KRA: {kra}
+      </div>
 
-      {showDebug && (
-        <pre
-          style={{
-            maxHeight: "300px",
-            overflowY: "auto",
-            backgroundColor: "#f9f9f9",
-            border: "1px solid #ddd",
-            padding: "10px",
-            fontSize: "12px",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {JSON.stringify(rows, null, 2)}
-        </pre>
-      )}
-
-      <table className="table-auto border-collapse border border-gray-400 w-full text-sm">
-        <thead>
-          <tr>
-            <th className="border border-gray-400 px-2 py-1">KPI Name</th>
-            <th className="border border-gray-400 px-2 py-1 text-center">{previousYear}</th>
-            <th className="border border-gray-400 px-2 py-1 text-center">{recentYear}</th>
-            <th className="border border-gray-400 px-2 py-1 text-center">Q1</th>
-            <th className="border border-gray-400 px-2 py-1 text-center">Q2</th>
-            <th className="border border-gray-400 px-2 py-1 text-center">Q3</th>
-            <th className="border border-gray-400 px-2 py-1 text-center">Q4</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i}>
-              <td className="border border-gray-300 px-2 py-1 text-center">{row.kpiName}</td>
-
-              {[`year-${previousYear}`, `year-${recentYear}`].map((periodKey) => (
-                <td key={periodKey} className="border border-gray-300 px-2 py-1 text-center">
-                  <div className="flex flex-col items-center space-y-1">
-                    {renderPlanCell(row, periodKey)}
-                    {renderPerformanceCell(row, periodKey)}
-                    {renderRatioCell(row, periodKey)}
-                  </div>
-                </td>
+      {/* === Table === */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto border-collapse text-sm">
+          <thead>
+            <tr className={`border-b ${headerBg}`}>
+              <th className={`border px-3 py-2 ${borderColor} text-left`}>KPI Name</th>
+              <th className={`border px-3 py-2 ${borderColor} text-center`}>{previousYear}</th>
+              <th className={`border px-3 py-2 ${borderColor} text-center`}>{recentYear}</th>
+              {quarters.map((q) => (
+                <th key={q} className={`border px-3 py-2 ${borderColor} text-center`}>{q.toUpperCase()}</th>
               ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i} className={`border-b ${borderColor} ${rowHoverBg}`}>
+                <td className="px-3 py-2 text-left font-medium">{row.kpiName}</td>
 
-              {["q1", "q2", "q3", "q4"].map((q) => {
-                const periodKey = `${q}-${recentYear}`;
-                return (
-                  <td key={q} className="border border-gray-300 px-2 py-1 text-center">
-                    <div className="flex flex-col items-center space-y-1">
+                {/* Yearly: Previous & Current */}
+                {[`year-${previousYear}`, `year-${recentYear}`].map((periodKey) => (
+                  <td key={periodKey} className="px-3 py-2 text-center align-top">
+                    <div className="flex flex-col gap-1">
                       {renderPlanCell(row, periodKey)}
                       {renderPerformanceCell(row, periodKey)}
                       {renderRatioCell(row, periodKey)}
                     </div>
                   </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                ))}
+
+                {/* Quarterly: Q1-Q4 for current year */}
+                {quarters.map((q) => {
+                  const periodKey = `${q}-${recentYear}`;
+                  return (
+                    <td key={q} className="px-3 py-2 text-center align-top">
+                      <div className="flex flex-col gap-1">
+                        {renderPlanCell(row, periodKey)}
+                        {renderPerformanceCell(row, periodKey)}
+                        {renderRatioCell(row, periodKey)}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
