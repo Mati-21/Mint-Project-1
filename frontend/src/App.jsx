@@ -130,6 +130,7 @@ function App() {
             <Route path="Target-validation" element={<TargetValidation />} />
             <Route path="user-report" element={<UserReportTable />} />
             <Route path="sector-reporting/:sectorId" element={<AllSectorReport />} />
+            <Route path="setting" element={<Setting />} />
           </Route>
 
           {/* STRATEGIC */}
@@ -149,6 +150,7 @@ function App() {
             <Route path="performance-validation" element={<PerformanceValidation />} />
             <Route path="Target-validation" element={<TargetValidation />} />
             <Route path="sector-reporting" element={<AllSectorReport />} />
+            <Route path="setting" element={<Setting />} />
           </Route>
 
           {/* MINISTER */}
@@ -164,6 +166,7 @@ function App() {
             <Route path="allSector/:sectorId" element={<AllSector />} />
             <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
             <Route path="user-profile" element={<UserProfile />} />
+            <Route path="setting" element={<Setting />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="performance-validation" element={<PerformanceValidation />} />
             <Route path="Target-validation" element={<TargetValidation />} />
@@ -185,6 +188,9 @@ function App() {
             <Route path="user-profile" element={<UserProfile />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="user-report" element={<UserReportTable />} />
+            <Route path="Subsector-reporting/:subsectorId" element={<AllSubsectorReport />} />
+            <Route path="setting" element={<Setting />} />
+            
           </Route>
 
           {/* 404 */}
