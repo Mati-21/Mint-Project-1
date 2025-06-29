@@ -30,4 +30,6 @@ export const taskAssignStore = create((set) => ({
     );
     return assignedRes;
   },
+
+  fetchAssignedTask: async () => {},
 }));

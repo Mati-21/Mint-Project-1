@@ -15,8 +15,9 @@ const PlanningUI = () => {
     const AssigneMeasure = async () => {
       try {
         const res = await axios.get(
-          `${BACKEND_URL}/api/measureAssignment/get-assignment/${userId}`
+          `http://localhost:1221/api/measureAssignment/user/${userId}`
         );
+        console.log(res.data);
         setAssignedMeasure(res.data);
       } catch (error) {
         console.error("Error fetching assignment:", error);
@@ -24,8 +25,6 @@ const PlanningUI = () => {
     };
     AssigneMeasure();
   }, [userId]);
-
-  console.log(AssignedMeasure);
 
   return (
     <div className="max-w-6xl mx-auto bg-white shadow-md rounded-xl overflow-hidden">
@@ -70,15 +69,15 @@ const PlanningUI = () => {
               <div className="space-y-2">
                 <p>
                   <span className="font-bold text-pink-600">🎯 Goal:</span>{" "}
-                  {assignment?.KpiData?.goalDes || "N/A"}
+                  {assignment?.Goal_Name || "N/A"}
                 </p>
                 <p>
                   <span className="font-bold text-yellow-600">🏷️ KRA:</span>{" "}
-                  {assignment?.KpiData?.kraName || "N/A"}
+                  {assignment?.Kra_Name || "N/A"}
                 </p>
                 <p>
                   <span className="font-bold text-red-600">📌 KPI:</span>{" "}
-                  {assignment?.KpiData?.kpiName || "N/A"}
+                  {assignment?.Kpi_Name || "N/A"}
                 </p>
               </div>
 
@@ -96,18 +95,18 @@ const PlanningUI = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="bg-white">
-                      <td className="p-3 border">
-                        {assignment?.measure || "N/A"}
-                      </td>
-                      <td className="p-3 border">
-                        <input
-                          type="text"
-                          defaultValue={assignment?.target || ""}
-                          className="w-full border rounded px-2 py-1"
-                        />
-                      </td>
-                    </tr>
+                    {assignment.measures?.map((measure, idx) => (
+                      <tr key={idx} className="bg-white">
+                        <td className="p-3 border">{measure.measure}</td>
+                        <td className="p-3 border">
+                          <input
+                            type="text"
+                            defaultValue={measure.target}
+                            className="w-full border rounded px-2 py-1"
+                          />
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

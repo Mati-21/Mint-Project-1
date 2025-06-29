@@ -1,65 +1,59 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import useAuthStore from "../../../store/auth.store";
+import axios from "axios";
 
 const PerformanceUI = () => {
   const [year, setYear] = useState("2024");
   const [quarter, setQuarter] = useState("Q1");
-  const [rows, setRows] = useState([
-    {
-      indicator: "Response Time",
-      target: "24",
-      justification: "",
-      selected: false,
-      file: null,
-    },
-    {
-      indicator: "Resolution Rate",
-      target: "95",
-      justification: "",
-      selected: false,
-      file: null,
-    },
-  ]);
+  const [assignedMeasure, setAssignedMeasure] = useState([]);
+
+  const { user } = useAuthStore();
+  const userId = user?._id;
+
+  useEffect(() => {
+    const fetchAssignedMeasures = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:1221/api/measureAssignment/user/${userId}`
+        );
+        const withExtras = res.data.map((item) => ({
+          ...item,
+          justification: "",
+          selected: false,
+          file: null,
+        }));
+        setAssignedMeasure(withExtras);
+      } catch (error) {
+        console.error("Error fetching assignment:", error);
+      }
+    };
+    if (userId) fetchAssignedMeasures();
+  }, [userId]);
 
   const handleInputChange = (index, field, value) => {
-    const newRows = [...rows];
-    newRows[index][field] = value;
-    setRows(newRows);
+    const updated = [...assignedMeasure];
+    updated[index][field] = value;
+    setAssignedMeasure(updated);
   };
 
   const handleFileChange = (index, file) => {
-    const newRows = [...rows];
-    newRows[index].file = file;
-    setRows(newRows);
+    const updated = [...assignedMeasure];
+    updated[index].file = file;
+    setAssignedMeasure(updated);
   };
 
   const handleSave = (index) => {
-    const row = rows[index];
-    console.log("Saving row:", row);
-    alert(`Saved: ${row.indicator}`);
-    // Add your backend logic here
+    const item = assignedMeasure[index];
+    console.log("Saving:", item);
+    alert(`Saved: ${item.indicator}`);
+    // Replace with API POST/PUT if needed
   };
 
   return (
     <div className="p-6 space-y-6">
       <h2 className="text-2xl font-bold text-orange-600">Performance</h2>
 
-      {/* Goal/KRA/KPI */}
-      <div className="space-y-2">
-        <p>
-          <span className="font-bold text-pink-600">🎯 Goal:</span> Improve
-          Service Delivery
-        </p>
-        <p>
-          <span className="font-bold text-yellow-600">🏷️ KRA:</span> Reduce
-          Response Time
-        </p>
-        <p>
-          <span className="font-bold text-red-600">📌 KPI:</span> Average Ticket
-          Resolution Time
-        </p>
-      </div>
-
-      {/* Year & Quarter */}
+      {/* Year & Quarter Selection */}
       <div className="flex space-x-6">
         <div>
           <label className="font-semibold mr-2">Year:</label>
@@ -87,73 +81,100 @@ const PerformanceUI = () => {
         </div>
       </div>
 
-      {/* Data Table */}
-      <div className="overflow-x-auto border rounded">
-        <table className="min-w-full text-sm text-left">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 border">Indicator</th>
-              <th className="p-2 border">Target Value</th>
-              <th className="p-2 border">Justification</th>
-              <th className="p-2 border">Select</th>
-              <th className="p-2 border">Attachment</th>
-              <th className="p-2 border">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, idx) => (
-              <tr key={idx}>
-                <td className="p-2 border">{row.indicator}</td>
-                <td className="p-2 border">
-                  <input
-                    type="text"
-                    value={row.target}
-                    onChange={(e) =>
-                      handleInputChange(idx, "target", e.target.value)
-                    }
-                    className="border rounded px-2 py-1 w-full"
-                  />
-                </td>
-                <td className="p-2 border">
-                  <input
-                    type="text"
-                    placeholder="Justification"
-                    value={row.justification}
-                    onChange={(e) =>
-                      handleInputChange(idx, "justification", e.target.value)
-                    }
-                    className="border rounded px-2 py-1 w-full"
-                  />
-                </td>
-                <td className="p-2 border text-center">
-                  <input
-                    type="checkbox"
-                    checked={row.selected}
-                    onChange={(e) =>
-                      handleInputChange(idx, "selected", e.target.checked)
-                    }
-                  />
-                </td>
-                <td className="p-2 border">
-                  <input
-                    type="file"
-                    onChange={(e) => handleFileChange(idx, e.target.files[0])}
-                    className="w-full"
-                  />
-                </td>
-                <td className="p-2 border text-center">
-                  <button
-                    onClick={() => handleSave(idx)}
-                    className="bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600"
-                  >
-                    Save
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Render filtered assigned measures */}
+      {assignedMeasure.map((item, idx) => (
+        <div key={idx} className="space-y-4 mb-10">
+          {/* Goal / KRA / KPI Section */}
+          <div className="space-y-2">
+            <p>
+              <span className="font-bold text-pink-600">🎯 Goal:</span>{" "}
+              {item.Goal_Name || "N/A"}
+            </p>
+            <p>
+              <span className="font-bold text-yellow-600">🏷️ KRA:</span>{" "}
+              {item.Kra_Name || "N/A"}
+            </p>
+            <p>
+              <span className="font-bold text-red-600">📌 KPI:</span>{" "}
+              {item.Kpi_Name || "N/A"}
+            </p>
+          </div>
+
+          {/* Data Table */}
+          <div className="overflow-x-auto border rounded">
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-2 border">Indicator</th>
+                  <th className="p-2 border">Target Value</th>
+                  <th className="p-2 border">Justification</th>
+                  <th className="p-2 border">Select</th>
+                  <th className="p-2 border">Attachment</th>
+                  <th className="p-2 border">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {item.measures.map((data, idx) => (
+                  <tr>
+                    <td className="p-2 border">{data.measure}</td>
+                    <td className="p-2 border">
+                      <input
+                        type="text"
+                        value={data.target}
+                        onChange={(e) =>
+                          handleInputChange(idx, "target", e.target.value)
+                        }
+                        className="border rounded px-2 py-1 w-full"
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <input
+                        type="text"
+                        placeholder="Justification"
+                        value={data.justification}
+                        onChange={(e) =>
+                          handleInputChange(
+                            idx,
+                            "justification",
+                            e.target.value
+                          )
+                        }
+                        className="border rounded px-2 py-1 w-full"
+                      />
+                    </td>
+                    <td className="p-2 border text-center">
+                      <input
+                        type="checkbox"
+                        checked={data.selected}
+                        onChange={(e) =>
+                          handleInputChange(idx, "selected", e.target.checked)
+                        }
+                      />
+                    </td>
+                    <td className="p-2 border">
+                      <input
+                        type="file"
+                        onChange={(e) =>
+                          handleFileChange(idx, e.target.files[0])
+                        }
+                        className="w-full"
+                      />
+                    </td>
+                    <td className="p-2 border text-center">
+                      <button
+                        onClick={() => handleSave(idx)}
+                        className="bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600"
+                      >
+                        Save
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

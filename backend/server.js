@@ -37,7 +37,7 @@ import targetRouter from "./routes/targetValidationRoutes.js";
 import performanceValidationRouter from "./routes/performanceValidationRoutes.js";
 import chatRouter from "./routes/chatRouter.js";
 import KpiTableRouter from "./routes/kpiTableRoutes.js";
-import measureAssignmentRouter from "./routes/measureAssignment.js";
+import measureAssignmentRouter from "./routes/measureAssignmentRoute.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

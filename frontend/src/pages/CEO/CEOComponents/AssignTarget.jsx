@@ -3,6 +3,7 @@ import axios from "axios";
 import { taskAssignStore } from "../../../store/taskAssignStore";
 import useAuthStore from "../../../store/auth.store";
 import { flattenAssignedKpis } from "../../../utils/flattenAssignedKpis";
+import { toast } from "react-toastify";
 
 const BACKEND_URL = "http://localhost:1221";
 const initialWorkers = ["Alice", "Bob", "Charlie", "Diana"];
@@ -105,9 +106,15 @@ export default function AssignTarget({ kpis, assignments, setAssignments }) {
         `http://localhost:1221/api/measureAssignment/assign`,
         newAssignment
       );
-      console.log(res);
+      toast.success("Task Assigned Successfully");
     } catch (error) {
-      console.log(error.message);
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error || // from res.status(500)
+        error.message || // fallback from axios itself
+        "Something went wrong";
+
+      toast.error(message);
     }
 
     setTarget("");
