@@ -22,12 +22,17 @@ const ResultFrameworkMenu = ({ open = true }) => {
   useEffect(() => {
     const fetchSubsectors = async () => {
       try {
-        const res = await axios.get(`${backendUrl}/api/subsector/get-subsector`);
+        const res = await axios.get(
+          `${backendUrl}/api/subsector/get-subsector`
+        );
+        console.log(res);
         let list = Array.isArray(res.data) ? res.data : [];
 
         if (role === "chief ceo") {
           list = list.filter(
-            (sub) => sub?.sectorId === userSectorId || sub?.sectorId?._id === userSectorId
+            (sub) =>
+              sub?.sectorId === userSectorId ||
+              sub?.sectorId?._id === userSectorId
           );
         } else if (role === "ceo" || role === "worker") {
           list = list.filter((sub) => sub?._id === userSubsectorId);
@@ -93,7 +98,7 @@ const ResultFrameworkMenu = ({ open = true }) => {
             subsectors.map((subsector) => (
               <li key={subsector._id}>
                 <Link
-                  to={`${basePath}/allSubsector/${subsector._id}?userId=${user._id}`}
+                  to={`${basePath}/allSubsector/${subsector?._id}?userId=${user?._id}`}
                   className={`block px-3 py-2 rounded text-xs transition duration-300 ${
                     dark
                       ? "bg-white/10 text-white hover:bg-white/20"

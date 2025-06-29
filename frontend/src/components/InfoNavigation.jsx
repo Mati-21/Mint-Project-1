@@ -28,11 +28,6 @@ const InfoNavigation = () => {
         const krasData = res.data;
         console.log("Fetched KRAs:", krasData);
 
-        krasData.forEach((kra) => {
-          const relatedGoalDesc = kra.goalId ? kra.goalId.goal_desc : "None";
-          console.log(`KRA: ${kra.kra_name}, Related Goal Desc: ${relatedGoalDesc}`);
-        });
-
         setKras(krasData);
       })
       .catch(() => setKras([]));
@@ -205,15 +200,31 @@ const InfoNavigation = () => {
                 <h3 className="text-lg font-semibold mb-3 text-center">
                   Ministry of Innovation and Technology
                 </h3>
-                <hr /><br />
+                <hr />
+                <br />
                 <p className="text-sm leading-relaxed text-justify">
-  The Ministry of Innovation and Technology (MInT) spearheads Ethiopia’s science, innovation, and technology advancement agenda. Its mission is to transform the nation into a technology-driven economy by building robust digital infrastructure, advancing scientific research, and fostering cutting-edge innovative solutions.
-  <br /><br />
-  The Ministry’s Sector Plan and Report presents a comprehensive strategic roadmap and key performance outcomes that underpin Ethiopia’s progress in science and technology. It underscores MInT’s dedication to driving economic growth through technological innovation, detailing sector goals, planned initiatives, and measurable achievements.
-  <br /><br />
-  Additionally, the report offers insight into challenges faced and lessons learned, providing a transparent and holistic overview of efforts aimed at strengthening national competitiveness and promoting sustainable development within an ever-evolving global technology landscape.
-</p>
-
+                  The Ministry of Innovation and Technology (MInT) spearheads
+                  Ethiopia’s science, innovation, and technology advancement
+                  agenda. Its mission is to transform the nation into a
+                  technology-driven economy by building robust digital
+                  infrastructure, advancing scientific research, and fostering
+                  cutting-edge innovative solutions.
+                  <br />
+                  <br />
+                  The Ministry’s Sector Plan and Report presents a comprehensive
+                  strategic roadmap and key performance outcomes that underpin
+                  Ethiopia’s progress in science and technology. It underscores
+                  MInT’s dedication to driving economic growth through
+                  technological innovation, detailing sector goals, planned
+                  initiatives, and measurable achievements.
+                  <br />
+                  <br />
+                  Additionally, the report offers insight into challenges faced
+                  and lessons learned, providing a transparent and holistic
+                  overview of efforts aimed at strengthening national
+                  competitiveness and promoting sustainable development within
+                  an ever-evolving global technology landscape.
+                </p>
               </div>
             )}
 
@@ -265,17 +276,33 @@ const InfoNavigation = () => {
 
                     if (modalContent === "goals") {
                       displayText =
-                        item.goal_desc || item.title || item.name || "Unnamed Goal";
+                        item.goal_desc ||
+                        item.title ||
+                        item.name ||
+                        "Unnamed Goal";
                     } else if (modalContent === "kras") {
                       // kra.goalId is an object with goal info
-                      const goalDesc = item.goalId ? item.goalId.goal_desc : "Unknown Goal";
-                      displayText = `${item.kra_name || item.title || "Unnamed KRA"} — Goal: ${goalDesc}`;
+                      const goalDesc = item.goalId
+                        ? item.goalId.goal_desc
+                        : "Unknown Goal";
+                      displayText = `${
+                        item.kra_name || item.title || "Unnamed KRA"
+                      } — Goal: ${goalDesc}`;
                     } else if (modalContent === "kpis") {
                       // kpi.kra and kpi.goal are objects containing names
-                      const kraName = item.kra ? item.kra.kra_name || "Unnamed KRA" : "Unknown KRA";
-                      const goalDesc = item.goal ? item.goal.goal_desc || "Unnamed Goal" : "Unknown Goal";
+                      const kraName = item.kra
+                        ? item.kra.kra_name || "Unnamed KRA"
+                        : "Unknown KRA";
+                      const goalDesc = item.goal
+                        ? item.goal.goal_desc || "Unnamed Goal"
+                        : "Unknown Goal";
 
-                      displayText = `${item.kpi_name || item.kpiName || item.title || "Unnamed KPI"} — KRA: ${kraName} — Goal: ${goalDesc}`;
+                      displayText = `${
+                        item.kpi_name ||
+                        item.kpiName ||
+                        item.title ||
+                        "Unnamed KPI"
+                      } — KRA: ${kraName} — Goal: ${goalDesc}`;
                     }
 
                     return (

@@ -39,6 +39,10 @@ import Setting from "./components/Setting";
 import KPITableReport from "./components/Table/KPITableReport";
 import AllSubsectorReport from "./components/Sector/AllSubsectorReport";
 import AllSectorReport from "./components/Sector/AllSectorReoprt";
+import TaskAssignment from "./pages/CEO/CEOComponents/TaskAssignment";
+import PlanningUI from "./pages/Worker/WorkUnitComponents/PlanningUi";
+import Container from "./pages/Worker/WorkUnitComponents/Container";
+import PerformanceUI from "./pages/Worker/WorkUnitComponents/PerformanceUI";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -51,7 +55,9 @@ function App() {
   return (
     <div
       className={`min-h-screen transition-colors duration-300 ${
-        dark ? "bg-gray-900 text-white" : "bg-[rgba(13,42,92,0.08)] text-gray-900"
+        dark
+          ? "bg-gray-900 text-white"
+          : "bg-[rgba(13,42,92,0.08)] text-gray-900"
       }`}
     >
       <BrowserRouter>
@@ -85,7 +91,10 @@ function App() {
             <Route path="Goal-Kra-Kpi" element={<AddGoalKraKpi />} />
             <Route path="Goal-" element={<AddGoalKraKpi />} />
             <Route path="Kpi-Year-Assign" element={<KpiYearAssignmentPage />} />
-            <Route path="goal-kra-kpi-management" element={<GoalKraKpiManagement />} />
+            <Route
+              path="goal-kra-kpi-management"
+              element={<GoalKraKpiManagement />}
+            />
             <Route path="chat" element={<ChatPage />} />
             <Route path="setting" element={<Setting />} />
           </Route>
@@ -101,15 +110,24 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="allSector/:sectorId" element={<AllSector />} />
-            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
-            <Route path="Subsector-reporting/:subsectorId" element={<AllSubsectorReport />} />
+            <Route
+              path="allSubsector/:subsectorId"
+              element={<AllSubsector />}
+            />
+            <Route
+              path="Subsector-reporting/:subsectorId"
+              element={<AllSubsectorReport />}
+            />
             <Route path="user-profile" element={<UserProfile />} />
             <Route path="chat" element={<ChatPage />} />
-            <Route path="performance-validation" element={<PerformanceValidation />} />
+            <Route
+              path="performance-validation"
+              element={<PerformanceValidation />}
+            />
             <Route path="Target-validation" element={<TargetValidation />} />
             <Route path="user-report" element={<KPITableReport />} />
             <Route path="setting" element={<Setting />} />
-
+            <Route path="task-assignment" element={<TaskAssignment />} />
           </Route>
 
           {/* CHIEF CEO ROUTES */}
@@ -123,13 +141,22 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="allSector/:sectorId" element={<AllSector />} />
-            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+            <Route
+              path="allSubsector/:subsectorId"
+              element={<AllSubsector />}
+            />
             <Route path="user-profile" element={<UserProfile />} />
             <Route path="chat" element={<ChatPage />} />
-            <Route path="performance-validation" element={<PerformanceValidation />} />
+            <Route
+              path="performance-validation"
+              element={<PerformanceValidation />}
+            />
             <Route path="Target-validation" element={<TargetValidation />} />
             <Route path="user-report" element={<UserReportTable />} />
-            <Route path="sector-reporting/:sectorId" element={<AllSectorReport />} />
+            <Route
+              path="sector-reporting/:sectorId"
+              element={<AllSectorReport />}
+            />
             <Route path="setting" element={<Setting />} />
           </Route>
 
@@ -144,10 +171,16 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="allSector/:sectorId" element={<AllSector />} />
-            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+            <Route
+              path="allSubsector/:subsectorId"
+              element={<AllSubsector />}
+            />
             <Route path="user-profile" element={<UserProfile />} />
             <Route path="chat" element={<ChatPage />} />
-            <Route path="performance-validation" element={<PerformanceValidation />} />
+            <Route
+              path="performance-validation"
+              element={<PerformanceValidation />}
+            />
             <Route path="Target-validation" element={<TargetValidation />} />
             <Route path="sector-reporting" element={<AllSectorReport />} />
             <Route path="setting" element={<Setting />} />
@@ -164,11 +197,17 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="allSector/:sectorId" element={<AllSector />} />
-            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+            <Route
+              path="allSubsector/:subsectorId"
+              element={<AllSubsector />}
+            />
             <Route path="user-profile" element={<UserProfile />} />
             <Route path="setting" element={<Setting />} />
             <Route path="chat" element={<ChatPage />} />
-            <Route path="performance-validation" element={<PerformanceValidation />} />
+            <Route
+              path="performance-validation"
+              element={<PerformanceValidation />}
+            />
             <Route path="Target-validation" element={<TargetValidation />} />
             <Route path="sector-reporting" element={<AllSectorReport />} />
           </Route>
@@ -184,13 +223,23 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="allSector/:sectorId" element={<AllSector />} />
-            <Route path="allSubsector/:subsectorId" element={<AllSubsector />} />
+            <Route
+              path="allSubsector/:subsectorId"
+              element={<AllSubsector />}
+            />
             <Route path="user-profile" element={<UserProfile />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="user-report" element={<UserReportTable />} />
-            <Route path="Subsector-reporting/:subsectorId" element={<AllSubsectorReport />} />
+            <Route
+              path="Subsector-reporting/:subsectorId"
+              element={<AllSubsectorReport />}
+            />
             <Route path="setting" element={<Setting />} />
-            
+
+            <Route path="" element={<Container />}>
+              <Route path="planning" element={<PlanningUI />} />
+              <Route path="performance" element={<PerformanceUI />} />
+            </Route>
           </Route>
 
           {/* 404 */}

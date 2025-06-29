@@ -1,14 +1,8 @@
 // src/components/sidebar/useCEOSideMenuTitles.js
-import {
-  MdOutlineDisplaySettings,
-  MdVerified,
-} from "react-icons/md";
+import { MdOutlineDisplaySettings, MdVerified } from "react-icons/md";
 import { IoAnalyticsSharp } from "react-icons/io5";
 import { FcPlanner } from "react-icons/fc";
-import {
-  TbReportAnalytics,
-  TbTarget,
-} from "react-icons/tb";
+import { TbReportAnalytics, TbTarget } from "react-icons/tb";
 import {
   FaChartLine,
   FaFileExport,
@@ -28,11 +22,13 @@ export default function useWorkunitSideMenuTitles() {
       sectionTitle: "Annual/Quarterly",
       key: "annual",
       menu: "Planning",
+      link: "planning",
       icon: <FcPlanner size={20} />,
     },
     {
       key: "performance",
       menu: "Performance",
+      link: "performance",
       icon: <FaChartLine size={16} color="#F36F21" />,
     },
     {

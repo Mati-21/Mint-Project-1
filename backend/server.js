@@ -9,13 +9,14 @@ import http from "http";
 import { Server } from "socket.io";
 
 // Import multer middleware
-import {upload} from "./middlewares/multer.js";
+import { upload } from "./middlewares/multer.js";
 
 // Routes and Middleware
 import authMiddleware from "./middlewares/authMiddleware.js";
 import profileRouter from "./routes/profileRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
+import measureRouter from "./routes/measureRoute.js";
 import planRouter from "./routes/planRoutes.js";
 import reportRouter from "./routes/reportRoutes.js";
 import goalRouter from "./routes/goalRoutes.js";
@@ -36,6 +37,7 @@ import targetRouter from "./routes/targetValidationRoutes.js";
 import performanceValidationRouter from "./routes/performanceValidationRoutes.js";
 import chatRouter from "./routes/chatRouter.js";
 import KpiTableRouter from "./routes/kpiTableRoutes.js";
+import measureAssignmentRouter from "./routes/measureAssignment.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -60,6 +62,7 @@ app.use(
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes setup
+app.use("/api/measureAssignment", measureAssignmentRouter);
 app.get("/api/profile", authMiddleware, profileRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
@@ -78,17 +81,18 @@ app.use("/api/assign", kpiAssignmentRouter);
 app.use("/api/menu", menuRouter);
 app.use("/api/year", kpiYearAssignmentRouter);
 app.use("/api", planRoutes);
-app.use('/api/plans', planRouter);
+app.use("/api/plans", planRouter);
 app.use("/api", performanceRoutes);
 app.use("/api/target-validation", targetRouter);
 app.use("/api/performance-validation", performanceValidationRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/users/update-profile", profileRouter);
-app.use('/api/performance', performanceRoutes);
+app.use("/api/performance", performanceRoutes);
 app.use("/api/kpi-table", KpiTableRouter);
 app.use("/api/kra2", kra2Router);
 app.use("/api/kpi2", kpi2Router);
-
+// In server.js or index.js
+app.use("/api/measures", measureRouter);
 
 // Socket.io setup
 const server = http.createServer(app);

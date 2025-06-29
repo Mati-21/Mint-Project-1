@@ -268,12 +268,16 @@ export const changePassword = async (req, res) => {
 
     const user = await User.findById(req.userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     const isMatch = verifyPassword(oldPassword, user.password, user.salt);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Old password is incorrect" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Old password is incorrect" });
     }
 
     const { hash, salt } = hashPassword(newPassword);
@@ -284,6 +288,28 @@ export const changePassword = async (req, res) => {
     res.json({ success: true, message: "Password changed successfully" });
   } catch (err) {
     console.error("[changePassword] Error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const getSubSectorUser = async (req, res) => {
+  try {
+    const { subsectorId } = req.params;
+
+    if (!subsectorId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Subsector ID is required" });
+    }
+
+    const users = await User.find({ subsector: subsectorId })
+      .populate("sector", "sector_name")
+      .populate("subsector", "subsector_name")
+      .select("-password -salt");
+
+    res.status(200).json({ success: true, data: users });
+  } catch (error) {
+    console.error("[getSubSectorUser] Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

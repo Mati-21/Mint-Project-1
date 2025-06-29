@@ -1,14 +1,8 @@
 // src/components/sidebar/ChiefCEOSideMenuTitles.js
-import {
-  MdOutlineDisplaySettings,
-  MdVerified,
-} from "react-icons/md";
+import { MdOutlineDisplaySettings, MdVerified } from "react-icons/md";
 import { IoAnalyticsSharp } from "react-icons/io5";
 import { FcPlanner } from "react-icons/fc";
-import {
-  TbReportAnalytics,
-  TbTarget,
-} from "react-icons/tb";
+import { TbReportAnalytics, TbTarget } from "react-icons/tb";
 import {
   FaChartLine,
   FaFileExport,

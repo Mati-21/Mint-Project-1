@@ -1,14 +1,8 @@
 // src/components/sidebar/useCEOSideMenuTitles.js
-import {
-  MdOutlineDisplaySettings,
-  MdVerified,
-} from "react-icons/md";
+import { MdOutlineDisplaySettings, MdVerified } from "react-icons/md";
 import { IoAnalyticsSharp } from "react-icons/io5";
 import { FcPlanner } from "react-icons/fc";
-import {
-  TbReportAnalytics,
-  TbTarget,
-} from "react-icons/tb";
+import { TbReportAnalytics, TbTarget } from "react-icons/tb";
 import {
   FaChartLine,
   FaFileExport,
@@ -46,6 +40,12 @@ export default function useCEOSideMenuTitles() {
       key: "performanceValidation",
       menu: "Performance Validation",
       link: "Performance-validation",
+      icon: <MdVerified size={20} color="#F36F21" />,
+    },
+    {
+      key: "taskAssignment",
+      menu: "Task Assignment",
+      link: "task-Assignment",
       icon: <MdVerified size={20} color="#F36F21" />,
     },
     {

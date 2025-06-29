@@ -10,17 +10,20 @@ import {
   updateUser,
   updateUserPassword,
   changePassword,
+  getSubSectorUser,
 } from "../controllers/userController.js";
 
 import { validatePasswordStrength } from "../middlewares/validatePasswordStrength.js";
 
 import { checkAuth } from "../middlewares/checkAuth.js";
 import authUser from "../middlewares/authUser.js";
-import  {uploadMemory}  from "../middlewares/multer.js";
+import { uploadMemory } from "../middlewares/multer.js";
 
 const userRouter = express.Router();
 
 userRouter.get("/get-users", authUser, getUsers);
+userRouter.get("/getsubsector-user/:subsectorId", getSubSectorUser);
+
 userRouter.post("/create", validatePasswordStrength, createUser);
 userRouter.post("/login", loginUser);
 userRouter.post("/logout", logout);

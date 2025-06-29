@@ -7,18 +7,24 @@ export const addSubsector = async (req, res) => {
     const { subsector_name, sectorId } = req.body;
 
     if (!subsector_name || !sectorId) {
-      return res.status(400).json({ error: "subsector_name and sectorId are required" });
+      return res
+        .status(400)
+        .json({ error: "subsector_name and sectorId are required" });
     }
 
     const existingSector = await sectorModel.findById(sectorId);
     if (!existingSector) {
-      return res.status(404).json({ error: "Sector not found with the provided sectorId." });
+      return res
+        .status(404)
+        .json({ error: "Sector not found with the provided sectorId." });
     }
 
     const newSubsector = new Subsector({ sectorId, subsector_name });
     await newSubsector.save();
 
-    res.status(201).json({ message: "Subsector added successfully", data: newSubsector });
+    res
+      .status(201)
+      .json({ message: "Subsector added successfully", data: newSubsector });
   } catch (err) {
     console.error("Error creating Subsector:", err);
     res.status(500).json({ error: err.message });
@@ -26,6 +32,16 @@ export const addSubsector = async (req, res) => {
 };
 
 // Get All Subsectors with populated sector info
+// export const getAllSubsectors = async (req, res) => {
+//   try {
+//     const subsectors = await Subsector.find().populate("sectorId");
+//     console.log(subsectors);
+//     res.json(subsectors); // Note: just sending array, no wrapping data
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
 export const getAllSubsectors = async (req, res) => {
   try {
     const subsectors = await Subsector.find().populate("sectorId");
@@ -42,7 +58,9 @@ export const updateSubsector = async (req, res) => {
     const { subsector_name, sectorId } = req.body;
 
     if (!subsector_name || !sectorId) {
-      return res.status(400).json({ error: "subsector_name and sectorId are required" });
+      return res
+        .status(400)
+        .json({ error: "subsector_name and sectorId are required" });
     }
 
     const subsector = await Subsector.findById(id);
@@ -92,7 +110,9 @@ export const getSubsectorsBySector = async (req, res) => {
     const subsectors = await Subsector.find({ sectorId }).populate("sectorId");
 
     if (!subsectors || subsectors.length === 0) {
-      return res.status(404).json({ message: "No subsectors found for the given sector ID" });
+      return res
+        .status(404)
+        .json({ message: "No subsectors found for the given sector ID" });
     }
 
     res.json(subsectors);

@@ -1,8 +1,7 @@
-import Plan from '../models/planModels.js';
-import mongoose from 'mongoose';
-import KPI from '../models/kpiModel2.js';
-import KpiAssignment from '../models/kpiAssignmentModel.js';
-
+import Plan from "../models/planModels.js";
+import mongoose from "mongoose";
+import KPI from "../models/kpiModel2.js";
+import KpiAssignment from "../models/kpiAssignmentModel.js";
 
 // Create or update a plan (yearly or quarterly target)
 export const createOrUpdatePlan = async (req, res) => {
@@ -11,7 +10,7 @@ export const createOrUpdatePlan = async (req, res) => {
     const {
       userId,
       role,
-      kpiName,       // Expect camelCase from client
+      kpiName, // Expect camelCase from client
       year,
       target,
       description,
@@ -27,13 +26,19 @@ export const createOrUpdatePlan = async (req, res) => {
 
     // Basic validations
     if (!userId || !role || !kpi_name || !year) {
-      return res.status(400).json({ message: "Missing required fields: userId, role, kpi_name, or year." });
+      return res
+        .status(400)
+        .json({
+          message: "Missing required fields: userId, role, kpi_name, or year.",
+        });
     }
 
     // Find KPI document
     const kpiDoc = await KPI.findOne({ kpi_name });
     if (!kpiDoc) {
-      return res.status(404).json({ message: `KPI not found for name: ${kpi_name}` });
+      return res
+        .status(404)
+        .json({ message: `KPI not found for name: ${kpi_name}` });
     }
 
     const kpiId = kpiDoc._id;
@@ -45,7 +50,9 @@ export const createOrUpdatePlan = async (req, res) => {
     const finalGoalId = goalId || kpiGoalId;
 
     if (!finalKraId || !finalGoalId) {
-      return res.status(400).json({ message: "KPI must have associated KRA and Goal." });
+      return res
+        .status(400)
+        .json({ message: "KPI must have associated KRA and Goal." });
     }
 
     // Determine sectorId and subsectorId, try fallback from KpiAssignment if missing
@@ -56,12 +63,17 @@ export const createOrUpdatePlan = async (req, res) => {
       const assignment = await KpiAssignment.findOne({ kpiId });
       if (assignment) {
         if (!sectorId && assignment.sectorId) sectorId = assignment.sectorId;
-        if (!subsectorId && assignment.subsectorId) subsectorId = assignment.subsectorId;
+        if (!subsectorId && assignment.subsectorId)
+          subsectorId = assignment.subsectorId;
       }
     }
 
     if (!sectorId) {
-      return res.status(400).json({ message: "Sector ID is required and could not be auto-filled." });
+      return res
+        .status(400)
+        .json({
+          message: "Sector ID is required and could not be auto-filled.",
+        });
     }
 
     // Prepare filters
@@ -70,7 +82,13 @@ export const createOrUpdatePlan = async (req, res) => {
     let existingUserPlan = await Plan.findOne(userPlanFilter);
 
     // Any plan created by CEO or other roles (excluding worker)
-    const otherPlanFilter = { kpiId, year, sectorId, subsectorId, role: { $ne: 'worker' } };
+    const otherPlanFilter = {
+      kpiId,
+      year,
+      sectorId,
+      subsectorId,
+      role: { $ne: "worker" },
+    };
     const existingOtherPlan = await Plan.findOne(otherPlanFilter);
 
     // Helper function to validate and convert target to number
@@ -85,22 +103,29 @@ export const createOrUpdatePlan = async (req, res) => {
     // Handle quarterly target update/create
     if (quarter && target !== undefined) {
       const qKey = quarter.toLowerCase(); // e.g. 'q1'
-      if (!['q1', 'q2', 'q3', 'q4'].includes(qKey)) {
-        return res.status(400).json({ message: "Invalid quarter value. Must be one of q1, q2, q3, q4." });
+      if (!["q1", "q2", "q3", "q4"].includes(qKey)) {
+        return res
+          .status(400)
+          .json({
+            message: "Invalid quarter value. Must be one of q1, q2, q3, q4.",
+          });
       }
 
       const quarterTargetNum = parseTarget(target);
       if (quarterTargetNum === null) {
-        return res.status(400).json({ message: "Quarter target must be a valid number." });
+        return res
+          .status(400)
+          .json({ message: "Quarter target must be a valid number." });
       }
 
-      if (role === 'worker') {
+      if (role === "worker") {
         // Workers must not update CEO plans
 
         if (existingUserPlan) {
           // Update worker's own plan
           existingUserPlan[qKey] = quarterTargetNum;
-          if (description !== undefined) existingUserPlan.description = description;
+          if (description !== undefined)
+            existingUserPlan.description = description;
           const updatedPlan = await existingUserPlan.save();
           return res.status(200).json(updatedPlan);
         } else {
@@ -117,17 +142,20 @@ export const createOrUpdatePlan = async (req, res) => {
             year,
             target: 0, // yearly target default 0 when only quarter provided
             [qKey]: quarterTargetNum,
-            description: description || '',
+            description: description || "",
           });
           const savedPlan = await newPlan.save();
-          return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
+          return res
+            .status(201)
+            .json({ planId: savedPlan._id, ...savedPlan._doc });
         }
       } else {
         // CEO or other roles - update or create plan normally
 
         if (existingOtherPlan) {
           existingOtherPlan[qKey] = quarterTargetNum;
-          if (description !== undefined) existingOtherPlan.description = description;
+          if (description !== undefined)
+            existingOtherPlan.description = description;
           const updatedPlan = await existingOtherPlan.save();
           return res.status(200).json(updatedPlan);
         } else {
@@ -143,31 +171,40 @@ export const createOrUpdatePlan = async (req, res) => {
             year,
             target: 0,
             [qKey]: quarterTargetNum,
-            description: description || '',
+            description: description || "",
           });
           const savedPlan = await newPlan.save();
-          return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
+          return res
+            .status(201)
+            .json({ planId: savedPlan._id, ...savedPlan._doc });
         }
       }
     }
 
     // Handle yearly target update/create (when no quarter provided)
     if (target === undefined) {
-      return res.status(400).json({ message: "Target is required when quarter info is not provided." });
+      return res
+        .status(400)
+        .json({
+          message: "Target is required when quarter info is not provided.",
+        });
     }
 
     const targetNum = parseTarget(target);
     if (targetNum === null) {
-      return res.status(400).json({ message: "Target must be a valid number." });
+      return res
+        .status(400)
+        .json({ message: "Target must be a valid number." });
     }
 
-    if (role === 'worker') {
+    if (role === "worker") {
       // Workers cannot update CEO plans
 
       if (existingUserPlan) {
         // update worker's own plan preserving quarterly targets
         existingUserPlan.target = targetNum;
-        if (description !== undefined) existingUserPlan.description = description;
+        if (description !== undefined)
+          existingUserPlan.description = description;
         const updatedPlan = await existingUserPlan.save();
         return res.status(200).json(updatedPlan);
       } else {
@@ -183,14 +220,16 @@ export const createOrUpdatePlan = async (req, res) => {
           goalId: finalGoalId,
           year,
           target: targetNum,
-          description: description || '',
+          description: description || "",
           q1: 0,
           q2: 0,
           q3: 0,
           q4: 0,
         });
         const savedPlan = await newPlan.save();
-        return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
+        return res
+          .status(201)
+          .json({ planId: savedPlan._id, ...savedPlan._doc });
       }
     } else {
       // CEO or other roles update or create normally
@@ -198,7 +237,8 @@ export const createOrUpdatePlan = async (req, res) => {
       if (existingOtherPlan) {
         // preserve quarterly targets
         existingOtherPlan.target = targetNum;
-        if (description !== undefined) existingOtherPlan.description = description;
+        if (description !== undefined)
+          existingOtherPlan.description = description;
         const updatedPlan = await existingOtherPlan.save();
         return res.status(200).json(updatedPlan);
       } else {
@@ -213,14 +253,16 @@ export const createOrUpdatePlan = async (req, res) => {
           goalId: finalGoalId,
           year,
           target: targetNum,
-          description: description || '',
+          description: description || "",
           q1: 0,
           q2: 0,
           q3: 0,
           q4: 0,
         });
         const savedPlan = await newPlan.save();
-        return res.status(201).json({ planId: savedPlan._id, ...savedPlan._doc });
+        return res
+          .status(201)
+          .json({ planId: savedPlan._id, ...savedPlan._doc });
       }
     }
   } catch (error) {
@@ -228,7 +270,6 @@ export const createOrUpdatePlan = async (req, res) => {
     return res.status(500).json({ message: "Server error." });
   }
 };
-
 
 // Other controllers unchanged, full versions below
 
@@ -245,11 +286,11 @@ export const getPlans = async (req, res) => {
     if (kpiId) filter.kpiId = kpiId;
 
     const plans = await Plan.find(filter)
-      .populate('sectorId', 'name')
-      .populate('subsectorId', 'name')
-      .populate('kpiId', 'kpi_name')
-      .populate('kraId', 'kra_name')
-      .populate('goalId', 'goal_desc')
+      .populate("sectorId", "name")
+      .populate("subsectorId", "name")
+      .populate("kpiId", "kpi_name")
+      .populate("kraId", "kra_name")
+      .populate("goalId", "goal_desc")
       .sort({ year: 1 });
 
     return res.status(200).json(plans);
@@ -269,11 +310,11 @@ export const getPlanById = async (req, res) => {
     }
 
     const plan = await Plan.findById(id)
-      .populate('sectorId', 'name')
-      .populate('subsectorId', 'name')
-      .populate('kpiId', 'kpi_name')
-      .populate('kraId', 'kra_name')
-      .populate('goalId', 'goal_desc');
+      .populate("sectorId", "name")
+      .populate("subsectorId", "name")
+      .populate("kpiId", "kpi_name")
+      .populate("kraId", "kra_name")
+      .populate("goalId", "goal_desc");
 
     if (!plan) {
       return res.status(404).json({ message: "Plan not found." });
@@ -299,7 +340,9 @@ export const updatePlan = async (req, res) => {
     if (updateData.target !== undefined) {
       const targetNum = Number(updateData.target);
       if (isNaN(targetNum)) {
-        return res.status(400).json({ message: "Target must be a valid number." });
+        return res
+          .status(400)
+          .json({ message: "Target must be a valid number." });
       }
       updateData.target = targetNum;
     }
@@ -347,21 +390,32 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 export const getPlanTarget = async (req, res) => {
   try {
     const kpi_name = req.query.kpi_name || req.query.kpiName;
-    const { kraId, role, sectorId, subsectorId, userId, year, quarter } = req.query;
+    const { kraId, role, sectorId, subsectorId, userId, year, quarter } =
+      req.query;
 
     // Validate required params
     if (!kpi_name || !kraId || !role || !sectorId || !userId || !year) {
-      return res.status(400).json({ message: "Missing required query parameters." });
+      return res
+        .status(400)
+        .json({ message: "Missing required query parameters." });
     }
 
     // Validate ObjectId format for IDs (except role and year)
-    if (![kraId, sectorId, subsectorId, userId].every(id => !id || isValidObjectId(id))) {
-      return res.status(400).json({ message: "One or more provided IDs are invalid." });
+    if (
+      ![kraId, sectorId, subsectorId, userId].every(
+        (id) => !id || isValidObjectId(id)
+      )
+    ) {
+      return res
+        .status(400)
+        .json({ message: "One or more provided IDs are invalid." });
     }
 
     const kpiDoc = await KPI.findOne({ kpi_name });
     if (!kpiDoc) {
-      return res.status(404).json({ message: `KPI not found for name: ${kpi_name}` });
+      return res
+        .status(404)
+        .json({ message: `KPI not found for name: ${kpi_name}` });
     }
 
     const filter = {
@@ -376,7 +430,9 @@ export const getPlanTarget = async (req, res) => {
 
     const plan = await Plan.findOne(filter);
     if (!plan) {
-      return res.status(404).json({ message: "No plan found for the specified criteria." });
+      return res
+        .status(404)
+        .json({ message: "No plan found for the specified criteria." });
     }
 
     if (quarter) {

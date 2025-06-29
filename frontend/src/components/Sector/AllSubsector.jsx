@@ -16,7 +16,9 @@ function AllSubsector() {
 
   // Filters
   const [filterSector, setFilterSector] = useState("");
-  const [filterSubsector, setFilterSubsector] = useState(subsectorIdFromParams || "");
+  const [filterSubsector, setFilterSubsector] = useState(
+    subsectorIdFromParams || ""
+  );
   const [filterYear, setFilterYear] = useState("");
   const [filterQuarter, setFilterQuarter] = useState("");
 
@@ -58,7 +60,9 @@ function AllSubsector() {
     }
     const filtered = subsectors.filter((sub) => {
       const sectorIdFromSub =
-        typeof sub.sectorId === "object" ? sub.sectorId._id || sub.sectorId : sub.sectorId;
+        typeof sub.sectorId === "object"
+          ? sub.sectorId._id || sub.sectorId
+          : sub.sectorId;
       return sectorIdFromSub === filterSector;
     });
     setFilteredSubsectors(filtered);
@@ -70,9 +74,10 @@ function AllSubsector() {
 
   const inputClasses = `
     w-full md:w-52 px-3 py-2 rounded-md border text-sm transition focus:outline-none focus:ring-2
-    ${dark
-      ? "bg-[#1f2937] text-white border-gray-600 placeholder-gray-400 focus:ring-[#F36F21]"
-      : "bg-white text-[rgba(13,42,92,0.85)] border border-gray-300 placeholder-gray-500 focus:ring-[#0D2A5C]"
+    ${
+      dark
+        ? "bg-[#1f2937] text-white border-gray-600 placeholder-gray-400 focus:ring-[#F36F21]"
+        : "bg-white text-[rgba(13,42,92,0.85)] border border-gray-300 placeholder-gray-500 focus:ring-[#0D2A5C]"
     }
   `;
   const labelClasses = `text-xs font-medium mb-1 ${
@@ -122,6 +127,7 @@ function AllSubsector() {
         );
         const assignedData = assignedRes.data;
         setAssignedKpisRaw(assignedData);
+        console.log(assignedData);
 
         const nested = transformAssignedKpisToNested(assignedData);
         setNestedKpis(nested);
@@ -134,7 +140,9 @@ function AllSubsector() {
         setDetailedKpis(detailedRes.data || []);
       } catch (err) {
         console.error("Error fetching KPI data:", err);
-        setError(err.response?.data?.error || err.message || "Failed to load KPIs");
+        setError(
+          err.response?.data?.error || err.message || "Failed to load KPIs"
+        );
         setNestedKpis([]);
         setDetailedKpis([]);
       } finally {
@@ -147,7 +155,11 @@ function AllSubsector() {
 
   return (
     <div className={`p-4 ${dark ? "bg-[#1f2937]" : "bg-white"}`}>
-      <h1 className={`text-xl font-semibold mb-4 ${dark ? "text-white" : "text-gray-900"}`}>
+      <h1
+        className={`text-xl font-semibold mb-4 ${
+          dark ? "text-white" : "text-gray-900"
+        }`}
+      >
         Subsector Export and Reporting Dashboard
       </h1>
 
@@ -157,7 +169,11 @@ function AllSubsector() {
         }`}
       >
         {/* Sector filter only if NOT Chief CEO, Worker, or CEO */}
-        {!(normalizedRole === "chief ceo" || normalizedRole === "worker" || normalizedRole === "ceo") && (
+        {!(
+          normalizedRole === "chief ceo" ||
+          normalizedRole === "worker" ||
+          normalizedRole === "ceo"
+        ) && (
           <div className="flex flex-col">
             <label className={labelClasses}>Filter by Sector</label>
             <select
@@ -183,7 +199,14 @@ function AllSubsector() {
               value={filterSubsector}
               onChange={(e) => setFilterSubsector(e.target.value)}
               className={inputClasses}
-              disabled={!filterSector && !(normalizedRole === "chief ceo" || normalizedRole === "worker" || normalizedRole === "ceo")}
+              disabled={
+                !filterSector &&
+                !(
+                  normalizedRole === "chief ceo" ||
+                  normalizedRole === "worker" ||
+                  normalizedRole === "ceo"
+                )
+              }
             >
               <option value="">All Subsectors</option>
               {filteredSubsectors.map((sub) => (
@@ -229,11 +252,17 @@ function AllSubsector() {
         </div>
       </div>
 
-      {loading && <p className={dark ? "text-white" : "text-gray-900"}>Loading assigned KPIs...</p>}
+      {loading && (
+        <p className={dark ? "text-white" : "text-gray-900"}>
+          Loading assigned KPIs...
+        </p>
+      )}
 
       {error && <p className="text-red-600">{error}</p>}
 
-      {!loading && !error && nestedKpis.length === 0 && <p>No KPIs assigned or failed to load.</p>}
+      {!loading && !error && nestedKpis.length === 0 && (
+        <p>No KPIs assigned or failed to load.</p>
+      )}
 
       {!loading && !error && nestedKpis.length > 0 && (
         <KPIGroupedTable data={nestedKpis} detailedKpis={detailedKpis} />
