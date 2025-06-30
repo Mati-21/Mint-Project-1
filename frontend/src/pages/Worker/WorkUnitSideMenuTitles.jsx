@@ -28,11 +28,13 @@ export default function useWorkunitSideMenuTitles() {
       sectionTitle: "Annual/Quarterly",
       key: "annual",
       menu: "Planning",
+      link: "planning",
       icon: <FcPlanner size={20} />,
     },
     {
       key: "performance",
       menu: "Performance",
+      link: "performance",
       icon: <FaChartLine size={16} color="#F36F21" />,
     },
     {
@@ -58,7 +60,7 @@ export default function useWorkunitSideMenuTitles() {
       key: "exportReporting",
       menu: "Export and Reporting",
       // 🔗 Dynamically include subsectorId and userId in the link
-      link: `Subsector-reporting/${subsectorId}?userId=${userId}`,
+      link: `worker-report`,
       icon: <FaFileExport size={16} color="#F36F21" />,
     },
     {

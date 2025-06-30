@@ -31,6 +31,12 @@ export default function useCEOSideMenuTitles() {
       icon: <FcPlanner size={20} />,
     },
     {
+      key: "kpi measures",
+      menu: "Task Assignment",
+      link: `KPI-Measures`,
+      icon: <FcPlanner size={20} />,
+    },
+    {
       key: "performance",
       menu: "Performance",
       icon: <FaChartLine size={16} color="#F36F21" />,
