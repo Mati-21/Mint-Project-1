@@ -123,6 +123,10 @@ io.on("connection", (socket) => {
   });
 });
 
+app.get('/', (req,res)=>{
+res.send("online server")
+})
+
 export { io, onlineUsers, server };
 
 const PORT = process.env.PORT || 1221;
