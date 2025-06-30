@@ -9,7 +9,7 @@ import http from "http";
 import { Server } from "socket.io";
 
 // Import multer middleware
-import {upload} from "./middlewares/multer.js";
+import { upload } from "./middlewares/multer.js";
 
 // Routes and Middleware
 import authMiddleware from "./middlewares/authMiddleware.js";
@@ -82,17 +82,17 @@ app.use("/api/assign", kpiAssignmentRouter);
 app.use("/api/menu", menuRouter);
 app.use("/api/year", kpiYearAssignmentRouter);
 app.use("/api", planRoutes);
-app.use('/api/plans', planRouter);
+app.use("/api/plans", planRouter);
 app.use("/api", performanceRoutes);
 app.use("/api/target-validation", targetRouter);
 app.use("/api/performance-validation", performanceValidationRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/users/update-profile", profileRouter);
-app.use('/api/performance', performanceRoutes);
+app.use("/api/performance", performanceRoutes);
 app.use("/api/kpi-table", KpiTableRouter);
 app.use("/api/kra2", kra2Router);
 app.use("/api/kpi2", kpi2Router);
-app.use('/api/measure-assignment', measureAssignmentRouter);
+app.use("/api/measure-assignment", measureAssignmentRouter);
 app.use("/api/measure", kpiMeasureRouter);
 app.use("/api/worker-plans", workerPlanRouter);
 app.use("/api/worker-performance", WorkerPerformanceRouter);
@@ -123,9 +123,9 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get('/', (req,res)=>{
-res.send("online server")
-})
+app.get("/", (req, res) => {
+  res.send("online server");
+});
 
 export { io, onlineUsers, server };
 
