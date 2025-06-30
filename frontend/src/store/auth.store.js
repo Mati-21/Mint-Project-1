@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import axios from "axios";
 
-const backendUrl = "https://mint-project-1-4.onrender.com";
+const backendUrl = "http://localhost:1221";
 
 axios.defaults.withCredentials = true;
 
