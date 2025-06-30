@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import useAuthStore from "../../../store/auth.store";
+import { taskAssignStore } from "../../../store/taskAssignStore";
 
 const BACKEND_URL = `http://localhost:1221`;
 
@@ -9,22 +10,18 @@ const PlanningUI = () => {
   const [quarter, setQuarter] = useState("Q1");
   const [AssignedMeasure, setAssignedMeasure] = useState([]);
   const { user } = useAuthStore();
+  const { fetchAssignedTask } = taskAssignStore();
+
   const userId = user?._id;
 
   useEffect(() => {
     const AssigneMeasure = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:1221/api/measureAssignment/user/${userId}`
-        );
-        console.log(res.data);
-        setAssignedMeasure(res.data);
-      } catch (error) {
-        console.error("Error fetching assignment:", error);
-      }
+      const res = await fetchAssignedTask(userId);
+
+      setAssignedMeasure(res);
     };
     AssigneMeasure();
-  }, [userId]);
+  }, [fetchAssignedTask, userId]);
 
   return (
     <div className="max-w-6xl mx-auto bg-white shadow-md rounded-xl overflow-hidden">
@@ -59,7 +56,7 @@ const PlanningUI = () => {
           </div>
         </div>
 
-        {AssignedMeasure.length > 0 ? (
+        {AssignedMeasure?.length > 0 ? (
           AssignedMeasure.map((assignment, index) => (
             <div
               key={assignment._id || index}

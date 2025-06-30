@@ -31,5 +31,15 @@ export const taskAssignStore = create((set) => ({
     return assignedRes;
   },
 
-  fetchAssignedTask: async () => {},
+  fetchAssignedTask: async (userId) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:1221/api/measureAssignment/user/${userId}`
+      );
+      console.log(res.data);
+      return res.data;
+    } catch (error) {
+      console.error("Error fetching assignment:", error);
+    }
+  },
 }));

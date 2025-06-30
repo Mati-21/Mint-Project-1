@@ -43,6 +43,8 @@ import TaskAssignment from "./pages/CEO/CEOComponents/TaskAssignment";
 import PlanningUI from "./pages/Worker/WorkUnitComponents/PlanningUi";
 import Container from "./pages/Worker/WorkUnitComponents/Container";
 import PerformanceUI from "./pages/Worker/WorkUnitComponents/PerformanceUI";
+import NotificationCard from "./components/NotificationCard";
+import Notifications from "./components/NotificationCard2";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -235,6 +237,8 @@ function App() {
               element={<AllSubsectorReport />}
             />
             <Route path="setting" element={<Setting />} />
+            <Route path="notification" element={<NotificationCard />} />
+            <Route path="notification2" element={<Notifications />} />
 
             <Route path="" element={<Container />}>
               <Route path="planning" element={<PlanningUI />} />
